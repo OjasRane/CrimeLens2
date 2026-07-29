@@ -1,0 +1,217 @@
+@import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+@import "mapbox-gl/dist/mapbox-gl.css";
+@import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
+
+:root {
+  --paper: #f4f4f0;
+  --ink: #000000;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Courier New", Courier, monospace;
+}
+
+h1,
+h2,
+h3,
+.font-serif {
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.react-flow__node {
+  border-radius: 0;
+}
+
+.react-flow__controls {
+  background: #ffffff;
+  border: 4px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.react-flow__controls-button {
+  background: #ffffff;
+  border-bottom: 2px solid var(--ink);
+  border-radius: 0;
+  color: var(--ink);
+}
+
+.react-flow__controls-button:last-child {
+  border-bottom: 0;
+}
+
+.react-flow__controls-button svg {
+  fill: var(--ink);
+  max-height: 14px;
+  max-width: 14px;
+}
+
+.react-flow__attribution {
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  color: var(--ink);
+}
+
+.fatal-map {
+  background: var(--paper);
+}
+
+.fatal-map .mapboxgl-canvas {
+  outline: none;
+}
+
+.fatal-map .mapboxgl-ctrl-group {
+  background: var(--paper);
+  border: 4px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 var(--ink);
+  overflow: hidden;
+}
+
+.fatal-map .mapboxgl-ctrl-group button {
+  background-color: #ffffff;
+  border-bottom: 2px solid var(--ink);
+  border-radius: 0;
+  height: 34px;
+  width: 34px;
+}
+
+.fatal-map .mapboxgl-ctrl-group button:last-child {
+  border-bottom: 0;
+}
+
+.fatal-map .mapboxgl-ctrl-group button + button {
+  border-top: 0;
+}
+
+.fatal-map .mapboxgl-ctrl button.mapboxgl-ctrl-zoom-in .mapboxgl-ctrl-icon,
+.fatal-map .mapboxgl-ctrl button.mapboxgl-ctrl-zoom-out .mapboxgl-ctrl-icon,
+.fatal-map .mapbox-gl-draw_ctrl-draw-btn {
+  filter: contrast(1.4);
+}
+
+.fatal-map .mapboxgl-ctrl-attrib {
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  color: var(--ink);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.fatal-map-popup .mapboxgl-popup-content {
+  background: var(--paper);
+  border: 4px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 5px 5px 0 var(--ink);
+  color: var(--ink);
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.25;
+  max-width: 220px;
+  padding: 10px;
+  text-transform: uppercase;
+}
+
+.fatal-map-popup .mapboxgl-popup-content strong,
+.fatal-map-popup .mapboxgl-popup-content span,
+.fatal-map-popup .mapboxgl-popup-content em,
+.fatal-map-popup .mapboxgl-popup-content p {
+  display: block;
+  font-style: normal;
+  margin: 0 0 4px;
+}
+
+.fatal-map-popup .mapboxgl-popup-tip {
+  border-top-color: var(--ink);
+}
+
+.fatal-time-slider {
+  accent-color: #d22b2b;
+}
+
+.fatal-time-slider::-webkit-slider-runnable-track {
+  background: #ffffff;
+  border: 3px solid var(--ink);
+  height: 14px;
+}
+
+.fatal-time-slider::-webkit-slider-thumb {
+  appearance: none;
+  background: #d22b2b;
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  height: 26px;
+  margin-top: -9px;
+  width: 18px;
+}
+
+.fatal-time-slider::-moz-range-track {
+  background: #ffffff;
+  border: 3px solid var(--ink);
+  height: 14px;
+}
+
+.fatal-time-slider::-moz-range-thumb {
+  background: #d22b2b;
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  height: 20px;
+  width: 14px;
+}
+
+/* ── Timeline scrollbar ──────────────────────── */
+
+.fatal-timeline-scroll::-webkit-scrollbar {
+  height: 12px;
+}
+
+.fatal-timeline-scroll::-webkit-scrollbar-track {
+  background: var(--paper);
+  border-top: 3px solid var(--ink);
+}
+
+.fatal-timeline-scroll::-webkit-scrollbar-thumb {
+  background: var(--ink);
+  border: 2px solid var(--paper);
+}
+
+.fatal-timeline-scroll::-webkit-scrollbar-thumb:hover {
+  background: #d22b2b;
+}
+
+/* ── Scan-line animation ─────────────────────── */
+
+@keyframes fatal-scanline {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+.fatal-scanline {
+  animation: fatal-scanline 2s ease-in-out infinite;
+}
+
