@@ -214,12 +214,12 @@ const EVENTS: TimelineEvent[] = [
 ];
 
 const CATEGORY_COLORS: Record<EventCategory, string> = {
-  CALL: "#D22B2B",
-  ARREST: "#000000",
-  EVIDENCE: "#FCD34D",
-  CCTV: "#6366F1",
-  FORENSIC: "#059669",
-  ANALYSIS: "#D97706",
+  CALL: "var(--accent)",
+  ARREST: "var(--text-primary)",
+  EVIDENCE: "var(--accent-warm)",
+  CCTV: "var(--accent-indigo)",
+  FORENSIC: "var(--accent-green)",
+  ANALYSIS: "var(--accent-orange)",
 };
 
 const ANNOTATION_ICONS: Record<AnnotationType, { icon: typeof Camera; label: string; emoji: string }> = {

@@ -25,7 +25,7 @@ export function RedStringEdge({
     <path
       d={path}
       fill="none"
-      stroke="#D22B2B"
+      stroke="var(--accent)"
       strokeWidth={3}
       strokeDasharray="5,5"
       strokeLinecap="square"

@@ -4,8 +4,43 @@
 @import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 
 :root {
-  --paper: #f4f4f0;
-  --ink: #000000;
+  /* Semantic palette: component colours resolve through these tokens. */
+  --bg-primary: #f4f4f0;
+  --bg-surface: #ffffff;
+  --bg-inverse: #171717;
+  --text-primary: #171717;
+  --text-inverse: #f4f4f0;
+  --text-muted: color-mix(in srgb, var(--text-primary) 60%, transparent);
+  --border: #171717;
+  --accent: #d22b2b;
+  --accent-strong: #b52222;
+  --accent-warm: #fcd34d;
+  --accent-indigo: #6366f1;
+  --accent-green: #059669;
+  --accent-orange: #d97706;
+  --shadow-color: #171717;
+  --shadow-hard: 4px 4px 0 var(--shadow-color);
+  --paper: var(--bg-primary);
+  --ink: var(--text-primary);
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-primary: #171816;
+  --bg-surface: #222320;
+  --bg-inverse: #dfe1db;
+  --text-primary: #e8e9e4;
+  --text-inverse: #171816;
+  --text-muted: color-mix(in srgb, var(--text-primary) 64%, transparent);
+  --border: #aeb2a8;
+  --accent: #c85a5a;
+  --accent-strong: #ae4848;
+  --accent-warm: #c9a842;
+  --accent-indigo: #8b8ddf;
+  --accent-green: #50a98a;
+  --accent-orange: #d59a50;
+  --shadow-color: #080908;
+  --shadow-hard: 4px 4px 0 var(--shadow-color);
 }
 
 * {
@@ -15,6 +50,53 @@
 html,
 body {
   min-height: 100%;
+}
+
+/* Existing utility colours are intentionally aliased to the semantic palette.
+   This keeps the original brutalist geometry while allowing every repeated
+   colour role to switch together. */
+.bg-\[\#F4F4F0\] { background-color: var(--bg-primary) !important; }
+.bg-white { background-color: var(--bg-surface) !important; }
+.bg-black { background-color: var(--bg-inverse) !important; }
+.bg-\[\#D22B2B\] { background-color: var(--accent) !important; }
+.bg-\[\#FCD34D\] { background-color: var(--accent-warm) !important; }
+.bg-\[\#D22B2B\]\/10 { background-color: color-mix(in srgb, var(--accent) 10%, transparent) !important; }
+.bg-\[\#F4F4F0\]\/30 { background-color: color-mix(in srgb, var(--bg-primary) 30%, transparent) !important; }
+.bg-black\/20 { background-color: color-mix(in srgb, var(--text-primary) 20%, transparent) !important; }
+.\!bg-\[\#F4F4F0\] { background-color: var(--bg-primary) !important; }
+.\!bg-\[\#D22B2B\] { background-color: var(--accent) !important; }
+.text-black { color: var(--text-primary) !important; }
+.text-white, .text-\[\#F4F4F0\] { color: var(--text-inverse) !important; }
+.text-\[\#D22B2B\] { color: var(--accent) !important; }
+.text-\[\#FCD34D\] { color: var(--accent-warm) !important; }
+.text-black\/40 { color: color-mix(in srgb, var(--text-primary) 40%, transparent) !important; }
+.text-black\/60 { color: color-mix(in srgb, var(--text-primary) 60%, transparent) !important; }
+.text-white\/20 { color: color-mix(in srgb, var(--text-inverse) 20%, transparent) !important; }
+.text-white\/30 { color: color-mix(in srgb, var(--text-inverse) 30%, transparent) !important; }
+.text-white\/40 { color: color-mix(in srgb, var(--text-inverse) 40%, transparent) !important; }
+.text-white\/80 { color: color-mix(in srgb, var(--text-inverse) 80%, transparent) !important; }
+.border-black { border-color: var(--border) !important; }
+.border-t-black, .border-r-black, .border-l-black, .border-x-black { border-color: var(--border) !important; }
+.border-white { border-color: var(--text-inverse) !important; }
+.border-\[\#D22B2B\] { border-color: var(--accent) !important; }
+.border-black\/20 { border-color: color-mix(in srgb, var(--border) 20%, transparent) !important; }
+.border-black\/40 { border-color: color-mix(in srgb, var(--border) 40%, transparent) !important; }
+.accent-black { accent-color: var(--text-primary); }
+.placeholder\:text-black\/30::placeholder { color: color-mix(in srgb, var(--text-primary) 30%, transparent) !important; }
+.stroke-black\/30 { stroke: color-mix(in srgb, var(--border) 30%, transparent) !important; }
+
+/* Hard shadows remain part of the visual identity; the darker shadow and
+   softened border keep them legible on a near-black surface. */
+[class*="shadow-"] { --tw-shadow-color: var(--shadow-color) !important; }
+html[data-theme="dark"] [class*="shadow-"]:not(.shadow-none) { box-shadow: var(--shadow-hard) !important; }
+
+.theme-toggle:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--accent-warm);
+  outline-offset: 3px;
 }
 
 body {
@@ -43,15 +125,15 @@ textarea {
 }
 
 .react-flow__controls {
-  background: #ffffff;
-  border: 4px solid var(--ink);
+  background: var(--bg-surface);
+  border: 4px solid var(--border);
   border-radius: 0;
   box-shadow: 4px 4px 0 var(--ink);
 }
 
 .react-flow__controls-button {
-  background: #ffffff;
-  border-bottom: 2px solid var(--ink);
+  background: var(--bg-surface);
+  border-bottom: 2px solid var(--border);
   border-radius: 0;
   color: var(--ink);
 }
@@ -80,6 +162,23 @@ textarea {
   outline: none;
 }
 
+/* The map uses raster OSM tiles, whose place labels are part of the image.
+   In dark mode this converts the pale base into the app's near-black map
+   surface and the baked dark labels into the same soft off-white as UI text. */
+/* Mapbox's zoom and drawing glyphs are background-image sprites rather than
+   SVGs, so they need their own inversion against dark control buttons. */
+html[data-theme="dark"] .fatal-map .mapboxgl-ctrl-group button .mapboxgl-ctrl-icon,
+html[data-theme="dark"] .fatal-map .mapboxgl-ctrl-group button.mapbox-gl-draw_ctrl-draw-btn {
+  filter: invert(1) contrast(0.9) !important;
+}
+
+/* Draw glyphs are baked into each button's background image. The inversion
+   also affects its surface, so start from off-white to produce near-black. */
+html[data-theme="dark"] .fatal-map button.mapbox-gl-draw_polygon,
+html[data-theme="dark"] .fatal-map button.mapbox-gl-draw_trash {
+  background-color: var(--text-primary) !important;
+}
+
 .fatal-map .mapboxgl-ctrl-group {
   background: var(--paper);
   border: 4px solid var(--ink);
@@ -89,8 +188,8 @@ textarea {
 }
 
 .fatal-map .mapboxgl-ctrl-group button {
-  background-color: #ffffff;
-  border-bottom: 2px solid var(--ink);
+  background-color: var(--bg-surface);
+  border-bottom: 2px solid var(--border);
   border-radius: 0;
   height: 34px;
   width: 34px;
@@ -150,18 +249,18 @@ textarea {
 }
 
 .fatal-time-slider {
-  accent-color: #d22b2b;
+  accent-color: var(--accent);
 }
 
 .fatal-time-slider::-webkit-slider-runnable-track {
-  background: #ffffff;
+  background: var(--bg-surface);
   border: 3px solid var(--ink);
   height: 14px;
 }
 
 .fatal-time-slider::-webkit-slider-thumb {
   appearance: none;
-  background: #d22b2b;
+  background: var(--accent);
   border: 3px solid var(--ink);
   border-radius: 0;
   height: 26px;
@@ -170,13 +269,13 @@ textarea {
 }
 
 .fatal-time-slider::-moz-range-track {
-  background: #ffffff;
+  background: var(--bg-surface);
   border: 3px solid var(--ink);
   height: 14px;
 }
 
 .fatal-time-slider::-moz-range-thumb {
-  background: #d22b2b;
+  background: var(--accent);
   border: 3px solid var(--ink);
   border-radius: 0;
   height: 20px;
@@ -200,7 +299,7 @@ textarea {
 }
 
 .fatal-timeline-scroll::-webkit-scrollbar-thumb:hover {
-  background: #d22b2b;
+  background: var(--accent);
 }
 
 /* ── Scan-line animation ─────────────────────── */
@@ -214,4 +313,3 @@ textarea {
 .fatal-scanline {
   animation: fatal-scanline 2s ease-in-out infinite;
 }
-

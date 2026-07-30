@@ -16,6 +16,7 @@ import {
   type SpatialBounds,
   useInvestigationStore,
 } from "@/store/use-investigation-store";
+import { useThemeVersion } from "@/hooks/use-theme-version";
 
 type CrimeType = "Burglary" | "Assault" | "Fraud" | "Robbery" | "Arson";
 type IncidentSeverity = "LOW" | "MED" | "HIGH" | "CRITICAL";
@@ -223,6 +224,27 @@ const suspectIncidentLinks: Record<string, string[]> = {
 const playbackDates = Array.from(
   new Set(incidents.map((incident) => incident.date)),
 ).sort();
+
+const vectorStyles = {
+  light: "https://tiles.openfreemap.org/styles/liberty",
+  dark: "https://tiles.openfreemap.org/styles/dark",
+} as const;
+
+function setPlaceLabelColors(map: Map, isDark: boolean) {
+  if (!isDark) return;
+
+  for (const layer of map.getStyle().layers ?? []) {
+    const hasText =
+      layer.type === "symbol" &&
+      Boolean((layer.layout as Record<string, unknown> | undefined)?.["text-field"]);
+
+    if (!hasText) continue;
+
+    map.setPaintProperty(layer.id, "text-color", "#e8e9e4");
+    map.setPaintProperty(layer.id, "text-halo-color", "#171816");
+    map.setPaintProperty(layer.id, "text-halo-width", 1);
+  }
+}
 
 const markerSvg = encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
@@ -434,8 +456,15 @@ export function GeospatialMapWorkspace() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const drawRef = useRef<MapboxDraw | null>(null);
+  const mapStyleThemeRef = useRef<"light" | "dark" | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const [isFullscreenMap, setIsFullscreenMap] = useState(false);
+  const themeVersion = useThemeVersion();
+  const mapTheme: "light" | "dark" =
+    typeof document !== "undefined" && document.documentElement.dataset.theme === "dark"
+      ? "dark"
+      : "light";
+  const initialMapThemeRef = useRef(mapTheme);
 
   const selectedCrimeTypes = useInvestigationStore(
     (state) => state.selectedCrimeTypes,
@@ -512,35 +541,7 @@ export function GeospatialMapWorkspace() {
       minZoom: 10,
       maxZoom: 17,
       attributionControl: false,
-      style: {
-        version: 8,
-        sources: {
-          osm: {
-            type: "raster",
-            tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
-            tileSize: 256,
-            attribution: "OpenStreetMap",
-          },
-        },
-        layers: [
-          {
-            id: "parchment-ground",
-            type: "background",
-            paint: { "background-color": "#F4F4F0" },
-          },
-          {
-            id: "osm-parchment",
-            type: "raster",
-            source: "osm",
-            paint: {
-              "raster-saturation": -1,
-              "raster-contrast": 0.42,
-              "raster-brightness-min": 0.68,
-              "raster-brightness-max": 0.98,
-            },
-          },
-        ],
-      },
+      style: vectorStyles[initialMapThemeRef.current],
     });
 
     const draw = new MapboxDraw({
@@ -601,6 +602,7 @@ export function GeospatialMapWorkspace() {
 
     map.on("load", () => {
       addIncidentLayers(map);
+      setPlaceLabelColors(map, initialMapThemeRef.current === "dark");
       setIsMapReady(true);
     });
     map.on("draw.create", updateDrawBounds);
@@ -663,6 +665,7 @@ export function GeospatialMapWorkspace() {
 
     mapRef.current = map;
     drawRef.current = draw;
+    mapStyleThemeRef.current = initialMapThemeRef.current;
 
     return () => {
       setIsMapReady(false);
@@ -671,6 +674,24 @@ export function GeospatialMapWorkspace() {
       drawRef.current = null;
     };
   }, [setSpatialBounds]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+
+    if (!map || !isMapReady || mapStyleThemeRef.current === mapTheme) {
+      return;
+    }
+
+    mapStyleThemeRef.current = mapTheme;
+    map.setStyle(vectorStyles[mapTheme]);
+    map.once("style.load", () => {
+      addIncidentLayers(map);
+      setPlaceLabelColors(map, mapTheme === "dark");
+      const features = incidentFeatureCollection(visibleIncidents);
+      getSource(map, "incidents")?.setData(features);
+      getSource(map, "incident-heatmap")?.setData(features);
+    });
+  }, [isMapReady, mapTheme, themeVersion, visibleIncidents]);
 
   useEffect(() => {
     if (!isMapReady || !mapRef.current) {
@@ -692,6 +713,21 @@ export function GeospatialMapWorkspace() {
     const resizeFrame = window.requestAnimationFrame(() => map.resize());
     return () => window.cancelAnimationFrame(resizeFrame);
   }, [isFullscreenMap]);
+
+  // The ledger changes the width of this workspace without unmounting the map.
+  // Mapbox needs an explicit resize whenever its container's flex width changes.
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    const map = mapRef.current;
+
+    if (!container || !map) {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => map.resize());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [isMapReady]);
 
   useEffect(() => {
     if (!isMapPlaying) {
@@ -732,7 +768,6 @@ export function GeospatialMapWorkspace() {
       }`}
     >
       <div ref={mapContainerRef} className="fatal-map h-full w-full" />
-      <div className="pointer-events-none absolute inset-0 bg-[#F4F4F0]/30 mix-blend-multiply" />
       <div className="pointer-events-none absolute inset-0 border-4 border-black" />
 
       <aside className="absolute left-4 top-4 z-10 w-[min(330px,calc(100%-2rem))] border-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[6px_6px_0_black]">

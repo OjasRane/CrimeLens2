@@ -17,6 +17,7 @@ import {
 } from "@xyflow/react";
 import { FileSearch, MapPin, Phone, ReceiptText, UserRound } from "lucide-react";
 import { useInvestigationStore } from "@/store/use-investigation-store";
+import { themeColor, useThemeVersion } from "@/hooks/use-theme-version";
 
 type GraphNodeKind = "suspect" | "evidence" | "location" | "transaction";
 type LinkKind = "financial" | "phone" | "colocation";
@@ -53,9 +54,9 @@ type CaseGraphLink = {
 };
 
 const linkFilters: { id: LinkKind; label: string; tone: string }[] = [
-  { id: "financial", label: "Financial Transactions", tone: "#D22B2B" },
-  { id: "phone", label: "Phone Calls", tone: "#111111" },
-  { id: "colocation", label: "Co-Locations", tone: "#FCD34D" },
+  { id: "financial", label: "Financial Transactions", tone: "var(--accent)" },
+  { id: "phone", label: "Phone Calls", tone: "var(--text-primary)" },
+  { id: "colocation", label: "Co-Locations", tone: "var(--accent-warm)" },
 ];
 
 const graphNodes: CaseGraphNode[] = [
@@ -253,10 +254,10 @@ const graphLinks: CaseGraphLink[] = [
 
 const kindStyles: Record<GraphNodeKind, { bg: string; icon: typeof UserRound }> =
   {
-    suspect: { bg: "#000000", icon: UserRound },
-    evidence: { bg: "#FFFFFF", icon: FileSearch },
-    location: { bg: "#F4F4F0", icon: MapPin },
-    transaction: { bg: "#FCD34D", icon: ReceiptText },
+    suspect: { bg: "var(--bg-inverse)", icon: UserRound },
+    evidence: { bg: "var(--bg-surface)", icon: FileSearch },
+    location: { bg: "var(--bg-primary)", icon: MapPin },
+    transaction: { bg: "var(--accent-warm)", icon: ReceiptText },
   };
 
 function getHopDistances(enabledKinds: Set<LinkKind>, subjectId: string | null) {
@@ -384,7 +385,7 @@ function NetworkRedStringEdge({
       <path
         d={path}
         fill="none"
-        stroke="#000000"
+        stroke="var(--border)"
         strokeLinecap="square"
         strokeLinejoin="miter"
         strokeWidth={6}
@@ -392,7 +393,7 @@ function NetworkRedStringEdge({
       <path
         d={path}
         fill="none"
-        stroke="#D22B2B"
+        stroke="var(--accent)"
         strokeDasharray="8,7"
         strokeLinecap="square"
         strokeLinejoin="miter"
@@ -418,6 +419,7 @@ const edgeTypes = {
 };
 
 function NetworkGraphCanvas() {
+  useThemeVersion();
   const selectedSuspectId = useInvestigationStore(
     (state) => state.selectedSuspectId,
   );
@@ -500,7 +502,7 @@ function NetworkGraphCanvas() {
           markerEnd: active
             ? {
                 type: MarkerType.ArrowClosed,
-                color: "#D22B2B",
+                color: themeColor("--accent", "#d22b2b"),
                 width: 18,
                 height: 18,
               }
@@ -611,7 +613,7 @@ function NetworkGraphCanvas() {
       >
         <Background
           variant={BackgroundVariant.Dots}
-          color="#000000"
+          color={themeColor("--border", "#171717")}
           gap={24}
           size={1.15}
         />

@@ -10,6 +10,7 @@ import {
   useReactFlow,
 } from "@xyflow/react";
 import { RedStringEdge } from "@/components/flow-edges";
+import { themeColor, useThemeVersion } from "@/hooks/use-theme-version";
 import { PolaroidNode, StickyNoteNode } from "@/components/flow-nodes";
 import {
   type EvidenceNodeType,
@@ -68,6 +69,7 @@ function EvidenceBox() {
 }
 
 function BoardCanvas() {
+  useThemeVersion();
   const nodes = useInvestigationStore((state) => state.nodes);
   const edges = useInvestigationStore((state) => state.edges);
   const onNodesChange = useInvestigationStore((state) => state.onNodesChange);
@@ -116,7 +118,7 @@ function BoardCanvas() {
       >
         <Background
           variant={BackgroundVariant.Dots}
-          color="#000000"
+          color={themeColor("--border", "#171717")}
           gap={24}
           size={1}
         />

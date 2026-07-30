@@ -5,6 +5,7 @@ import { FactLedger } from "@/components/fact-ledger";
 import { GlobalStatusBar } from "@/components/global-status-bar";
 import { WorkspaceBar } from "@/components/workspace-bar";
 import { WorkspaceViewport } from "@/components/workspace-viewport";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useInvestigationStore } from "@/store/use-investigation-store";
 
 export function InvestigationWorkspace() {
@@ -21,20 +22,23 @@ export function InvestigationWorkspace() {
             The Fatal Ledger
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={toggleLedger}
-          className="flex h-11 items-center gap-2 border-2 border-black bg-[#F4F4F0] px-3 font-mono text-xs uppercase shadow-[4px_4px_0_black] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none rounded-none"
-          aria-expanded={isLedgerOpen}
-          aria-controls="fact-ledger"
-        >
-          {isLedgerOpen ? (
-            <PanelRightClose aria-hidden="true" size={18} strokeWidth={2.5} />
-          ) : (
-            <PanelRightOpen aria-hidden="true" size={18} strokeWidth={2.5} />
-          )}
-          Ledger
-        </button>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <button
+            type="button"
+            onClick={toggleLedger}
+            className="flex h-11 items-center gap-2 border-2 border-black bg-[#F4F4F0] px-3 font-mono text-xs uppercase shadow-[4px_4px_0_black] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none rounded-none"
+            aria-expanded={isLedgerOpen}
+            aria-controls="fact-ledger"
+          >
+            {isLedgerOpen ? (
+              <PanelRightClose aria-hidden="true" size={18} strokeWidth={2.5} />
+            ) : (
+              <PanelRightOpen aria-hidden="true" size={18} strokeWidth={2.5} />
+            )}
+            Ledger
+          </button>
+        </div>
       </header>
       <WorkspaceBar />
 
@@ -57,4 +61,3 @@ export function InvestigationWorkspace() {
     </div>
   );
 }
-
