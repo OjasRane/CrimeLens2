@@ -37,14 +37,14 @@ export function GlobalStatusBar() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 border-t-4 border-black bg-black px-4 py-2 font-mono text-[10px] font-black uppercase text-[#F4F4F0]">
+    <div className="fixed bottom-0 left-0 right-0 z-40 border-t-4 border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 font-mono text-[10px] font-black uppercase text-[var(--panel-strong-foreground)]">
       <div className="flex flex-wrap items-center gap-1">
-        <span className="mr-1 text-[#FCD34D]">ACTIVE FILTERS:</span>
+        <span className="mr-1 text-[var(--secondary)]">ACTIVE FILTERS:</span>
 
         {/* Crime types */}
-        <span className="text-white/80">
+        <span className="opacity-80">
           CRIME[
-          <span className={isDefaultCrimeTypes ? "text-white/40" : "text-[#D22B2B]"}>
+          <span className={isDefaultCrimeTypes ? "opacity-40" : "text-[var(--primary)]"}>
             {selectedCrimeTypes.length === 0
               ? "NONE"
               : selectedCrimeTypes.map((t) => t.toUpperCase()).join(", ")}
@@ -52,35 +52,35 @@ export function GlobalStatusBar() {
           ]
         </span>
 
-        <span className="mx-1 text-white/30">|</span>
+        <span className="mx-1 opacity-30">|</span>
 
         {/* Time range */}
-        <span className="text-white/80">
+        <span className="opacity-80">
           TIME[
-          <span className={isDefaultTime ? "text-white/40" : "text-[#D22B2B]"}>
+          <span className={isDefaultTime ? "opacity-40" : "text-[var(--primary)]"}>
             {timeRange[0]} TO {timeRange[1]}
           </span>
           ]
         </span>
 
-        <span className="mx-1 text-white/30">|</span>
+        <span className="mx-1 opacity-30">|</span>
 
         {/* Spatial bounds */}
-        <span className="text-white/80">
+        <span className="opacity-80">
           BOUNDS[
-          <span className={spatialBounds ? "text-[#D22B2B]" : "text-white/40"}>
+          <span className={spatialBounds ? "text-[var(--primary)]" : "opacity-40"}>
             {spatialBounds ? "SELECTED" : "NONE"}
           </span>
           ]
         </span>
 
-        <span className="mx-1 text-white/30">|</span>
+        <span className="mx-1 opacity-30">|</span>
 
         {/* Suspect */}
-        <span className="text-white/80">
+        <span className="opacity-80">
           SUSPECT[
           <span
-            className={selectedSuspectId ? "text-[#D22B2B]" : "text-white/40"}
+            className={selectedSuspectId ? "text-[var(--primary)]" : "opacity-40"}
           >
             {selectedSuspectId
               ? suspectLabels[selectedSuspectId] ?? selectedSuspectId
@@ -92,11 +92,11 @@ export function GlobalStatusBar() {
         {/* Clear all button */}
         {hasActiveFilters && (
           <>
-            <span className="mx-2 text-white/30">|</span>
+            <span className="mx-2 opacity-30">|</span>
             <button
               type="button"
               onClick={clearAllFilters}
-              className="border-2 border-[#D22B2B] bg-[#D22B2B] px-2 py-0.5 text-white shadow-[2px_2px_0_#F4F4F0] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="border-2 border-[var(--primary)] bg-[var(--primary)] px-2 py-0.5 text-[var(--background)] shadow-[2px_2px_0_var(--background)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
             >
               [ CLEAR ALL FILTERS ]
             </button>
@@ -104,7 +104,7 @@ export function GlobalStatusBar() {
         )}
 
         {/* System version */}
-        <span className="ml-auto hidden text-white/20 md:inline">
+        <span className="ml-auto hidden opacity-20 md:inline">
           FATAL//SYNC v1.0
         </span>
       </div>

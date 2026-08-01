@@ -1,7 +1,7 @@
 "use client";
 
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
-import { Maximize2, Pause, Play, X } from "lucide-react";
+import { Flame, GitBranch, MapPin, Maximize2, Pause, Play, Scan, X } from "lucide-react";
 import mapboxgl, { type GeoJSONSource, type Map } from "mapbox-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
@@ -9,13 +9,18 @@ import type {
   FeatureCollection,
   GeoJsonProperties,
   Geometry,
+  LineString,
   Point,
+  Polygon,
   Position,
 } from "geojson";
 import {
+  type MapDisplayMode,
   type SpatialBounds,
   useInvestigationStore,
 } from "@/store/use-investigation-store";
+import { getDocumentTheme, themeChangeEvent, type ThemeMode } from "@/lib/theme";
+import type { MapDensityPoint, MapMovementRoute } from "@/data/map-analytics";
 
 type CrimeType = "Burglary" | "Assault" | "Fraud" | "Robbery" | "Arson";
 type IncidentSeverity = "LOW" | "MED" | "HIGH" | "CRITICAL";
@@ -39,6 +44,38 @@ type IncidentFeatureProperties = {
   intensity: number;
 };
 
+type DensityFeatureProperties = {
+  id: string;
+  intensity: number;
+  severity: IncidentSeverity;
+};
+
+type RouteFeatureProperties = {
+  id: string;
+  label: string;
+  inbound: number;
+  outbound: number;
+  volume: number;
+};
+
+type MapPalette = {
+  ground: string;
+  foreground: string;
+  panel: string;
+  line: string;
+  primary: string;
+  secondary: string;
+  heatRamp: [string, string, string, string, string];
+  clusterHalo: string;
+  markerCenter: string;
+  raster: {
+    saturation: number;
+    contrast: number;
+    brightnessMin: number;
+    brightnessMax: number;
+  };
+};
+
 const crimeTypes: CrimeType[] = [
   "Burglary",
   "Assault",
@@ -46,6 +83,17 @@ const crimeTypes: CrimeType[] = [
   "Robbery",
   "Arson",
 ];
+
+const mapModeOptions: {
+  id: MapDisplayMode;
+  label: string;
+  icon: typeof MapPin;
+}[] = [
+    { id: "pins", label: "Pins", icon: MapPin },
+    { id: "heatmap", label: "Heat", icon: Flame },
+    { id: "density", label: "Density", icon: Scan },
+    { id: "routes", label: "Routes", icon: GitBranch },
+  ];
 
 const incidents: Incident[] = [
   {
@@ -224,12 +272,63 @@ const playbackDates = Array.from(
   new Set(incidents.map((incident) => incident.date)),
 ).sort();
 
-const markerSvg = encodeURIComponent(`
+const mapPalettes: Record<ThemeMode, MapPalette> = {
+  archive: {
+    ground: "#F4F4F0",
+    foreground: "#000000",
+    panel: "#FFFFFF",
+    line: "#000000",
+    primary: "#D22B2B",
+    secondary: "#FCD34D",
+    heatRamp: [
+      "rgba(210,43,43,0)",
+      "rgba(210,43,43,0.22)",
+      "rgba(210,43,43,0.5)",
+      "rgba(210,43,43,0.78)",
+      "rgba(0,0,0,0.85)",
+    ],
+    clusterHalo: "#F4F4F0",
+    markerCenter: "#F4F4F0",
+    raster: {
+      saturation: -1,
+      contrast: 0.42,
+      brightnessMin: 0.68,
+      brightnessMax: 0.98,
+    },
+  },
+  terminal: {
+    ground: "#01161E",
+    foreground: "#EFF6E0",
+    panel: "#124559",
+    line: "#598392",
+    primary: "#AEC3B0",
+    secondary: "#F3C969",
+    heatRamp: [
+      "rgba(18,69,89,0)",
+      "rgba(89,131,146,0.32)",
+      "rgba(174,195,176,0.58)",
+      "rgba(239,246,224,0.82)",
+      "rgba(243,201,105,0.95)",
+    ],
+    clusterHalo: "#124559",
+    markerCenter: "#01161E",
+    raster: {
+      saturation: -0.75,
+      contrast: 0.18,
+      brightnessMin: 0.08,
+      brightnessMax: 0.52,
+    },
+  },
+};
+
+function markerSvg(palette: MapPalette) {
+  return encodeURIComponent(`
 <svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
-  <path d="M18 42 4 22C-2 10 6 2 18 2s20 8 14 20L18 42Z" fill="#D22B2B" stroke="#000" stroke-width="4"/>
-  <circle cx="18" cy="17" r="6" fill="#F4F4F0" stroke="#000" stroke-width="3"/>
+  <path d="M18 42 4 22C-2 10 6 2 18 2s20 8 14 20L18 42Z" fill="${palette.primary}" stroke="${palette.line}" stroke-width="4"/>
+  <circle cx="18" cy="17" r="6" fill="${palette.markerCenter}" stroke="${palette.line}" stroke-width="3"/>
 </svg>
 `);
+}
 
 function incidentFeatureCollection(
   sourceIncidents: Incident[],
@@ -251,6 +350,114 @@ function incidentFeatureCollection(
         intensity: incident.intensity,
       },
     })),
+  };
+}
+
+function densityFeatureCollection(
+  sourceIncidents: Incident[],
+  densityPoints: MapDensityPoint[] = [],
+): FeatureCollection<Polygon, DensityFeatureProperties> {
+  const cellSize = 0.0024;
+
+  return {
+    type: "FeatureCollection",
+    features: sourceIncidents.map((incident) => {
+      const [longitude, latitude] = incident.coordinates;
+      const densityPoint = densityPoints.find(
+        (point) =>
+          Math.abs(point.coordinates[0] - longitude) < 0.0001 &&
+          Math.abs(point.coordinates[1] - latitude) < 0.0001,
+      );
+      const intensity = densityPoint?.weight ?? incident.intensity;
+
+      return {
+        type: "Feature",
+        geometry: {
+          type: "Polygon",
+          coordinates: [
+            [
+              [longitude - cellSize, latitude - cellSize],
+              [longitude + cellSize, latitude - cellSize],
+              [longitude + cellSize, latitude + cellSize],
+              [longitude - cellSize, latitude + cellSize],
+              [longitude - cellSize, latitude - cellSize],
+            ],
+          ],
+        },
+        properties: {
+          id: `density-${incident.id}`,
+          intensity,
+          severity: incident.severity,
+        },
+      };
+    }),
+  };
+}
+
+function curvedRouteCoordinates(
+  from: [number, number],
+  to: [number, number],
+): [number, number][] {
+  const [fromLongitude, fromLatitude] = from;
+  const [toLongitude, toLatitude] = to;
+  const deltaLongitude = toLongitude - fromLongitude;
+  const deltaLatitude = toLatitude - fromLatitude;
+  const curve = Math.hypot(deltaLongitude, deltaLatitude) * 0.22;
+  const normalLongitude = -deltaLatitude;
+  const normalLatitude = deltaLongitude;
+  const normalLength = Math.hypot(normalLongitude, normalLatitude) || 1;
+
+  return Array.from({ length: 18 }, (_, index) => {
+    const t = index / 17;
+    const bow = Math.sin(Math.PI * t) * curve;
+
+    return [
+      fromLongitude +
+      deltaLongitude * t +
+      (normalLongitude / normalLength) * bow,
+      fromLatitude +
+      deltaLatitude * t +
+      (normalLatitude / normalLength) * bow,
+    ];
+  });
+}
+
+function routeFeatureCollection(
+  routes: MapMovementRoute[],
+  visibleIncidentSet: Set<string>,
+): FeatureCollection<LineString, RouteFeatureProperties> {
+  return {
+    type: "FeatureCollection",
+    features: routes
+      .filter((route) => {
+        const endpoints = [route.from.coordinates, route.to.coordinates];
+
+        return endpoints.some(([longitude, latitude]) =>
+          incidents.some(
+            (incident) =>
+              visibleIncidentSet.has(incident.id) &&
+              Math.abs(incident.coordinates[0] - longitude) < 0.0001 &&
+              Math.abs(incident.coordinates[1] - latitude) < 0.0001,
+          ),
+        );
+      })
+      .map((route) => ({
+        type: "Feature",
+        geometry: {
+          type: "LineString",
+          coordinates: curvedRouteCoordinates(
+            route.from.coordinates,
+            route.to.coordinates,
+          ),
+        },
+        properties: {
+          id: route.id,
+          label: route.label,
+          inbound: route.inbound,
+          outbound: route.outbound,
+          volume: route.inbound + route.outbound,
+        },
+      })),
   };
 }
 
@@ -311,20 +518,43 @@ function boundsFromFeatures(
   };
 }
 
-function addIncidentLayers(map: Map) {
-  if (!map.hasImage("fatal-incident-marker")) {
+function addMarkerImage(map: Map, themeMode: ThemeMode) {
+  const imageId = `fatal-incident-marker-${themeMode}`;
+
+  if (!map.hasImage(imageId)) {
     const image = new Image(36, 44);
     image.onload = () => {
-      if (!map.hasImage("fatal-incident-marker")) {
-        map.addImage("fatal-incident-marker", image, { pixelRatio: 2 });
+      if (!map.hasImage(imageId)) {
+        map.addImage(imageId, image, { pixelRatio: 2 });
       }
     };
-    image.src = `data:image/svg+xml;charset=utf-8,${markerSvg}`;
+    image.src = `data:image/svg+xml;charset=utf-8,${markerSvg(mapPalettes[themeMode])}`;
   }
+}
+
+function addIncidentLayers(map: Map, themeMode: ThemeMode) {
+  const palette = mapPalettes[themeMode];
+
+  addMarkerImage(map, "archive");
+  addMarkerImage(map, "terminal");
 
   map.addSource("incident-heatmap", {
     type: "geojson",
     data: incidentFeatureCollection([]),
+  });
+
+  map.addSource("incident-density", {
+    type: "geojson",
+    data: densityFeatureCollection([]),
+  });
+
+  map.addSource("movement-routes", {
+    type: "geojson",
+    data: {
+      type: "FeatureCollection",
+      features: [],
+    },
+    lineMetrics: true,
   });
 
   map.addSource("incidents", {
@@ -355,18 +585,102 @@ function addIncidentLayers(map: Map) {
         ["linear"],
         ["heatmap-density"],
         0,
-        "rgba(210,43,43,0)",
+        palette.heatRamp[0],
         0.25,
-        "rgba(210,43,43,0.22)",
+        palette.heatRamp[1],
         0.55,
-        "rgba(210,43,43,0.5)",
+        palette.heatRamp[2],
         0.85,
-        "rgba(210,43,43,0.78)",
+        palette.heatRamp[3],
         1,
-        "rgba(0,0,0,0.85)",
+        palette.heatRamp[4],
       ],
       "heatmap-radius": ["interpolate", ["linear"], ["zoom"], 10, 18, 15, 44],
       "heatmap-opacity": 0.82,
+    },
+  });
+
+  map.addLayer({
+    id: "incident-density-extrusion",
+    type: "fill-extrusion",
+    source: "incident-density",
+    paint: {
+      "fill-extrusion-color": [
+        "interpolate",
+        ["linear"],
+        ["get", "intensity"],
+        0,
+        palette.panel,
+        4,
+        palette.secondary,
+        7,
+        palette.primary,
+        10,
+        palette.foreground,
+      ],
+      "fill-extrusion-height": [
+        "interpolate",
+        ["linear"],
+        ["get", "intensity"],
+        0,
+        25,
+        10,
+        420,
+      ],
+      "fill-extrusion-base": 0,
+      "fill-extrusion-opacity": 0.78,
+    },
+    layout: {
+      visibility: "none",
+    },
+  });
+
+  map.addLayer({
+    id: "movement-routes-casing",
+    type: "line",
+    source: "movement-routes",
+    layout: {
+      "line-cap": "round",
+      "line-join": "round",
+      visibility: "none",
+    },
+    paint: {
+      "line-color": palette.line,
+      "line-opacity": 0.85,
+      "line-width": [
+        "interpolate",
+        ["linear"],
+        ["get", "volume"],
+        0,
+        4,
+        220,
+        11,
+      ],
+    },
+  });
+
+  map.addLayer({
+    id: "movement-routes-flow",
+    type: "line",
+    source: "movement-routes",
+    layout: {
+      "line-cap": "round",
+      "line-join": "round",
+      visibility: "none",
+    },
+    paint: {
+      "line-color": palette.primary,
+      "line-dasharray": [2, 1.4],
+      "line-opacity": 0.94,
+      "line-width": [
+        "interpolate",
+        ["linear"],
+        ["get", "volume"],
+        0,
+        2,
+        220,
+        7,
+      ],
     },
   });
 
@@ -376,7 +690,7 @@ function addIncidentLayers(map: Map) {
     source: "incidents",
     filter: ["has", "point_count"],
     paint: {
-      "circle-color": "#F4F4F0",
+      "circle-color": palette.clusterHalo,
       "circle-radius": [
         "step",
         ["get", "point_count"],
@@ -386,7 +700,7 @@ function addIncidentLayers(map: Map) {
         8,
         34,
       ],
-      "circle-stroke-color": "#000000",
+      "circle-stroke-color": palette.line,
       "circle-stroke-width": 5,
     },
   });
@@ -397,7 +711,7 @@ function addIncidentLayers(map: Map) {
     source: "incidents",
     filter: ["has", "point_count"],
     paint: {
-      "circle-color": "#D22B2B",
+      "circle-color": palette.primary,
       "circle-radius": [
         "step",
         ["get", "point_count"],
@@ -407,7 +721,7 @@ function addIncidentLayers(map: Map) {
         8,
         20,
       ],
-      "circle-stroke-color": "#000000",
+      "circle-stroke-color": palette.line,
       "circle-stroke-width": 3,
     },
   });
@@ -418,10 +732,23 @@ function addIncidentLayers(map: Map) {
     source: "incidents",
     filter: ["!", ["has", "point_count"]],
     layout: {
-      "icon-image": "fatal-incident-marker",
+      "icon-image": `fatal-incident-marker-${themeMode}`,
       "icon-size": 0.86,
       "icon-anchor": "bottom",
       "icon-allow-overlap": true,
+    },
+  });
+
+  map.addLayer({
+    id: "incident-hit-targets",
+    type: "circle",
+    source: "incidents",
+    filter: ["!", ["has", "point_count"]],
+    paint: {
+      "circle-color": palette.primary,
+      "circle-opacity": 0.01,
+      "circle-radius": 16,
+      "circle-stroke-opacity": 0,
     },
   });
 }
@@ -430,15 +757,149 @@ function getSource(map: Map, sourceId: string) {
   return map.getSource(sourceId) as GeoJSONSource | undefined;
 }
 
+function applyMapTheme(map: Map, themeMode: ThemeMode) {
+  const palette = mapPalettes[themeMode];
+
+  addMarkerImage(map, themeMode);
+
+  if (map.getLayer("parchment-ground")) {
+    map.setPaintProperty("parchment-ground", "background-color", palette.ground);
+  }
+
+  if (map.getLayer("osm-parchment")) {
+    map.setPaintProperty("osm-parchment", "raster-saturation", palette.raster.saturation);
+    map.setPaintProperty("osm-parchment", "raster-contrast", palette.raster.contrast);
+    map.setPaintProperty(
+      "osm-parchment",
+      "raster-brightness-min",
+      palette.raster.brightnessMin,
+    );
+    map.setPaintProperty(
+      "osm-parchment",
+      "raster-brightness-max",
+      palette.raster.brightnessMax,
+    );
+  }
+
+  if (map.getLayer("crime-hotspots")) {
+    map.setPaintProperty("crime-hotspots", "heatmap-color", [
+      "interpolate",
+      ["linear"],
+      ["heatmap-density"],
+      0,
+      palette.heatRamp[0],
+      0.25,
+      palette.heatRamp[1],
+      0.55,
+      palette.heatRamp[2],
+      0.85,
+      palette.heatRamp[3],
+      1,
+      palette.heatRamp[4],
+    ]);
+  }
+
+  if (map.getLayer("incident-density-extrusion")) {
+    map.setPaintProperty("incident-density-extrusion", "fill-extrusion-color", [
+      "interpolate",
+      ["linear"],
+      ["get", "intensity"],
+      0,
+      palette.panel,
+      4,
+      palette.secondary,
+      7,
+      palette.primary,
+      10,
+      palette.foreground,
+    ]);
+  }
+
+  if (map.getLayer("movement-routes-casing")) {
+    map.setPaintProperty("movement-routes-casing", "line-color", palette.line);
+  }
+
+  if (map.getLayer("movement-routes-flow")) {
+    map.setPaintProperty("movement-routes-flow", "line-color", palette.primary);
+  }
+
+  if (map.getLayer("incident-clusters-halo")) {
+    map.setPaintProperty("incident-clusters-halo", "circle-color", palette.clusterHalo);
+    map.setPaintProperty("incident-clusters-halo", "circle-stroke-color", palette.line);
+  }
+
+  if (map.getLayer("incident-clusters-core")) {
+    map.setPaintProperty("incident-clusters-core", "circle-color", palette.primary);
+    map.setPaintProperty("incident-clusters-core", "circle-stroke-color", palette.line);
+  }
+
+  if (map.getLayer("incident-points")) {
+    map.setLayoutProperty("incident-points", "icon-image", `fatal-incident-marker-${themeMode}`);
+  }
+
+  if (map.getLayer("draw-polygon-fill")) {
+    map.setPaintProperty("draw-polygon-fill", "fill-color", palette.primary);
+    map.setPaintProperty("draw-polygon-fill", "fill-outline-color", palette.line);
+  }
+
+  if (map.getLayer("draw-polygon-stroke")) {
+    map.setPaintProperty("draw-polygon-stroke", "line-color", palette.line);
+  }
+
+  if (map.getLayer("draw-points")) {
+    map.setPaintProperty("draw-points", "circle-color", palette.ground);
+    map.setPaintProperty("draw-points", "circle-stroke-color", palette.line);
+  }
+}
+
+function setLayerVisibility(map: Map, layerId: string, isVisible: boolean) {
+  if (map.getLayer(layerId)) {
+    map.setLayoutProperty(layerId, "visibility", isVisible ? "visible" : "none");
+  }
+}
+
+function applyMapDisplayMode(map: Map, mode: MapDisplayMode) {
+  const showPins = mode === "pins";
+  const showHeatmap = mode === "heatmap";
+  const showDensity = mode === "density";
+  const showRoutes = mode === "routes";
+
+  setLayerVisibility(map, "crime-hotspots", showHeatmap);
+  setLayerVisibility(map, "incident-density-extrusion", showDensity);
+  setLayerVisibility(map, "movement-routes-casing", showRoutes);
+  setLayerVisibility(map, "movement-routes-flow", showRoutes);
+  setLayerVisibility(map, "incident-clusters-halo", showPins);
+  setLayerVisibility(map, "incident-clusters-core", showPins);
+  setLayerVisibility(map, "incident-points", showPins || showRoutes);
+  setLayerVisibility(map, "incident-hit-targets", showHeatmap || showDensity);
+
+  map.easeTo({
+    pitch: showDensity ? 55 : 0,
+    bearing: showDensity ? -22 : 0,
+    duration: 450,
+  });
+}
+
 export function GeospatialMapWorkspace() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Map | null>(null);
   const drawRef = useRef<MapboxDraw | null>(null);
   const [isMapReady, setIsMapReady] = useState(false);
   const [isFullscreenMap, setIsFullscreenMap] = useState(false);
+  const [themeMode, setThemeMode] = useState<ThemeMode>("archive");
 
   const selectedCrimeTypes = useInvestigationStore(
     (state) => state.selectedCrimeTypes,
+  );
+  const mapDisplayMode = useInvestigationStore((state) => state.mapDisplayMode);
+  const setMapDisplayMode = useInvestigationStore(
+    (state) => state.setMapDisplayMode,
+  );
+  const mapMovementRoutes = useInvestigationStore(
+    (state) => state.mapMovementRoutes,
+  );
+  const mapDensityPoints = useInvestigationStore(
+    (state) => state.mapDensityPoints,
   );
   const setSelectedCrimeTypeEnabled = useInvestigationStore(
     (state) => state.setSelectedCrimeTypeEnabled,
@@ -484,6 +945,11 @@ export function GeospatialMapWorkspace() {
     [playbackDate, selectedCrimeTypes, spatialBounds, timeRange],
   );
 
+  const visibleIncidentIds = useMemo(
+    () => new Set(visibleIncidents.map((incident) => incident.id)),
+    [visibleIncidents],
+  );
+
   const filterCounts = useMemo(
     () =>
       crimeTypes.reduce<Record<CrimeType, number>>((counts, crimeType) => {
@@ -504,6 +970,10 @@ export function GeospatialMapWorkspace() {
     if (!mapContainerRef.current || mapRef.current) {
       return;
     }
+
+    const initialTheme = getDocumentTheme();
+    const initialPalette = mapPalettes[initialTheme];
+    setThemeMode(initialTheme);
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
@@ -526,17 +996,17 @@ export function GeospatialMapWorkspace() {
           {
             id: "parchment-ground",
             type: "background",
-            paint: { "background-color": "#F4F4F0" },
+            paint: { "background-color": initialPalette.ground },
           },
           {
             id: "osm-parchment",
             type: "raster",
             source: "osm",
             paint: {
-              "raster-saturation": -1,
-              "raster-contrast": 0.42,
-              "raster-brightness-min": 0.68,
-              "raster-brightness-max": 0.98,
+              "raster-saturation": initialPalette.raster.saturation,
+              "raster-contrast": initialPalette.raster.contrast,
+              "raster-brightness-min": initialPalette.raster.brightnessMin,
+              "raster-brightness-max": initialPalette.raster.brightnessMax,
             },
           },
         ],
@@ -555,8 +1025,8 @@ export function GeospatialMapWorkspace() {
           type: "fill",
           filter: ["all", ["==", "$type", "Polygon"]],
           paint: {
-            "fill-color": "#D22B2B",
-            "fill-outline-color": "#000000",
+            "fill-color": initialPalette.primary,
+            "fill-outline-color": initialPalette.line,
             "fill-opacity": 0.16,
           },
         },
@@ -565,7 +1035,7 @@ export function GeospatialMapWorkspace() {
           type: "line",
           filter: ["all", ["==", "$type", "Polygon"]],
           paint: {
-            "line-color": "#000000",
+            "line-color": initialPalette.line,
             "line-dasharray": [2, 1],
             "line-width": 4,
           },
@@ -575,9 +1045,9 @@ export function GeospatialMapWorkspace() {
           type: "circle",
           filter: ["all", ["==", "$type", "Point"]],
           paint: {
-            "circle-color": "#F4F4F0",
+            "circle-color": initialPalette.ground,
             "circle-radius": 5,
-            "circle-stroke-color": "#000000",
+            "circle-stroke-color": initialPalette.line,
             "circle-stroke-width": 3,
           },
         },
@@ -600,7 +1070,8 @@ export function GeospatialMapWorkspace() {
     );
 
     map.on("load", () => {
-      addIncidentLayers(map);
+      addIncidentLayers(map, initialTheme);
+      applyMapDisplayMode(map, mapDisplayMode);
       setIsMapReady(true);
     });
     map.on("draw.create", updateDrawBounds);
@@ -631,7 +1102,7 @@ export function GeospatialMapWorkspace() {
       });
     });
 
-    map.on("click", "incident-points", (event) => {
+    const showIncidentPopup = (event: mapboxgl.MapLayerMouseEvent) => {
       const feature = event.features?.[0];
       const properties = feature?.properties as IncidentFeatureProperties | undefined;
       const coordinates = (feature?.geometry as Point | undefined)?.coordinates as
@@ -652,12 +1123,21 @@ export function GeospatialMapWorkspace() {
           `<strong>${properties.id}</strong><span>${properties.type} / ${properties.severity}</span><em>${properties.date}</em><p>${properties.title}</p>`,
         )
         .addTo(map);
-    });
+    };
+
+    map.on("click", "incident-points", showIncidentPopup);
+    map.on("click", "incident-hit-targets", showIncidentPopup);
 
     map.on("mouseenter", "incident-points", () => {
       map.getCanvas().style.cursor = "pointer";
     });
     map.on("mouseleave", "incident-points", () => {
+      map.getCanvas().style.cursor = "";
+    });
+    map.on("mouseenter", "incident-hit-targets", () => {
+      map.getCanvas().style.cursor = "pointer";
+    });
+    map.on("mouseleave", "incident-hit-targets", () => {
       map.getCanvas().style.cursor = "";
     });
 
@@ -670,7 +1150,22 @@ export function GeospatialMapWorkspace() {
       mapRef.current = null;
       drawRef.current = null;
     };
-  }, [setSpatialBounds]);
+  }, [mapDisplayMode, setSpatialBounds]);
+
+  useEffect(() => {
+    const handleThemeChange = () => {
+      const nextTheme = getDocumentTheme();
+      setThemeMode(nextTheme);
+
+      if (mapRef.current && isMapReady) {
+        applyMapTheme(mapRef.current, nextTheme);
+      }
+    };
+
+    handleThemeChange();
+    window.addEventListener(themeChangeEvent, handleThemeChange);
+    return () => window.removeEventListener(themeChangeEvent, handleThemeChange);
+  }, [isMapReady]);
 
   useEffect(() => {
     if (!isMapReady || !mapRef.current) {
@@ -678,9 +1173,39 @@ export function GeospatialMapWorkspace() {
     }
 
     const featureCollection = incidentFeatureCollection(visibleIncidents);
+    const routeCollection = routeFeatureCollection(
+      mapMovementRoutes,
+      visibleIncidentIds,
+    );
     getSource(mapRef.current, "incidents")?.setData(featureCollection);
     getSource(mapRef.current, "incident-heatmap")?.setData(featureCollection);
-  }, [isMapReady, visibleIncidents]);
+    getSource(mapRef.current, "incident-density")?.setData(
+      densityFeatureCollection(visibleIncidents, mapDensityPoints),
+    );
+    getSource(mapRef.current, "movement-routes")?.setData(routeCollection);
+  }, [
+    isMapReady,
+    mapDensityPoints,
+    mapMovementRoutes,
+    visibleIncidentIds,
+    visibleIncidents,
+  ]);
+
+  useEffect(() => {
+    if (!isMapReady || !mapRef.current) {
+      return;
+    }
+
+    applyMapDisplayMode(mapRef.current, mapDisplayMode);
+  }, [isMapReady, mapDisplayMode]);
+
+  useEffect(() => {
+    if (!isMapReady || !mapRef.current) {
+      return;
+    }
+
+    applyMapTheme(mapRef.current, themeMode);
+  }, [isMapReady, themeMode]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -727,16 +1252,18 @@ export function GeospatialMapWorkspace() {
 
   return (
     <div
-      className={`relative h-full min-h-[640px] overflow-hidden bg-[#F4F4F0] ${
-        isFullscreenMap ? "fixed inset-0 z-50 min-h-screen" : ""
-      }`}
+      className={`relative h-full min-h-[640px] overflow-hidden bg-[var(--background)] ${isFullscreenMap ? "fixed inset-0 z-50 min-h-screen" : ""
+        }`}
     >
       <div ref={mapContainerRef} className="fatal-map h-full w-full" />
-      <div className="pointer-events-none absolute inset-0 bg-[#F4F4F0]/30 mix-blend-multiply" />
-      <div className="pointer-events-none absolute inset-0 border-4 border-black" />
+      <div
+        className="pointer-events-none absolute inset-0 mix-blend-multiply"
+        style={{ backgroundColor: "var(--map-overlay)" }}
+      />
+      <div className="pointer-events-none absolute inset-0 border-4 border-[var(--line)]" />
 
-      <aside className="absolute left-4 top-4 z-10 w-[min(330px,calc(100%-2rem))] border-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[6px_6px_0_black]">
-        <div className="border-b-4 border-black bg-black px-3 py-2 text-[#F4F4F0]">
+      <aside className="absolute left-4 top-4 z-10 w-[min(330px,calc(100%-2rem))] border-4 border-[var(--line)] bg-[var(--background)] font-mono text-xs font-black uppercase shadow-[6px_6px_0_var(--shadow)]">
+        <div className="border-b-4 border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[var(--panel-strong-foreground)]">
           Filter Drawer
         </div>
         <div className="space-y-2 p-3">
@@ -747,7 +1274,7 @@ export function GeospatialMapWorkspace() {
             return (
               <label
                 key={crimeType}
-                className="flex cursor-pointer items-center gap-2 border-2 border-black bg-white px-2 py-2"
+                className="flex cursor-pointer items-center gap-2 border-2 border-[var(--line)] bg-[var(--panel)] px-2 py-2"
               >
                 <input
                   type="checkbox"
@@ -764,7 +1291,7 @@ export function GeospatialMapWorkspace() {
             );
           })}
           <div className="grid grid-cols-2 gap-2 pt-1">
-            <div className="border-2 border-black bg-white px-2 py-2">
+            <div className="border-2 border-[var(--line)] bg-[var(--panel)] px-2 py-2">
               Visible: {visibleIncidents.length}
             </div>
             <button
@@ -773,21 +1300,45 @@ export function GeospatialMapWorkspace() {
                 drawRef.current?.deleteAll();
                 setSpatialBounds(null);
               }}
-              className="border-2 border-black bg-[#FCD34D] px-2 py-2 text-left shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="border-2 border-[var(--line)] bg-[var(--secondary)] px-2 py-2 text-left text-black shadow-[3px_3px_0_var(--shadow)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
             >
               Clear Query
             </button>
           </div>
-          <div className="border-2 border-black bg-white px-2 py-2">
+          <div className="border-2 border-[var(--line)] bg-[var(--panel)] px-2 py-2">
             Bounds: {spatialBounds ? "ACTIVE" : "NONE"}
           </div>
         </div>
       </aside>
 
+      <div className="absolute right-4 top-4 z-20 flex max-w-[calc(100%-2rem)] flex-wrap border-4 border-[var(--line)] bg-[var(--panel)] font-mono text-[10px] font-black uppercase shadow-[4px_4px_0_var(--shadow)] md:text-xs">
+        {mapModeOptions.map((mode, index) => {
+          const Icon = mode.icon;
+          const isActive = mapDisplayMode === mode.id;
+
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => setMapDisplayMode(mode.id)}
+              className={`flex h-10 items-center gap-1.5 px-2.5 transition-colors ${index > 0 ? "border-l-4 border-[var(--line)]" : ""
+                } ${isActive
+                  ? "bg-[var(--panel-strong)] text-[var(--panel-strong-foreground)]"
+                  : "bg-[var(--panel)] text-[var(--foreground)] hover:bg-[var(--secondary)] hover:text-black"
+                }`}
+              aria-pressed={isActive}
+            >
+              <Icon aria-hidden="true" size={15} strokeWidth={3} />
+              {mode.label}
+            </button>
+          );
+        })}
+      </div>
+
       <button
         type="button"
         onClick={() => setIsFullscreenMap((isFullscreen) => !isFullscreen)}
-        className="absolute right-4 top-4 z-20 flex h-11 items-center gap-2 border-4 border-black bg-[#FCD34D] px-3 font-mono text-xs font-black uppercase shadow-[4px_4px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none md:hidden"
+        className="absolute right-4 top-20 z-20 flex h-11 items-center gap-2 border-4 border-[var(--line)] bg-[var(--secondary)] px-3 font-mono text-xs font-black uppercase text-black shadow-[4px_4px_0_var(--shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none md:hidden"
       >
         {isFullscreenMap ? (
           <X aria-hidden="true" size={18} strokeWidth={3} />
@@ -797,12 +1348,12 @@ export function GeospatialMapWorkspace() {
         [ {isFullscreenMap ? "EXIT MAP" : "FULLSCREEN MAP"} ]
       </button>
 
-      <div className="absolute bottom-4 left-4 right-4 z-10 border-4 border-black bg-[#F4F4F0] p-3 font-mono text-xs font-black uppercase shadow-[6px_6px_0_black] md:left-[370px]">
+      <div className="absolute bottom-4 left-4 right-4 z-10 border-4 border-[var(--line)] bg-[var(--background)] p-3 font-mono text-xs font-black uppercase shadow-[6px_6px_0_var(--shadow)] md:left-[370px]">
         <div className="flex flex-col gap-3 md:flex-row md:items-center">
           <button
             type="button"
             onClick={togglePlayback}
-            className="flex h-11 items-center justify-center gap-2 border-4 border-black bg-[#D22B2B] px-4 text-white shadow-[4px_4px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none md:w-36"
+            className="flex h-11 items-center justify-center gap-2 border-4 border-[var(--line)] bg-[var(--primary)] px-4 text-[var(--background)] shadow-[4px_4px_0_var(--shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none md:w-36"
           >
             {isMapPlaying ? (
               <Pause aria-hidden="true" size={18} fill="currentColor" />

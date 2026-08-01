@@ -214,9 +214,9 @@ const EVENTS: TimelineEvent[] = [
 ];
 
 const CATEGORY_COLORS: Record<EventCategory, string> = {
-  CALL: "#D22B2B",
-  ARREST: "#000000",
-  EVIDENCE: "#FCD34D",
+  CALL: "var(--primary)",
+  ARREST: "var(--panel-strong)",
+  EVIDENCE: "var(--secondary)",
   CCTV: "#6366F1",
   FORENSIC: "#059669",
   ANALYSIS: "#D97706",
@@ -382,22 +382,22 @@ function AnnotationPanel({
   const eventAnnotations = annotations.filter((a) => a.eventId === event.id);
 
   return (
-    <div className="absolute right-0 top-0 z-50 h-full w-[380px] border-l-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[-6px_0_0_black] overflow-y-auto">
+    <div className="absolute right-0 top-0 z-50 h-full w-[380px] border-l-4 border-[var(--line)] bg-[var(--background)] font-mono text-xs font-black uppercase shadow-[-6px_0_0_var(--shadow)] overflow-y-auto">
       {/* Header */}
-      <div className="flex items-center justify-between border-b-4 border-black bg-black px-4 py-3 text-white">
+      <div className="flex items-center justify-between border-b-4 border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3 text-[var(--panel-strong-foreground)]">
         <span>Annotate Event</span>
         <button
           type="button"
           onClick={onClose}
-          className="flex h-7 w-7 items-center justify-center border-2 border-white hover:bg-white hover:text-black"
+          className="flex h-7 w-7 items-center justify-center border-2 border-current hover:bg-[var(--panel)] hover:text-[var(--foreground)]"
         >
           <X size={14} strokeWidth={3} />
         </button>
       </div>
 
       {/* Event Info */}
-      <div className="border-b-4 border-black p-4">
-        <div className="mb-2 inline-block px-2 py-1 text-white" style={{ backgroundColor: CATEGORY_COLORS[event.category] }}>
+      <div className="border-b-4 border-[var(--line)] p-4">
+        <div className="mb-2 inline-block px-2 py-1 text-[var(--background)]" style={{ backgroundColor: CATEGORY_COLORS[event.category] }}>
           {event.category}
         </div>
         <p className="text-sm">{event.id} — {event.date} {event.time}</p>
@@ -405,7 +405,7 @@ function AnnotationPanel({
       </div>
 
       {/* Add Annotation */}
-      <div className="border-b-4 border-black p-4">
+      <div className="border-b-4 border-[var(--line)] p-4">
         <p className="mb-3">Add Intelligence Note</p>
         <div className="flex gap-2 mb-3">
           {(Object.entries(ANNOTATION_ICONS) as [AnnotationType, typeof ANNOTATION_ICONS[AnnotationType]][]).map(
@@ -414,10 +414,10 @@ function AnnotationPanel({
                 key={type}
                 type="button"
                 onClick={() => setSelectedType(type)}
-                className={`flex h-10 flex-1 items-center justify-center gap-1 border-4 border-black shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
+                className={`flex h-10 flex-1 items-center justify-center gap-1 border-4 border-[var(--line)] shadow-[3px_3px_0_var(--shadow)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
                   selectedType === type
-                    ? "bg-black text-white"
-                    : "bg-white hover:-translate-x-0.5 hover:-translate-y-0.5"
+                    ? "bg-[var(--panel-strong)] text-[var(--panel-strong-foreground)]"
+                    : "bg-[var(--panel)] hover:-translate-x-0.5 hover:-translate-y-0.5"
                 }`}
               >
                 <span className="text-base not-italic">{config.emoji}</span>
@@ -429,7 +429,7 @@ function AnnotationPanel({
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
           placeholder="Enter annotation note..."
-          className="mb-3 block w-full resize-none border-4 border-black bg-white p-3 normal-case placeholder:uppercase placeholder:text-black/30 focus:outline-none"
+          className="mb-3 block w-full resize-none border-4 border-[var(--line)] bg-[var(--panel)] p-3 normal-case text-[var(--foreground)] placeholder:uppercase placeholder:text-[var(--foreground)]/30 focus:outline-none"
           rows={3}
         />
         <button
@@ -441,7 +441,7 @@ function AnnotationPanel({
             }
           }}
           disabled={!noteText.trim()}
-          className="w-full border-4 border-black bg-[#FCD34D] py-2 shadow-[4px_4px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none disabled:opacity-40 disabled:shadow-none"
+          className="w-full border-4 border-[var(--line)] bg-[var(--secondary)] py-2 text-black shadow-[4px_4px_0_var(--shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none disabled:opacity-40 disabled:shadow-none"
         >
           Pin Annotation
         </button>
@@ -457,7 +457,7 @@ function AnnotationPanel({
               return (
                 <div
                   key={annotation.id}
-                  className="border-4 border-black bg-white p-3 shadow-[3px_3px_0_black]"
+                  className="border-4 border-[var(--line)] bg-[var(--panel)] p-3 shadow-[3px_3px_0_var(--shadow)]"
                 >
                   <div className="mb-2 flex items-center gap-2">
                     <span className="text-base">{config.emoji}</span>
@@ -491,7 +491,7 @@ function AnnotationCallout({
       style={style}
     >
       {/* Callout box */}
-      <div className="relative border-4 border-black bg-white px-2 py-1.5 font-mono text-[10px] font-black uppercase shadow-[3px_3px_0_black] whitespace-nowrap pointer-events-auto">
+      <div className="relative border-4 border-[var(--line)] bg-[var(--panel)] px-2 py-1.5 font-mono text-[10px] font-black uppercase shadow-[3px_3px_0_var(--shadow)] whitespace-nowrap pointer-events-auto">
         <span className="mr-1 text-sm not-italic">{config.emoji}</span>
         <span className="max-w-[120px] overflow-hidden text-ellipsis inline-block align-middle">
           {annotation.note.length > 18 ? annotation.note.slice(0, 18) + "…" : annotation.note}
@@ -564,21 +564,21 @@ function DensityHeatmapView({
           >
             {/* Tooltip */}
             <div className="pointer-events-none absolute -top-1 left-1/2 z-40 -translate-x-1/2 -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="border-4 border-black bg-white px-2 py-1 font-mono text-[10px] font-black uppercase shadow-[3px_3px_0_black] whitespace-nowrap">
+              <div className="border-4 border-[var(--line)] bg-[var(--panel)] px-2 py-1 font-mono text-[10px] font-black uppercase shadow-[3px_3px_0_var(--shadow)] whitespace-nowrap">
                 {formatDate(bucket.date)} — {bucket.count} EVENT{bucket.count > 1 ? "S" : ""}
               </div>
             </div>
 
             <div className="flex flex-1 items-end w-full">
               <div
-                className={`w-full border-2 border-black transition-all cursor-crosshair ${
-                  brushed ? "border-[#D22B2B]" : ""
+                className={`w-full border-2 border-[var(--line)] transition-all cursor-crosshair ${
+                  brushed ? "border-[var(--primary)]" : ""
                 }`}
                 style={{
                   height: `${Math.max(heightPct, 8)}%`,
                   backgroundColor: brushed
-                    ? "#D22B2B"
-                    : `rgba(0, 0, 0, ${0.15 + intensity * 0.85})`,
+                    ? "var(--primary)"
+                    : `color-mix(in srgb, var(--foreground) ${Math.round(15 + intensity * 85)}%, transparent)`,
                 }}
                 onMouseDown={() => handleMouseDown(index)}
                 onMouseMove={() => handleMouseMove(index)}
@@ -733,16 +733,16 @@ export function TimelineWorkspace() {
   const isHeatmapMode = zoomLevel === 0;
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-[#F4F4F0]">
+    <div className="relative flex h-full flex-col overflow-hidden bg-[var(--background)]">
       {/* ─── TOP TOOLBAR ──────────────────────────── */}
-      <div className="shrink-0 border-b-4 border-black bg-[#F4F4F0]">
-        <div className="flex items-center justify-between border-b-4 border-black bg-black px-4 py-3">
-          <h2 className="font-serif text-2xl font-black uppercase leading-none text-white md:text-3xl">
+      <div className="shrink-0 border-b-4 border-[var(--line)] bg-[var(--background)]">
+        <div className="flex items-center justify-between border-b-4 border-[var(--line)] bg-[var(--panel-strong)] px-4 py-3">
+          <h2 className="font-serif text-2xl font-black uppercase leading-none text-[var(--panel-strong-foreground)] md:text-3xl">
             Timeline Analysis
           </h2>
-          <div className="flex items-center gap-2 font-mono text-[10px] font-black uppercase text-white">
+          <div className="flex items-center gap-2 font-mono text-[10px] font-black uppercase text-[var(--panel-strong-foreground)]">
             <span className="hidden md:inline">{filteredEvents.length} Events Loaded</span>
-            <span className="inline-block h-2 w-2 animate-pulse bg-[#D22B2B]" />
+            <span className="inline-block h-2 w-2 animate-pulse bg-[var(--primary)]" />
             <span>LIVE</span>
           </div>
         </div>
@@ -757,41 +757,41 @@ export function TimelineWorkspace() {
                 type="date"
                 value={timeRange[0]}
                 onChange={(e) => setTimeRange([e.target.value, timeRange[1]])}
-                className="border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none"
+                className="border-4 border-[var(--line)] bg-[var(--panel)] px-2 py-1.5 shadow-[3px_3px_0_var(--shadow)] focus:outline-none"
               />
             </label>
-            <span className="text-black/40">→</span>
+            <span className="opacity-40">→</span>
             <label className="flex items-center gap-1">
               TO
               <input
                 type="date"
                 value={timeRange[1]}
                 onChange={(e) => setTimeRange([timeRange[0], e.target.value])}
-                className="border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none"
+                className="border-4 border-[var(--line)] bg-[var(--panel)] px-2 py-1.5 shadow-[3px_3px_0_var(--shadow)] focus:outline-none"
               />
             </label>
           </div>
 
-          <div className="h-6 w-[4px] bg-black hidden md:block" />
+          <div className="h-6 w-[4px] bg-[var(--line)] hidden md:block" />
 
           {/* Zoom controls */}
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-black/60">ZOOM</span>
+            <span className="text-[10px] opacity-60">ZOOM</span>
             <button
               type="button"
               onClick={() => setZoomLevel((z) => Math.max(z - 0.5, 0))}
-              className="flex h-8 w-8 items-center justify-center border-4 border-black bg-white shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="flex h-8 w-8 items-center justify-center border-4 border-[var(--line)] bg-[var(--panel)] shadow-[3px_3px_0_var(--shadow)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
             >
               <ZoomOut size={14} strokeWidth={3} />
             </button>
-            <div className="flex h-8 w-28 items-center border-4 border-black bg-white px-1">
-              <div className="relative h-1 w-full bg-black/20">
+            <div className="flex h-8 w-28 items-center border-4 border-[var(--line)] bg-[var(--panel)] px-1">
+              <div className="relative h-1 w-full bg-[var(--line)]/20">
                 <div
-                  className="absolute left-0 top-0 h-full bg-black transition-all"
+                  className="absolute left-0 top-0 h-full bg-[var(--line)] transition-all"
                   style={{ width: `${(zoomLevel / 3) * 100}%` }}
                 />
                 <div
-                  className="absolute top-1/2 h-4 w-2 -translate-y-1/2 border-2 border-black bg-[#D22B2B] transition-all"
+                  className="absolute top-1/2 h-4 w-2 -translate-y-1/2 border-2 border-[var(--line)] bg-[var(--primary)] transition-all"
                   style={{ left: `${(zoomLevel / 3) * 100}%`, marginLeft: "-4px" }}
                 />
               </div>
@@ -799,7 +799,7 @@ export function TimelineWorkspace() {
             <button
               type="button"
               onClick={() => setZoomLevel((z) => Math.min(z + 0.5, 3))}
-              className="flex h-8 w-8 items-center justify-center border-4 border-black bg-white shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="flex h-8 w-8 items-center justify-center border-4 border-[var(--line)] bg-[var(--panel)] shadow-[3px_3px_0_var(--shadow)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
             >
               <ZoomIn size={14} strokeWidth={3} />
             </button>
@@ -808,7 +808,7 @@ export function TimelineWorkspace() {
             </span>
           </div>
 
-          <div className="h-6 w-[4px] bg-black hidden md:block" />
+          <div className="h-6 w-[4px] bg-[var(--line)] hidden md:block" />
 
           {/* Brush toggle */}
           <button
@@ -818,10 +818,10 @@ export function TimelineWorkspace() {
               setBrushStart(null);
               setBrushEnd(null);
             }}
-            className={`flex h-8 items-center gap-1.5 border-4 border-black px-3 shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
+            className={`flex h-8 items-center gap-1.5 border-4 border-[var(--line)] px-3 shadow-[3px_3px_0_var(--shadow)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none ${
               brushActive
-                ? "bg-[#D22B2B] text-white"
-                : "bg-white hover:-translate-x-0.5 hover:-translate-y-0.5"
+                ? "bg-[var(--primary)] text-[var(--background)]"
+                : "bg-[var(--panel)] hover:-translate-x-0.5 hover:-translate-y-0.5"
             }`}
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square">
@@ -839,19 +839,19 @@ export function TimelineWorkspace() {
               setBrushStart(null);
               setBrushEnd(null);
             }}
-            className="flex h-8 items-center gap-1 border-4 border-black bg-[#FCD34D] px-3 shadow-[3px_3px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none"
+            className="flex h-8 items-center gap-1 border-4 border-[var(--line)] bg-[var(--secondary)] px-3 text-black shadow-[3px_3px_0_var(--shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none"
           >
             RESET
           </button>
         </div>
 
         {/* Category legend */}
-        <div className="flex flex-wrap gap-2 border-t-2 border-black/20 px-4 py-2 font-mono text-[10px] font-black uppercase">
+        <div className="flex flex-wrap gap-2 border-t-2 border-[var(--line)]/20 px-4 py-2 font-mono text-[10px] font-black uppercase">
           {(Object.entries(CATEGORY_COLORS) as [EventCategory, string][]).map(
             ([category, color]) => (
               <span key={category} className="flex items-center gap-1">
                 <span
-                  className="inline-block h-3 w-3 border-2 border-black"
+                  className="inline-block h-3 w-3 border-2 border-[var(--line)]"
                   style={{ backgroundColor: color }}
                 />
                 {category}
@@ -865,8 +865,8 @@ export function TimelineWorkspace() {
       <div className="relative flex-1 overflow-hidden">
         {isHeatmapMode ? (
           /* ─── DENSITY HEATMAP MODE ─────────────── */
-          <div className="h-full border-4 border-black bg-white mx-4 my-4 shadow-[4px_4px_0_black]">
-            <div className="border-b-4 border-black bg-[#F4F4F0] px-4 py-2 font-mono text-[10px] font-black uppercase">
+          <div className="h-full border-4 border-[var(--line)] bg-[var(--panel)] mx-4 my-4 shadow-[4px_4px_0_var(--shadow)]">
+            <div className="border-b-4 border-[var(--line)] bg-[var(--background)] px-4 py-2 font-mono text-[10px] font-black uppercase">
               Activity Density Heatmap — {densityBuckets.length} Active Days
             </div>
             <DensityHeatmapView
@@ -896,7 +896,7 @@ export function TimelineWorkspace() {
             >
               {/* ─── AXIS LINE ──────────────────────── */}
               <div
-                className="absolute border-t-4 border-black"
+                className="absolute border-t-4 border-[var(--line)]"
                 style={{
                   top: "60%",
                   left: 0,
@@ -914,12 +914,12 @@ export function TimelineWorkspace() {
                     top: "calc(60% + 12px)",
                   }}
                 >
-                  <div className="border-l-4 border-black pl-2 py-1">
-                    <span className="bg-black px-1.5 py-0.5 text-white">
+                  <div className="border-l-4 border-[var(--line)] pl-2 py-1">
+                    <span className="bg-[var(--panel-strong)] px-1.5 py-0.5 text-[var(--panel-strong-foreground)]">
                       {formatDate(seg.date)}
                     </span>
                     {seg.eventCount > 1 && (
-                      <span className="ml-1 bg-[#D22B2B] px-1 py-0.5 text-white text-[9px]">
+                      <span className="ml-1 bg-[var(--primary)] px-1 py-0.5 text-[var(--background)] text-[9px]">
                         ×{seg.eventCount}
                       </span>
                     )}
@@ -940,7 +940,7 @@ export function TimelineWorkspace() {
                 return (
                   <div
                     key={`gap-${seg.date}`}
-                    className="absolute flex items-center justify-center font-mono text-[9px] font-black text-black/40"
+                    className="absolute flex items-center justify-center font-mono text-[9px] font-black opacity-40"
                     style={{
                       left: `${gapStart}px`,
                       width: `${gapEnd - gapStart}px`,
@@ -951,7 +951,7 @@ export function TimelineWorkspace() {
                     <svg
                       width={Math.max(gapEnd - gapStart - 8, 10)}
                       height="16"
-                      className="stroke-black/30"
+                      style={{ stroke: 'var(--line)', opacity: 0.3 }}
                       strokeWidth="2.5"
                       fill="none"
                       strokeLinecap="square"
@@ -1000,7 +1000,7 @@ export function TimelineWorkspace() {
 
                     {/* Vertical connector stem */}
                     <div
-                      className="absolute w-0 border-l-[3px] border-dashed border-black/40"
+                      className="absolute w-0 border-l-[3px] border-dashed border-[var(--line)]/40"
                       style={{
                         left: "12px",
                         top: "14%",
@@ -1030,20 +1030,20 @@ export function TimelineWorkspace() {
                       <div
                         className={`border-4 p-2 font-mono text-[10px] font-black uppercase leading-tight transition-shadow ${
                           isSelected
-                            ? "border-black bg-[#FCD34D] shadow-[6px_6px_0_black]"
+                            ? "border-[var(--line)] bg-[var(--secondary)] shadow-[6px_6px_0_var(--shadow)]"
                             : isSuspectLinked
-                              ? "border-[#D22B2B] bg-[#D22B2B]/10 shadow-[6px_6px_0_#D22B2B]"
-                              : "border-black bg-white shadow-[4px_4px_0_black] hover:shadow-[6px_6px_0_black]"
+                              ? "border-[var(--primary)] bg-[var(--primary)]/10 shadow-[6px_6px_0_var(--primary)]"
+                              : "border-[var(--line)] bg-[var(--panel)] shadow-[4px_4px_0_var(--shadow)] hover:shadow-[6px_6px_0_var(--shadow)]"
                         }`}
                       >
                         {/* Suspect-linked badge */}
                         {isSuspectLinked && (
-                          <div className="absolute -left-2 -top-2 flex h-5 items-center gap-0.5 border-2 border-[#D22B2B] bg-[#D22B2B] px-1 text-[8px] text-white">
+                          <div className="absolute -left-2 -top-2 flex h-5 items-center gap-0.5 border-2 border-[var(--primary)] bg-[var(--primary)] px-1 text-[8px] text-[var(--background)]">
                             ● LINKED
                           </div>
                         )}
                         <div
-                          className="mb-1 inline-block px-1 py-0.5 text-[9px] text-white"
+                          className="mb-1 inline-block px-1 py-0.5 text-[9px] text-[var(--background)]"
                           style={{
                             backgroundColor: CATEGORY_COLORS[event.category],
                           }}
@@ -1064,18 +1064,18 @@ export function TimelineWorkspace() {
                                 backgroundColor:
                                   i < event.severity
                                     ? event.severity >= 8
-                                      ? "#D22B2B"
+                                      ? "var(--primary)"
                                       : event.severity >= 5
                                         ? "#D97706"
                                         : "#059669"
-                                    : "#e5e5e5",
+                                    : "var(--muted)",
                               }}
                             />
                           ))}
                         </div>
                         {/* Annotation badge count */}
                         {eventAnnotations.length > 0 && (
-                          <div className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center border-2 border-black bg-[#D22B2B] text-[9px] text-white">
+                          <div className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center border-2 border-[var(--line)] bg-[var(--primary)] text-[9px] text-[var(--background)]">
                             {eventAnnotations.length}
                           </div>
                         )}
@@ -1086,18 +1086,18 @@ export function TimelineWorkspace() {
                     <div
                       className={`absolute h-5 w-5 border-4 transition-all ${
                         isSelected
-                          ? "scale-125 border-black bg-[#FCD34D]"
+                          ? "scale-125 border-[var(--line)] bg-[var(--secondary)]"
                           : isSuspectLinked
-                            ? "scale-125 border-[#D22B2B] bg-[#D22B2B]"
-                            : "border-black bg-white"
+                            ? "scale-125 border-[var(--primary)] bg-[var(--primary)]"
+                            : "border-[var(--line)] bg-[var(--panel)]"
                       }`}
                       style={{
                         left: "3px",
                         top: "calc(60% - 10px)",
                         backgroundColor: isSelected
-                          ? "#FCD34D"
+                          ? "var(--secondary)"
                           : isSuspectLinked
-                            ? "#D22B2B"
+                            ? "var(--primary)"
                             : CATEGORY_COLORS[event.category],
                         opacity: isDimmed ? 0.2 : 1,
                       }}
@@ -1112,7 +1112,7 @@ export function TimelineWorkspace() {
                 brushEnd !== null &&
                 isDraggingBrush.current && (
                   <div
-                    className="absolute top-0 h-full border-x-4 border-[#D22B2B] bg-[#D22B2B]/10 pointer-events-none z-20"
+                    className="absolute top-0 h-full border-x-4 border-[var(--primary)] bg-[var(--primary)]/10 pointer-events-none z-20"
                     style={{
                       left: `${Math.min(brushStart, brushEnd)}px`,
                       width: `${Math.abs(brushEnd - brushStart)}px`,
@@ -1135,26 +1135,26 @@ export function TimelineWorkspace() {
       </div>
 
       {/* ─── STATUS BAR ───────────────────────────── */}
-      <div className="shrink-0 border-t-4 border-black bg-black px-4 py-2 font-mono text-[10px] font-black uppercase text-[#F4F4F0]">
+      <div className="shrink-0 border-t-4 border-[var(--line)] bg-[var(--panel-strong)] px-4 py-2 font-mono text-[10px] font-black uppercase text-[var(--panel-strong-foreground)]">
         <div className="flex flex-wrap items-center gap-4">
           <span>
             Range: {timeRange[0]} → {timeRange[1]}
           </span>
-          <span className="text-[#D22B2B]">
+          <span className="text-[var(--primary)]">
             {filteredEvents.length} Events
           </span>
           <span>
             {annotations.length} Annotations
           </span>
-          <span className="text-[#FCD34D]">
+          <span className="text-[var(--secondary)]">
             Zoom: {isHeatmapMode ? "HEATMAP" : `${zoomLevel.toFixed(1)}×`}
           </span>
           {brushActive && (
-            <span className="animate-pulse text-[#D22B2B]">
+            <span className="animate-pulse text-[var(--primary)]">
               ● BRUSH ACTIVE — DRAG TO SELECT
             </span>
           )}
-          <span className="ml-auto text-white/40">
+          <span className="ml-auto opacity-40">
             FATAL//TIMELINE v2.0
           </span>
         </div>

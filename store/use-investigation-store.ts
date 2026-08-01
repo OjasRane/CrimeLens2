@@ -8,9 +8,16 @@ import {
   type XYPosition,
 } from "@xyflow/react";
 import { create } from "zustand";
+import {
+  densitySeedPoints,
+  movementRoutes,
+  type MapDensityPoint,
+  type MapMovementRoute,
+} from "@/data/map-analytics";
 
 export type EvidenceNodeType = "stickyNote" | "polaroid";
 export type ActiveWorkspace = "canvas" | "map" | "network" | "timeline";
+export type MapDisplayMode = "pins" | "heatmap" | "density" | "routes";
 export type TimeRange = [string, string];
 export type SpatialBounds = {
   north: number;
@@ -31,15 +38,19 @@ type InvestigationState = {
   timeRange: TimeRange;
   playbackDate: string;
   isMapPlaying: boolean;
+  mapDisplayMode: MapDisplayMode;
   selectedSuspectId: string | null;
   selectedCrimeTypes: string[];
   spatialBounds: SpatialBounds | null;
+  mapDensityPoints: MapDensityPoint[];
+  mapMovementRoutes: MapMovementRoute[];
   nodes: Node[];
   edges: Edge[];
   setActiveWorkspace: (workspace: ActiveWorkspace) => void;
   setTimeRange: (timeRange: TimeRange) => void;
   setPlaybackDate: (date: string) => void;
   setIsMapPlaying: (isPlaying: boolean) => void;
+  setMapDisplayMode: (mode: MapDisplayMode) => void;
   setSelectedSuspectId: (suspectId: string | null) => void;
   toggleSelectedCrimeType: (crimeType: string) => void;
   setSelectedCrimeTypeEnabled: (crimeType: string, isEnabled: boolean) => void;
@@ -61,9 +72,12 @@ export const useInvestigationStore = create<InvestigationState>((set, get) => ({
   timeRange: ["2026-07-18", "2026-07-28"],
   playbackDate: "2026-07-28",
   isMapPlaying: false,
+  mapDisplayMode: "pins",
   selectedSuspectId: null,
   selectedCrimeTypes: ["Burglary", "Assault", "Fraud", "Robbery", "Arson"],
   spatialBounds: null,
+  mapDensityPoints: densitySeedPoints,
+  mapMovementRoutes: movementRoutes,
   nodes: [
     {
       id: "note-victim",
@@ -115,6 +129,9 @@ export const useInvestigationStore = create<InvestigationState>((set, get) => ({
   },
   setIsMapPlaying: (isPlaying) => {
     set({ isMapPlaying: isPlaying });
+  },
+  setMapDisplayMode: (mode) => {
+    set({ mapDisplayMode: mode });
   },
   setSelectedSuspectId: (suspectId) => {
     set({ selectedSuspectId: suspectId });

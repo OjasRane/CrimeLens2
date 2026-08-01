@@ -53,9 +53,9 @@ type CaseGraphLink = {
 };
 
 const linkFilters: { id: LinkKind; label: string; tone: string }[] = [
-  { id: "financial", label: "Financial Transactions", tone: "#D22B2B" },
-  { id: "phone", label: "Phone Calls", tone: "#111111" },
-  { id: "colocation", label: "Co-Locations", tone: "#FCD34D" },
+  { id: "financial", label: "Financial Transactions", tone: "var(--primary)" },
+  { id: "phone", label: "Phone Calls", tone: "var(--foreground)" },
+  { id: "colocation", label: "Co-Locations", tone: "var(--secondary)" },
 ];
 
 const graphNodes: CaseGraphNode[] = [
@@ -253,10 +253,10 @@ const graphLinks: CaseGraphLink[] = [
 
 const kindStyles: Record<GraphNodeKind, { bg: string; icon: typeof UserRound }> =
   {
-    suspect: { bg: "#000000", icon: UserRound },
-    evidence: { bg: "#FFFFFF", icon: FileSearch },
-    location: { bg: "#F4F4F0", icon: MapPin },
-    transaction: { bg: "#FCD34D", icon: ReceiptText },
+    suspect: { bg: "var(--panel-strong)", icon: UserRound },
+    evidence: { bg: "var(--panel)", icon: FileSearch },
+    location: { bg: "var(--background)", icon: MapPin },
+    transaction: { bg: "var(--secondary)", icon: ReceiptText },
   };
 
 function getHopDistances(enabledKinds: Set<LinkKind>, subjectId: string | null) {
@@ -312,12 +312,12 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
 
   return (
     <div
-      className={`group relative min-h-24 w-44 border-4 border-black p-3 font-mono uppercase shadow-[5px_5px_0_black] transition-all duration-300 rounded-none ${
+      className={`group relative min-h-24 w-44 border-4 border-[var(--line)] p-3 font-mono uppercase shadow-[5px_5px_0_var(--shadow)] transition-all duration-300 rounded-none ${
         data.selected
-          ? "scale-105 bg-[#D22B2B] text-white"
+          ? "scale-105 bg-[var(--primary)] text-[var(--background)]"
           : isSuspect
-            ? "bg-black text-white"
-            : "text-black"
+            ? "bg-[var(--panel-strong)] text-[var(--panel-strong-foreground)]"
+            : "text-[var(--foreground)]"
       }`}
       onClick={() => {
         if (isSuspect) {
@@ -335,12 +335,12 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
       <Handle
         type="target"
         position={Position.Left}
-        className="!h-3 !w-3 !border-2 !border-black !bg-[#F4F4F0]"
+        className="!h-3 !w-3 !border-2 !border-[var(--line)] !bg-[var(--background)]"
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="!h-3 !w-3 !border-2 !border-black !bg-[#D22B2B]"
+        className="!h-3 !w-3 !border-2 !border-[var(--line)] !bg-[var(--primary)]"
       />
       <div className="mb-2 flex items-center justify-between gap-2 border-b-2 border-current pb-2">
         <Icon aria-hidden="true" size={18} strokeWidth={3} />
@@ -351,7 +351,7 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
         {data.subtitle}
       </div>
       {data.risk ? (
-        <div className="mt-2 inline-block border-2 border-black bg-[#FCD34D] px-1 py-0.5 text-[10px] font-black text-black">
+        <div className="mt-2 inline-block border-2 border-[var(--line)] bg-[var(--secondary)] px-1 py-0.5 text-[10px] font-black text-black">
           {data.risk} RISK
         </div>
       ) : null}
@@ -384,7 +384,7 @@ function NetworkRedStringEdge({
       <path
         d={path}
         fill="none"
-        stroke="#000000"
+        stroke="var(--line)"
         strokeLinecap="square"
         strokeLinejoin="miter"
         strokeWidth={6}
@@ -392,7 +392,7 @@ function NetworkRedStringEdge({
       <path
         d={path}
         fill="none"
-        stroke="#D22B2B"
+        stroke="var(--primary)"
         strokeDasharray="8,7"
         strokeLinecap="square"
         strokeLinejoin="miter"
@@ -500,7 +500,7 @@ function NetworkGraphCanvas() {
           markerEnd: active
             ? {
                 type: MarkerType.ArrowClosed,
-                color: "#D22B2B",
+                color: "var(--primary)",
                 width: 18,
                 height: 18,
               }
@@ -532,9 +532,9 @@ function NetworkGraphCanvas() {
   }
 
   return (
-    <div className="grid h-full min-h-[640px] bg-[#F4F4F0] lg:grid-cols-[330px_1fr]">
-      <aside className="z-10 border-b-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase lg:border-b-0 lg:border-r-4">
-        <div className="border-b-4 border-black bg-black px-3 py-2 text-[#F4F4F0]">
+    <div className="grid h-full min-h-[640px] bg-[var(--background)] lg:grid-cols-[330px_1fr]">
+      <aside className="z-10 border-b-4 border-[var(--line)] bg-[var(--background)] font-mono text-xs font-black uppercase lg:border-b-0 lg:border-r-4">
+        <div className="border-b-4 border-[var(--line)] bg-[var(--panel-strong)] px-3 py-2 text-[var(--panel-strong-foreground)]">
           Link Filters
         </div>
         <div className="space-y-2 p-3">
@@ -547,7 +547,7 @@ function NetworkGraphCanvas() {
             return (
               <label
                 key={filter.id}
-                className="flex cursor-pointer items-center gap-2 border-2 border-black bg-white px-2 py-2 shadow-[3px_3px_0_black]"
+                className="flex cursor-pointer items-center gap-2 border-2 border-[var(--line)] bg-[var(--panel)] px-2 py-2 shadow-[3px_3px_0_var(--shadow)]"
               >
                 <input
                   type="checkbox"
@@ -556,7 +556,7 @@ function NetworkGraphCanvas() {
                   className="h-4 w-4 shrink-0 accent-black"
                 />
                 <span
-                  className="h-3 w-3 shrink-0 border-2 border-black"
+                  className="h-3 w-3 shrink-0 border-2 border-[var(--line)]"
                   style={{ backgroundColor: filter.tone }}
                 />
                 <span className="min-w-0">
@@ -566,7 +566,7 @@ function NetworkGraphCanvas() {
             );
           })}
 
-          <label className="grid gap-2 border-2 border-black bg-white px-2 py-2 shadow-[3px_3px_0_black]">
+          <label className="grid gap-2 border-2 border-[var(--line)] bg-[var(--panel)] px-2 py-2 shadow-[3px_3px_0_var(--shadow)]">
             <span>Hops From Subject: {hopLimit}</span>
             <input
               type="range"
@@ -580,13 +580,13 @@ function NetworkGraphCanvas() {
           </label>
 
           <div className="grid grid-cols-2 gap-2">
-            <div className="border-2 border-black bg-white px-2 py-2">
+            <div className="border-2 border-[var(--line)] bg-[var(--panel)] px-2 py-2">
               Edges: {visibleEdgeCount}
             </div>
             <button
               type="button"
               onClick={() => setSelectedSuspectId(null)}
-              className="border-2 border-black bg-[#FCD34D] px-2 py-2 text-left shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="border-2 border-[var(--line)] bg-[var(--secondary)] px-2 py-2 text-left text-black shadow-[3px_3px_0_var(--shadow)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
             >
               Clear Subject
             </button>
@@ -607,19 +607,19 @@ function NetworkGraphCanvas() {
         nodesDraggable={false}
         nodesConnectable={false}
         elementsSelectable
-        className="bg-[#F4F4F0]"
+        className="bg-[var(--background)]"
       >
         <Background
           variant={BackgroundVariant.Dots}
-          color="#000000"
+          color="var(--line)"
           gap={24}
           size={1.15}
         />
 
         {selectedNode ? (
           <Panel position="bottom-right" className="m-0">
-            <div className="max-w-[320px] border-4 border-black bg-white p-3 font-mono text-xs font-black uppercase shadow-[6px_6px_0_black]">
-              <div className="mb-2 flex items-center gap-2 border-b-2 border-black pb-2">
+            <div className="max-w-[320px] border-4 border-[var(--line)] bg-[var(--panel)] p-3 font-mono text-xs font-black uppercase shadow-[6px_6px_0_var(--shadow)]">
+              <div className="mb-2 flex items-center gap-2 border-b-2 border-[var(--line)] pb-2">
                 <Phone aria-hidden="true" size={17} strokeWidth={3} />
                 Subject Locked
               </div>
@@ -630,7 +630,7 @@ function NetworkGraphCanvas() {
               <button
                 type="button"
                 onClick={openLedger}
-                className="w-full border-4 border-black bg-[#D22B2B] px-3 py-2 text-left text-white shadow-[4px_4px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none"
+                className="w-full border-4 border-[var(--line)] bg-[var(--primary)] px-3 py-2 text-left text-[var(--background)] shadow-[4px_4px_0_var(--shadow)] active:translate-x-1 active:translate-y-1 active:shadow-none"
               >
                 [ INSPECT DOSSIER ]
               </button>

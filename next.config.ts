@@ -6,6 +6,7 @@ const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: projectRoot,
+  devIndicators: false,
 };
 
 export default nextConfig;

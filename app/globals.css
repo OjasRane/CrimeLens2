@@ -4,8 +4,50 @@
 @import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 
 :root {
-  --paper: #f4f4f0;
-  --ink: #000000;
+  --background: #f4f4f0;
+  --foreground: #000000;
+  --panel: #ffffff;
+  --panel-strong: #000000;
+  --panel-strong-foreground: #f4f4f0;
+  --line: #000000;
+  --primary: #d22b2b;
+  --secondary: #fcd34d;
+  --secondary-strong: #b8860b;
+  --muted: #e3e1d7;
+  --shadow: #000000;
+  --map-ground: #f4f4f0;
+  --map-overlay: rgba(244, 244, 240, 0.3);
+  --map-raster-saturation: -1;
+  --map-raster-contrast: 0.42;
+  --map-raster-brightness-min: 0.68;
+  --map-raster-brightness-max: 0.98;
+  --paper: var(--background);
+  --ink: var(--foreground);
+  color-scheme: light;
+}
+
+:root[data-theme="terminal"],
+.dark {
+  --background: #01161e;
+  --foreground: #eff6e0;
+  --panel: #124559;
+  --panel-strong: #eff6e0;
+  --panel-strong-foreground: #01161e;
+  --line: #598392;
+  --primary: #aec3b0;
+  --secondary: #f3c969;
+  --secondary-strong: #598392;
+  --muted: #062834;
+  --shadow: #598392;
+  --map-ground: #01161e;
+  --map-overlay: rgba(1, 22, 30, 0.16);
+  --map-raster-saturation: -0.75;
+  --map-raster-contrast: 0.18;
+  --map-raster-brightness-min: 0.08;
+  --map-raster-brightness-max: 0.52;
+  --paper: var(--background);
+  --ink: var(--foreground);
+  color-scheme: dark;
 }
 
 * {
@@ -19,8 +61,8 @@ body {
 
 body {
   margin: 0;
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--background);
+  color: var(--foreground);
   font-family: "Courier New", Courier, monospace;
 }
 
@@ -38,22 +80,39 @@ textarea {
   font: inherit;
 }
 
+::selection {
+  background: var(--primary);
+  color: var(--background);
+}
+
+.theme-toggle__terminal {
+  display: none;
+}
+
+:root[data-theme="terminal"] .theme-toggle__archive {
+  display: none;
+}
+
+:root[data-theme="terminal"] .theme-toggle__terminal {
+  display: inline;
+}
+
 .react-flow__node {
   border-radius: 0;
 }
 
 .react-flow__controls {
-  background: #ffffff;
-  border: 4px solid var(--ink);
+  background: var(--panel);
+  border: 4px solid var(--line);
   border-radius: 0;
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: 4px 4px 0 var(--shadow);
 }
 
 .react-flow__controls-button {
-  background: #ffffff;
-  border-bottom: 2px solid var(--ink);
+  background: var(--panel);
+  border-bottom: 2px solid var(--line);
   border-radius: 0;
-  color: var(--ink);
+  color: var(--foreground);
 }
 
 .react-flow__controls-button:last-child {
@@ -61,19 +120,19 @@ textarea {
 }
 
 .react-flow__controls-button svg {
-  fill: var(--ink);
+  fill: var(--foreground);
   max-height: 14px;
   max-width: 14px;
 }
 
 .react-flow__attribution {
-  background: var(--paper);
-  border: 1px solid var(--ink);
-  color: var(--ink);
+  background: var(--background);
+  border: 1px solid var(--line);
+  color: var(--foreground);
 }
 
 .fatal-map {
-  background: var(--paper);
+  background: var(--map-ground);
 }
 
 .fatal-map .mapboxgl-canvas {
@@ -81,16 +140,16 @@ textarea {
 }
 
 .fatal-map .mapboxgl-ctrl-group {
-  background: var(--paper);
-  border: 4px solid var(--ink);
+  background: var(--panel);
+  border: 4px solid var(--line);
   border-radius: 0;
-  box-shadow: 4px 4px 0 var(--ink);
+  box-shadow: 4px 4px 0 var(--shadow);
   overflow: hidden;
 }
 
 .fatal-map .mapboxgl-ctrl-group button {
-  background-color: #ffffff;
-  border-bottom: 2px solid var(--ink);
+  background-color: var(--panel);
+  border-bottom: 2px solid var(--line);
   border-radius: 0;
   height: 34px;
   width: 34px;
@@ -111,10 +170,10 @@ textarea {
 }
 
 .fatal-map .mapboxgl-ctrl-attrib {
-  background: var(--paper);
-  border: 2px solid var(--ink);
+  background: var(--panel);
+  border: 2px solid var(--line);
   border-radius: 0;
-  color: var(--ink);
+  color: var(--foreground);
   font-family: "Courier New", Courier, monospace;
   font-size: 10px;
   font-weight: 900;
@@ -122,11 +181,11 @@ textarea {
 }
 
 .fatal-map-popup .mapboxgl-popup-content {
-  background: var(--paper);
-  border: 4px solid var(--ink);
+  background: var(--panel);
+  border: 4px solid var(--line);
   border-radius: 0;
-  box-shadow: 5px 5px 0 var(--ink);
-  color: var(--ink);
+  box-shadow: 5px 5px 0 var(--shadow);
+  color: var(--foreground);
   font-family: "Courier New", Courier, monospace;
   font-size: 11px;
   font-weight: 900;
@@ -146,23 +205,23 @@ textarea {
 }
 
 .fatal-map-popup .mapboxgl-popup-tip {
-  border-top-color: var(--ink);
+  border-top-color: var(--line);
 }
 
 .fatal-time-slider {
-  accent-color: #d22b2b;
+  accent-color: var(--primary);
 }
 
 .fatal-time-slider::-webkit-slider-runnable-track {
-  background: #ffffff;
-  border: 3px solid var(--ink);
+  background: var(--panel);
+  border: 3px solid var(--line);
   height: 14px;
 }
 
 .fatal-time-slider::-webkit-slider-thumb {
   appearance: none;
-  background: #d22b2b;
-  border: 3px solid var(--ink);
+  background: var(--primary);
+  border: 3px solid var(--line);
   border-radius: 0;
   height: 26px;
   margin-top: -9px;
@@ -170,14 +229,14 @@ textarea {
 }
 
 .fatal-time-slider::-moz-range-track {
-  background: #ffffff;
-  border: 3px solid var(--ink);
+  background: var(--panel);
+  border: 3px solid var(--line);
   height: 14px;
 }
 
 .fatal-time-slider::-moz-range-thumb {
-  background: #d22b2b;
-  border: 3px solid var(--ink);
+  background: var(--primary);
+  border: 3px solid var(--line);
   border-radius: 0;
   height: 20px;
   width: 14px;
@@ -190,17 +249,17 @@ textarea {
 }
 
 .fatal-timeline-scroll::-webkit-scrollbar-track {
-  background: var(--paper);
-  border-top: 3px solid var(--ink);
+  background: var(--background);
+  border-top: 3px solid var(--line);
 }
 
 .fatal-timeline-scroll::-webkit-scrollbar-thumb {
-  background: var(--ink);
-  border: 2px solid var(--paper);
+  background: var(--line);
+  border: 2px solid var(--background);
 }
 
 .fatal-timeline-scroll::-webkit-scrollbar-thumb:hover {
-  background: #d22b2b;
+  background: var(--primary);
 }
 
 /* ── Scan-line animation ─────────────────────── */
@@ -214,4 +273,3 @@ textarea {
 .fatal-scanline {
   animation: fatal-scanline 2s ease-in-out infinite;
 }
-

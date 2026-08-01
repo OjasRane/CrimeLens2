@@ -13,8 +13,8 @@ export function StickyNoteNode({ id, data }: NodeProps) {
   }
 
   return (
-    <div className="relative h-48 w-48 border-2 border-black bg-[#FCD34D] p-4 pt-6 shadow-[4px_4px_0_black] rounded-none">
-      <div className="absolute left-1/2 top-[-10px] h-5 w-16 -translate-x-1/2 border-2 border-black bg-white shadow-[2px_2px_0_black] rounded-none" />
+    <div className="relative h-48 w-48 border-2 border-[var(--line)] bg-[var(--secondary)] p-4 pt-6 shadow-[4px_4px_0_var(--shadow)] rounded-none">
+      <div className="absolute left-1/2 top-[-10px] h-5 w-16 -translate-x-1/2 border-2 border-[var(--line)] bg-[var(--panel)] shadow-[2px_2px_0_var(--shadow)] rounded-none" />
       <textarea
         value={text}
         onChange={handleChange}
@@ -30,11 +30,11 @@ export function PolaroidNode({ data }: NodeProps) {
   const caption = typeof data.caption === "string" ? data.caption : "UNTITLED";
 
   return (
-    <div className="w-56 border-2 border-black bg-white p-3 pb-4 shadow-[4px_4px_0_black] rounded-none">
-      <div className="flex aspect-square items-center justify-center border-2 border-black bg-[#F4F4F0] font-mono text-xs uppercase text-black rounded-none">
+    <div className="w-56 border-2 border-[var(--line)] bg-[var(--panel)] p-3 pb-4 shadow-[4px_4px_0_var(--shadow)] rounded-none">
+      <div className="flex aspect-square items-center justify-center border-2 border-[var(--line)] bg-[var(--background)] font-mono text-xs uppercase text-[var(--foreground)] rounded-none">
         Image Placeholder
       </div>
-      <div className="mt-3 border-t-2 border-black pt-2 text-center font-mono text-xs font-bold uppercase tracking-normal text-black">
+      <div className="mt-3 border-t-2 border-[var(--line)] pt-2 text-center font-mono text-xs font-bold uppercase tracking-normal text-[var(--foreground)]">
         {caption}
       </div>
     </div>
