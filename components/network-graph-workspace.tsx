@@ -491,7 +491,7 @@ function NetworkGraphCanvas() {
     () => new Set(linkFilters.map((filter) => filter.id)),
   );
   const [hopLimit, setHopLimit] = useState(2);
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   const hopDistances = useMemo(
     () => getHopDistances(enabledLinkKinds, selectedSuspectId),
@@ -656,69 +656,53 @@ function NetworkGraphCanvas() {
   );
 
   return (
-    <div className="relative flex h-full min-h-0 w-full flex-1 bg-[#F4F4F0] dark:bg-[#01161E] md:grid md:min-h-[640px] md:grid-cols-[300px_1fr] lg:grid-cols-[330px_1fr]">
-      {/* ── Sidebar ─────────────────────────────── */}
-      <aside className="z-10 hidden border-r-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0] md:block">
-        <div className="border-b-4 border-black bg-black px-3 py-2 text-[#F4F4F0] dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0]">
-          Link Filters
-        </div>
-        {filterControls}
+    <div
+      data-testid="network-graph"
+      className="relative h-full min-h-0 w-full flex-1 overflow-hidden bg-[#F4F4F0] dark:bg-[#01161E]"
+    >
+      {/* ── Collapsible filter box ──────────────── */}
+      <aside
+        data-testid="network-filter-box"
+        className="absolute left-3 top-3 z-50 flex max-h-[calc(100%-1.5rem)] w-[min(320px,calc(100%-1.5rem))] flex-col border-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase text-black shadow-[3px_3px_0_black] dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0] dark:shadow-[0_0_16px_rgba(1,22,30,0.8)] md:left-4 md:top-4 md:shadow-[4px_4px_0_black] dark:md:shadow-[0_0_16px_rgba(1,22,30,0.8)]"
+      >
+        <button
+          type="button"
+          onClick={() =>
+            setIsFiltersOpen((open) => {
+              if (!open) triggerHaptic("light");
+              return !open;
+            })
+          }
+          aria-expanded={isFiltersOpen}
+          aria-controls="network-link-filters"
+          className="flex min-h-11 w-full shrink-0 items-center justify-between bg-black px-3 text-left text-[#F4F4F0] dark:bg-[#01161E] dark:text-[#EFF6E0]"
+        >
+          <span>[ {isFiltersOpen ? "-" : "+"} ] Link Filters</span>
+          <span className="text-[9px] opacity-70">
+            {enabledLinkKinds.size}/{linkFilters.length} Active
+          </span>
+        </button>
+
+        <AnimatePresence initial={false}>
+          {isFiltersOpen ? (
+            <motion.div
+              id="network-link-filters"
+              className="min-h-0 overflow-y-auto border-t-4 border-black dark:border-[#598392]"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+            >
+              <div className="max-h-[min(60dvh,430px)]">
+                {filterControls}
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </aside>
 
-      <button
-        type="button"
-        onClick={() =>
-          setIsMobileFiltersOpen((open) => {
-            if (!open) triggerHaptic("light");
-            return !open;
-          })
-        }
-        aria-expanded={isMobileFiltersOpen}
-        aria-controls="mobile-link-filters"
-        className="absolute left-3 top-3 z-50 min-h-11 border-4 border-black bg-[#F4F4F0] px-3 font-mono text-xs font-black uppercase text-black shadow-[3px_3px_0_black] md:hidden dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0] dark:shadow-[0_0_12px_rgba(1,22,30,0.75)]"
-      >
-        [ {isMobileFiltersOpen ? "-" : "+"} ] Link Filters
-      </button>
-
-      <AnimatePresence>
-        {isMobileFiltersOpen ? (
-          <>
-            <motion.button
-              type="button"
-              aria-label="Close link filters"
-              className="absolute inset-0 z-[55] bg-black/55 backdrop-blur-sm md:hidden"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsMobileFiltersOpen(false)}
-            />
-            <motion.aside
-              id="mobile-link-filters"
-              className="absolute inset-x-0 bottom-0 z-[60] max-h-[72%] overflow-y-auto border-t-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[0_-4px_0_black] md:hidden dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0] dark:shadow-[0_-8px_24px_rgba(1,22,30,0.85)]"
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-            >
-              <div className="flex min-h-11 items-center justify-between border-b-4 border-black bg-black px-3 text-[#F4F4F0] dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0]">
-                <span>[ LINK FILTERS ]</span>
-                <button
-                  type="button"
-                  onClick={() => setIsMobileFiltersOpen(false)}
-                  className="h-11 min-w-11 border-x-2 border-black px-2 dark:border-[#598392]"
-                  aria-label="Close link filters"
-                >
-                  [ X ]
-                </button>
-              </div>
-              {filterControls}
-            </motion.aside>
-          </>
-        ) : null}
-      </AnimatePresence>
-
       {/* ── Graph ───────────────────────────────── */}
-      <div className="relative h-full min-h-0 w-full flex-1 md:min-h-[520px]">
+      <div className="relative h-full min-h-0 w-full">
         <ReactFlow
           nodes={nodes}
           edges={edges}
