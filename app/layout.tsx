@@ -4,8 +4,8 @@ import "./globals.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 export const metadata: Metadata = {
-  title: "Fatal Investigation",
-  description: "Analog brutalist investigation canvas",
+  title: "Global Intel Index",
+  description: "Secure agent clearance terminal for The Fatal Ledger",
 };
 
 export const viewport: Viewport = {
@@ -27,7 +27,11 @@ export default function RootLayout({
         className="pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
         suppressHydrationWarning
       >
-        <ThemeProvider attribute="class" defaultTheme="light">
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+        >
           {children}
         </ThemeProvider>
       </body>

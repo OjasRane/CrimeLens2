@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap");
 @import "tailwindcss";
 @import "@xyflow/react/dist/style.css";
 @import "mapbox-gl/dist/mapbox-gl.css";
@@ -37,6 +38,13 @@
 html,
 body {
   min-height: 100%;
+}
+
+.login-terminal,
+.login-terminal button,
+.login-terminal input {
+  font-family: "Space Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 html {
