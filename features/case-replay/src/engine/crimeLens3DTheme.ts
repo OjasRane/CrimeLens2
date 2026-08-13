@@ -1,0 +1,48 @@
+export const crimeLens3DTheme = {
+  colors: {
+    paper: "#F5F3EC",
+    paperBright: "#FAF9F5",
+    neutralSurface: "#E8E4DA",
+    wall: "#DEDAD0",
+    floor: "#D7D4CB",
+    concrete: "#BEBBB2",
+    ink: "#111111",
+    charcoal: "#343434",
+    charcoalSoft: "#555A57",
+    muted: "#6B6760",
+    evidenceYellow: "#F4C94F",
+    softYellow: "#FFE58A",
+    suspectRed: "#D64545",
+    communicationBlue: "#356FD6",
+    locationGreen: "#2BAF83",
+    neutralLink: "#7B8086",
+    glass: "#AFC4C0",
+  },
+  edges: {
+    uiStrong: "#111111",
+    documentStrong: "#111111",
+    worldSubtle: "#4A4A47",
+    selected: "#F4C94F",
+  },
+  materials: {
+    paper: { color: "#FAF9F5", roughness: 0.9, metalness: 0 },
+    paperWarm: { color: "#F5F3EC", roughness: 0.94, metalness: 0 },
+    wall: { color: "#DEDAD0", roughness: 0.96, metalness: 0 },
+    floor: { color: "#D7D4CB", roughness: 0.94, metalness: 0 },
+    charcoalMetal: { color: "#343434", roughness: 0.48, metalness: 0.32 },
+    concrete: { color: "#BEBBB2", roughness: 0.93, metalness: 0 },
+    yellowTag: { color: "#F4C94F", roughness: 0.76, metalness: 0 },
+    glass: { color: "#AFC4C0", roughness: 0.24, metalness: 0.05 },
+    fabric: { color: "#6B6760", roughness: 0.92, metalness: 0 },
+  },
+  lighting: {
+    background: "#F5F3EC",
+    fog: "#F5F3EC",
+    ambient: "#FFF8E8",
+    key: "#FFEBC2",
+    fill: "#D7DFDF",
+    contactShadow: "#514E49",
+  },
+} as const;
+
+export type CrimeLens3DTheme = typeof crimeLens3DTheme;

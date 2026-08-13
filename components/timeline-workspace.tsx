@@ -10,6 +10,7 @@ import {
   Files,
   MapPinned,
   Network,
+  Play,
   Radar,
   X,
   ZoomIn,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { BlindSpotTimelineWorkspace } from "@/components/blind-spot-timeline-workspace";
+import { PlayCaseReplayButton } from "@/features/case-replay/integration/PlayCaseReplayButton";
 import { getInvestigation } from "@/data/investigations/registry";
 import type {
   Investigation,
@@ -1237,22 +1239,30 @@ export function TimelineWorkspace() {
             Timeline Analysis
           </h2>
           <div className="flex items-center gap-2 font-mono text-[10px] font-black uppercase text-white dark:text-[#F2EFE7]">
-            <button
-              type="button"
-              onClick={() => setShowBlindSpotDetector(true)}
-              disabled={activeInvestigationId === "mumbai-2611"}
-              className="fatal-historical-badge mr-1 flex h-8 items-center gap-1.5 border-2 border-[#EF4444] bg-[#EF4444] px-2.5 text-[9px] font-black uppercase tracking-[0.08em] text-white transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 dark:border-[#D8D3C7] dark:bg-[#0D1A20] dark:text-[#F2EFE7]"
-            >
-              <Radar aria-hidden="true" className="size-3.5" strokeWidth={3} />
-              <span className="hidden sm:inline">
-                {activeInvestigationId === "mumbai-2611"
-                  ? "Historical Record"
-                  : "Blind-Spot Detector"}
-              </span>
-              <span className="sm:hidden">
-                {activeInvestigationId === "mumbai-2611" ? "Record" : "Blind Spots"}
-              </span>
-            </button>
+            {activeInvestigationId === "mumbai-2611" ? (
+              <PlayCaseReplayButton
+                initialEventId={selectedTimelineEventId?.replace(
+                  "MUM-TL-",
+                  "TL-",
+                )}
+                className="flex h-8 shrink-0 items-center gap-1.5 border-2 border-[#FCD34D] bg-[#FCD34D] px-2.5 text-[9px] font-black uppercase tracking-[0.08em] text-black shadow-[3px_3px_0_#D22B2B] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[#FFD45A] dark:bg-[#FFD45A] dark:text-[#050B0E] dark:shadow-[3px_3px_0_#FF4D55]"
+              >
+                <Play aria-hidden="true" className="size-3.5" fill="currentColor" />
+                <span className="hidden sm:inline">Play Replay</span>
+                <span className="sm:hidden">Replay</span>
+              </PlayCaseReplayButton>
+            ) : null}
+            {activeInvestigationId !== "mumbai-2611" ? (
+              <button
+                type="button"
+                onClick={() => setShowBlindSpotDetector(true)}
+                className="fatal-historical-badge mr-1 flex h-8 items-center gap-1.5 border-2 border-[#EF4444] bg-[#EF4444] px-2.5 text-[9px] font-black uppercase tracking-[0.08em] text-white transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 dark:border-[#D8D3C7] dark:bg-[#0D1A20] dark:text-[#F2EFE7]"
+              >
+                <Radar aria-hidden="true" className="size-3.5" strokeWidth={3} />
+                <span className="hidden sm:inline">Blind-Spot Detector</span>
+                <span className="sm:hidden">Blind Spots</span>
+              </button>
+            ) : null}
             <span className="fatal-events-loaded hidden md:inline dark:text-[#AFAFA7]">
               {filteredEvents.length} Events Loaded
             </span>

@@ -18,6 +18,13 @@ export default defineConfig([
       "@typescript-eslint/no-explicit-any": "warn",
     },
   },
+  {
+    files: ["features/case-replay/**/*.{ts,tsx}"],
+    rules: {
+      // Three.js objects are intentionally animated through mutable refs.
+      "react-hooks/immutability": "off",
+    },
+  },
   globalIgnores([
     ".next/**",
     "out/**",

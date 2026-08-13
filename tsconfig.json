@@ -17,6 +17,9 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@replay/*": [
+        "./features/case-replay/src/*"
       ]
     },
     "resolveJsonModule": true,

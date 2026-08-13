@@ -11,12 +11,16 @@ import {
   isSupabaseBrowserConfigured,
 } from "@/lib/supabase-browser";
 
+const isLocalAuthBypass = process.env.NODE_ENV === "development";
+
 export function AuthenticatedWorkspace({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [authorized, setAuthorized] = useState(false);
+  const [authorized, setAuthorized] = useState(isLocalAuthBypass);
   const [message, setMessage] = useState("VERIFYING SUPABASE SESSION...");
 
   useEffect(() => {
+    if (isLocalAuthBypass) return;
+
     if (!isSupabaseBrowserConfigured) {
       setMessage("SUPABASE AUTH IS NOT CONFIGURED");
       return;
@@ -57,6 +61,10 @@ export function AuthenticatedWorkspace({ children }: { children: ReactNode }) {
       data.subscription.unsubscribe();
     };
   }, [router]);
+
+  if (isLocalAuthBypass) {
+    return <>{children}</>;
+  }
 
   if (!authorized) {
     return (
