@@ -37,6 +37,11 @@ export type ClassifiedAuthError = {
   message: string;
 };
 
+export type ClassifiedEnrollmentError = {
+  message: string;
+  code?: string;
+};
+
 const cancellationCodes = new Set([
   "ERROR_CEREMONY_ABORTED",
   "AbortError",
@@ -113,6 +118,108 @@ export function classifyPasskeyError(error: unknown): ClassifiedAuthError {
     state: "error",
     message: "Authentication service unavailable // retry connection",
   };
+}
+
+export function classifyEnrollmentError(
+  error: unknown,
+): ClassifiedEnrollmentError {
+  const candidate =
+    typeof error === "object" && error !== null ? (error as ErrorLike) : {};
+  const code = typeof candidate.code === "string" ? candidate.code : "";
+  const message =
+    typeof candidate.message === "string" ? candidate.message : "";
+  const status = typeof candidate.status === "number" ? candidate.status : 0;
+
+  if (code === "email_address_not_authorized") {
+    return {
+      code,
+      message:
+        "Email delivery is blocked for this address // configure custom SMTP or use a Supabase project-team email",
+    };
+  }
+
+  if (
+    code === "over_email_send_rate_limit" ||
+    code === "over_request_rate_limit" ||
+    status === 429
+  ) {
+    return {
+      code: code || "rate_limited",
+      message:
+        "Confirmation request limit reached // wait a few minutes, then retry",
+    };
+  }
+
+  if (code === "email_provider_disabled" || code === "otp_disabled") {
+    return {
+      code,
+      message:
+        "Email confirmation is disabled // enable the Email provider and magic links in Supabase Auth",
+    };
+  }
+
+  if (code === "user_not_found" || code === "signup_disabled") {
+    return {
+      code,
+      message:
+        "Account is not pre-authorized // create or invite the Supabase Auth user before enrollment",
+    };
+  }
+
+  if (code === "captcha_failed") {
+    return {
+      code,
+      message:
+        "Security verification failed // reload the page and complete the check again",
+    };
+  }
+
+  if (
+    /redirect|callback/i.test(message) &&
+    /allow|invalid|not permitted|not supported/i.test(message)
+  ) {
+    return {
+      code: code || "redirect_not_allowed",
+      message:
+        "Production enrollment callback is not allowlisted // add this site's /enroll URL to Supabase Auth redirect URLs",
+    };
+  }
+
+  if (
+    error instanceof TypeError ||
+    /failed to fetch|network|load failed|connection/i.test(message)
+  ) {
+    return {
+      code: code || "network_error",
+      message:
+        "Authentication service could not be reached // check the connection and retry",
+    };
+  }
+
+  return {
+    code: code || undefined,
+    message:
+      "Confirmation could not be started // review the latest Supabase Auth log entry",
+  };
+}
+
+export function buildEnrollmentRedirectUrl(
+  configuredSiteUrl: string | undefined,
+  browserOrigin: string,
+): string {
+  const fallback = new URL("/enroll", browserOrigin);
+  const candidate = configuredSiteUrl?.trim();
+  if (!candidate) return fallback.toString();
+
+  try {
+    const configuredUrl = new URL(candidate);
+    if (configuredUrl.protocol !== "http:" && configuredUrl.protocol !== "https:") {
+      return fallback.toString();
+    }
+    return new URL("/enroll", configuredUrl).toString();
+  } catch {
+    return fallback.toString();
+  }
 }
 
 export const authProgress: Record<AuthVisualState, number> = {

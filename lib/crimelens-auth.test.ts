@@ -3,6 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   authProgress,
   browserSupportsPasskeys,
+  buildEnrollmentRedirectUrl,
+  classifyEnrollmentError,
   classifyPasskeyError,
   loadAuthorizedProfile,
 } from "./crimelens-auth";
@@ -92,6 +94,59 @@ describe("classifyPasskeyError", () => {
 
   it("does not call a rate limit response an identity denial", () => {
     expect(classifyPasskeyError({ status: 429 }).state).toBe("error");
+  });
+});
+
+describe("classifyEnrollmentError", () => {
+  it("explains the hosted Supabase email restriction", () => {
+    expect(
+      classifyEnrollmentError({ code: "email_address_not_authorized" })
+        .message,
+    ).toContain("custom SMTP");
+  });
+
+  it("turns a mail rate limit into a retryable instruction", () => {
+    expect(
+      classifyEnrollmentError({ code: "over_email_send_rate_limit" })
+        .message,
+    ).toContain("wait a few minutes");
+  });
+
+  it("explains when a controlled account was not provisioned", () => {
+    expect(classifyEnrollmentError({ code: "signup_disabled" }).message).toContain(
+      "create or invite",
+    );
+  });
+
+  it("does not expose an unknown provider message", () => {
+    const result = classifyEnrollmentError(
+      new Error("sensitive upstream provider response"),
+    );
+    expect(result.message).not.toContain("sensitive");
+    expect(result.message).toContain("Supabase Auth log");
+  });
+});
+
+describe("buildEnrollmentRedirectUrl", () => {
+  it("uses the configured stable production origin", () => {
+    expect(
+      buildEnrollmentRedirectUrl(
+        "https://crimelens.example.com/ignored/path",
+        "https://preview.example.com",
+      ),
+    ).toBe("https://crimelens.example.com/enroll");
+  });
+
+  it("falls back to the current origin when no site URL is configured", () => {
+    expect(
+      buildEnrollmentRedirectUrl(undefined, "http://localhost:3000"),
+    ).toBe("http://localhost:3000/enroll");
+  });
+
+  it("ignores an invalid configured URL", () => {
+    expect(
+      buildEnrollmentRedirectUrl("not a url", "https://app.example.com"),
+    ).toBe("https://app.example.com/enroll");
   });
 });
 

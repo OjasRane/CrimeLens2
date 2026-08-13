@@ -1,1 +1,1 @@
-"""Kinetic authentication service package."""
+"""CrimeLens intelligence API package."""

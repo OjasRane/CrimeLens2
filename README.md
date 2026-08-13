@@ -269,6 +269,9 @@ NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY=pk_dev_replace_me
 NEXT_PUBLIC_SUPABASE_URL=https://project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_replace_me
 
+# Stable public origin for production email-confirmation links.
+NEXT_PUBLIC_SITE_URL=https://crimelens.example.com
+
 # Protected FastAPI intelligence endpoint.
 NEXT_PUBLIC_TIMELINE_INTEL_URL=http://localhost:8000/api/v1/intel/timeline/SUSPECT-001
 ```
@@ -286,6 +289,13 @@ CrimeLens uses Supabase Auth as the only production identity and session authori
    - RP origins: the exact HTTPS origins, for example `https://crimelens.example.com`
 3. Do not use a Vercel preview hostname or another changing URL as the production RP ID. Changing the RP ID invalidates existing passkeys.
 4. Add the production origin to `CORS_ORIGINS` in the FastAPI deployment.
+5. In **Authentication → URL Configuration**, set the Site URL to the stable
+   production origin and add the exact `https://your-domain.example/enroll`
+   callback under Redirect URLs. Set that same origin as `NEXT_PUBLIC_SITE_URL`
+   in the deployed web app.
+6. Configure custom SMTP for production email delivery. Supabase's default
+   sender is intended for testing and may reject recipients that are not members
+   of the project's organization or throttle confirmation messages.
 
 The checked-in `supabase/config.toml` enables passkeys for local Supabase development with `localhost` / `127.0.0.1`. WebAuthn works on supported localhost contexts; production requires HTTPS.
 
@@ -308,7 +318,6 @@ Open `/enroll`, enter that existing account email, follow the confirmation link,
 
 - Local: run the Supabase stack/config (or use a configured hosted project), start FastAPI from `backend`, then run `npm run dev` and open `http://localhost:3000` in a supported browser.
 - Production: deploy to the stable HTTPS origin configured as the RP origin, enroll a fresh production credential, verify login/cancel/no-credential cases, and call a protected FastAPI route with the Supabase access token.
-- Security check: `POST /api/v1/auth/verify-kinetic` returns `410 Gone` by default. Set `ENABLE_LEGACY_KINETIC_AUTH=false` in production. Even if explicitly enabled for an isolated legacy demo, its old token is not a Supabase session and is rejected by protected FastAPI routes.
 
 ---
 

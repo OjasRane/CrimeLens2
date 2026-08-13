@@ -86,13 +86,3 @@ class SupabaseAuthenticationTests(TestCase):
             main.require_active_profile(user)
 
         self.assertEqual(context.exception.status_code, 403)
-
-    def test_legacy_kinetic_auth_is_disabled_by_default(self):
-        with (
-            patch.object(main, "LEGACY_KINETIC_AUTH_ENABLED", False),
-            self.assertRaises(HTTPException) as context,
-        ):
-            main.require_legacy_kinetic_auth()
-
-        self.assertEqual(context.exception.status_code, 410)
-

@@ -8,6 +8,7 @@ import {
   Pencil,
   Plus,
   ShieldCheck,
+  TriangleAlert,
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
@@ -15,6 +16,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   browserSupportsPasskeys,
+  buildEnrollmentRedirectUrl,
+  classifyEnrollmentError,
   classifyPasskeyError,
   loadAuthorizedProfile,
   type CrimeLensProfile,
@@ -62,12 +65,14 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
   const [emailSent, setEmailSent] = useState(false);
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageIsError, setMessageIsError] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [friendlyName, setFriendlyName] = useState("");
 
   const loadSecurityState = useCallback(async () => {
     if (!isSupabaseBrowserConfigured) {
       setMessage("Supabase Auth is not configured for this deployment");
+      setMessageIsError(true);
       setLoading(false);
       return;
     }
@@ -96,6 +101,7 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
       setProfile(authorizedProfile);
       setPasskeys((registeredPasskeys ?? []) as PasskeyRecord[]);
       setMessage("");
+      setMessageIsError(false);
     } catch (error) {
       setProfile(null);
       setPasskeys([]);
@@ -104,6 +110,7 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
           ? "Account inactive // enrollment prohibited"
           : "No authorized CrimeLens profile is assigned to this account",
       );
+      setMessageIsError(true);
     } finally {
       setLoading(false);
     }
@@ -131,20 +138,26 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
 
     setWorking(true);
     setMessage("");
+    setMessageIsError(false);
     const supabase = getSupabaseBrowserClient();
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
       options: {
         shouldCreateUser: false,
-        emailRedirectTo: `${window.location.origin}/enroll`,
+        emailRedirectTo: buildEnrollmentRedirectUrl(
+          process.env.NEXT_PUBLIC_SITE_URL,
+          window.location.origin,
+        ),
       },
     });
 
     if (error) {
-      setMessage("Trusted account confirmation could not be started");
+      setMessage(classifyEnrollmentError(error).message);
+      setMessageIsError(true);
     } else {
       setEmailSent(true);
       setMessage("Confirmation link requested // check the authorized inbox");
+      setMessageIsError(false);
     }
     setWorking(false);
   };
@@ -153,18 +166,22 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
     if (!profile || working) return;
     if (!browserSupportsPasskeys()) {
       setMessage("Passkeys require HTTPS or a supported localhost browser");
+      setMessageIsError(true);
       return;
     }
 
     setWorking(true);
     setMessage("Awaiting device authenticator...");
+    setMessageIsError(false);
     const supabase = getSupabaseBrowserClient();
     const { error } = await supabase.auth.registerPasskey();
     if (error) {
       setMessage(classifyPasskeyError(error).message);
+      setMessageIsError(true);
     } else {
       await loadSecurityState();
       setMessage("Passkey registered // device ready for passwordless access");
+      setMessageIsError(false);
     }
     setWorking(false);
   };
@@ -183,12 +200,14 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
 
     if (error) {
       setMessage("Passkey name could not be updated");
+      setMessageIsError(true);
       return;
     }
 
     setEditingId(null);
     setFriendlyName("");
     setMessage("Passkey designation updated");
+    setMessageIsError(false);
     await loadSecurityState();
   };
 
@@ -208,10 +227,12 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
 
     if (error) {
       setMessage("Passkey could not be removed");
+      setMessageIsError(true);
       return;
     }
 
     setMessage("Passkey removed from this account");
+    setMessageIsError(false);
     await loadSecurityState();
   };
 
@@ -409,13 +430,20 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
         ) : null}
 
         {message ? (
-          <p
-            className={`border-4 border-black bg-white p-4 text-[9px] font-bold leading-5 dark:border-[#EAE5C9] dark:bg-[#132E3A] ${panel}`}
-            role="status"
+          <div
+            className={`flex items-start gap-3 p-4 text-[9px] font-bold leading-5 ${panel} ${
+              messageIsError
+                ? "!border-[#D22B2B] !bg-[#FFF4F1] !shadow-[6px_6px_0_#D22B2B] !text-[#8D1B1B] dark:!bg-[#24191A] dark:!text-[#FFAAA0]"
+                : ""
+            }`}
+            role={messageIsError ? "alert" : "status"}
             aria-live="polite"
           >
-            {message}
-          </p>
+            {messageIsError ? (
+              <TriangleAlert aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+            ) : null}
+            <p className="m-0 min-w-0">{message}</p>
+          </div>
         ) : null}
 
         {authenticated ? (
