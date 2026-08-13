@@ -563,14 +563,14 @@ function AnnotationPanel({
   const eventAnnotations = annotations.filter((a) => a.eventId === event.id);
 
   return (
-    <div className={`fatal-timeline-annotation absolute right-0 top-0 z-50 h-full w-[380px] overflow-y-auto border-l-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[-6px_0_0_black] dark:border-[#D8D3C7] dark:bg-[#081318] dark:text-[#F2EFE7] dark:shadow-[-7px_0_0_#010506] ${className}`}>
+    <div className={`fatal-timeline-annotation absolute inset-0 z-50 h-full w-full overflow-y-auto border-l-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[-6px_0_0_black] sm:left-auto sm:w-[380px] dark:border-[#D8D3C7] dark:bg-[#081318] dark:text-[#F2EFE7] dark:shadow-[-7px_0_0_#010506] ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between border-b-4 border-black bg-black px-4 py-3 text-white dark:border-[#426D79] dark:bg-[#08242D] dark:text-[#F4F1DC]">
         <span>Annotate Event</span>
         <button
           type="button"
           onClick={onClose}
-          className="flex h-7 w-7 items-center justify-center rounded-none border-2 border-white hover:bg-white hover:text-black dark:border-[#FF4D55] dark:text-[#FF4D55] dark:hover:bg-[#FF4D55] dark:hover:text-[#031820]"
+          className="flex h-11 w-11 items-center justify-center rounded-none border-2 border-white hover:bg-white hover:text-black sm:h-7 sm:w-7 dark:border-[#FF4D55] dark:text-[#FF4D55] dark:hover:bg-[#FF4D55] dark:hover:text-[#031820]"
         >
           <X size={14} strokeWidth={3} />
         </button>
@@ -735,9 +735,10 @@ function DensityHeatmapView({
 
   return (
     <div
-      className="flex h-full items-end gap-[3px] px-4 pb-8 pt-12 select-none"
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
+      className="flex h-full touch-none select-none items-end gap-[3px] px-4 pb-8 pt-12"
+      onPointerUp={handleMouseUp}
+      onPointerCancel={handleMouseUp}
+      onPointerLeave={handleMouseUp}
     >
       {buckets.map((bucket, index) => {
         const heightPct = (bucket.count / maxCount) * 100;
@@ -772,8 +773,11 @@ function DensityHeatmapView({
                     ? "#D22B2B"
                     : `rgba(0, 0, 0, ${0.15 + intensity * 0.85})`,
                 }}
-                onMouseDown={() => handleMouseDown(index)}
-                onMouseMove={() => handleMouseMove(index)}
+                onPointerDown={(event) => {
+                  event.preventDefault();
+                  handleMouseDown(index);
+                }}
+                onPointerMove={() => handleMouseMove(index)}
               />
             </div>
             <span className="mt-2 block text-center font-mono text-[9px] font-black uppercase leading-none -rotate-45 origin-top-left translate-x-2">
@@ -843,7 +847,7 @@ function EventInspector({
   return (
     <motion.aside
       aria-label={`Event inspector for ${event.title}`}
-      className="fatal-event-inspector absolute inset-x-4 bottom-3 z-40 border-2 border-[#D8D3C7] bg-[#0D1A20] text-[#F2EFE7] shadow-[7px_7px_0_#010506]"
+      className="fatal-event-inspector absolute inset-x-2 bottom-2 z-40 max-h-[58dvh] overflow-y-auto border-2 border-[#D8D3C7] bg-[#0D1A20] text-[#F2EFE7] shadow-[7px_7px_0_#010506] sm:inset-x-4 sm:bottom-3"
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18, ease: "easeOut" }}
@@ -862,7 +866,7 @@ function EventInspector({
         </button>
       </div>
 
-      <div className="grid grid-cols-[minmax(0,1.25fr)_minmax(330px,1fr)] gap-4 px-3 py-3">
+      <div className="grid grid-cols-1 gap-4 px-3 py-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(330px,1fr)]">
         <div className="min-w-0">
           <div className="mb-1.5 flex flex-wrap items-center gap-2 font-mono font-black uppercase">
             <span className="text-base tabular-nums text-[#F2EFE7]">
@@ -886,7 +890,7 @@ function EventInspector({
         </div>
 
         <div className="flex min-w-0 flex-col justify-between gap-2">
-          <dl className="grid grid-cols-4 gap-x-3 font-mono text-[9px] uppercase">
+          <dl className="grid grid-cols-2 gap-3 font-mono text-[9px] uppercase sm:grid-cols-4">
             <div className="min-w-0 border-l border-[#34515A] pl-2">
               <dt className="text-[#70878D]">Location</dt>
               <dd className="mt-0.5 truncate font-black text-[#F2EFE7]">
@@ -916,7 +920,7 @@ function EventInspector({
             </div>
           </dl>
 
-          <div className="flex flex-wrap justify-end gap-2 font-mono text-[9px] font-black uppercase">
+          <div className="flex flex-wrap justify-start gap-2 font-mono text-[9px] font-black uppercase lg:justify-end">
             {primaryLocation ? (
               <button
                 type="button"
@@ -1115,8 +1119,9 @@ export function TimelineWorkspace() {
 
   // Brush selection handling
   const handleTimelineMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
+    (e: React.PointerEvent<HTMLDivElement>) => {
       if (!brushActive || zoomLevel === 0) return;
+      e.currentTarget.setPointerCapture(e.pointerId);
       const container = scrollContainerRef.current;
       if (!container) return;
 
@@ -1130,7 +1135,7 @@ export function TimelineWorkspace() {
   );
 
   const handleTimelineMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
+    (e: React.PointerEvent<HTMLDivElement>) => {
       if (!isDraggingBrush.current) return;
       const container = scrollContainerRef.current;
       if (!container) return;
@@ -1227,8 +1232,8 @@ export function TimelineWorkspace() {
     >
       {/* ─── TOP TOOLBAR ──────────────────────────── */}
       <div className="fatal-timeline-toolbar shrink-0 border-b-4 border-black bg-[#F4F4F0] dark:border-b dark:border-[#34515A] dark:bg-[#0D1A20]">
-        <div className="fatal-timeline-commandbar flex items-center justify-between border-b-4 border-black bg-black px-4 py-3 dark:border-b dark:border-[#34515A] dark:bg-[#050B0E]">
-          <h2 className="fatal-timeline-title font-serif text-2xl font-black uppercase leading-none text-white md:text-3xl dark:text-[#F2EFE7]">
+        <div className="fatal-timeline-commandbar flex items-center justify-between gap-2 border-b-4 border-black bg-black px-3 py-2 sm:px-4 sm:py-3 dark:border-b dark:border-[#34515A] dark:bg-[#050B0E]">
+          <h2 className="fatal-timeline-title truncate font-serif text-lg font-black uppercase leading-none text-white sm:text-2xl md:text-3xl dark:text-[#F2EFE7]">
             Timeline Analysis
           </h2>
           <div className="flex items-center gap-2 font-mono text-[10px] font-black uppercase text-white dark:text-[#F2EFE7]">
@@ -1257,16 +1262,16 @@ export function TimelineWorkspace() {
         </div>
 
         {/* Controls strip */}
-        <div className="fatal-timeline-controls flex flex-wrap items-center gap-3 px-4 py-3 font-mono text-xs font-black uppercase dark:text-[#F2EFE7]">
+        <div className="fatal-timeline-controls hide-scrollbar flex items-center gap-3 overflow-x-auto px-3 py-2 font-mono text-xs font-black uppercase sm:flex-wrap sm:px-4 sm:py-3 dark:text-[#F2EFE7]">
           {/* Date range */}
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <label className="flex items-center gap-1">
               FROM
               <input
                 type="date"
                 value={timeRange[0]}
                 onChange={(e) => setTimeRange([e.target.value, timeRange[1]])}
-                className="fatal-timeline-control border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none dark:border dark:border-[#D8D3C7] dark:bg-[#081318] dark:text-[#F2EFE7] dark:shadow-none"
+                className="fatal-timeline-control w-[8.8rem] border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none dark:border dark:border-[#D8D3C7] dark:bg-[#081318] dark:text-[#F2EFE7] dark:shadow-none"
               />
             </label>
             <span className="text-black/40 dark:text-[#6F8F96]">→</span>
@@ -1276,7 +1281,7 @@ export function TimelineWorkspace() {
                 type="date"
                 value={timeRange[1]}
                 onChange={(e) => setTimeRange([timeRange[0], e.target.value])}
-                className="fatal-timeline-control border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none dark:border dark:border-[#D8D3C7] dark:bg-[#081318] dark:text-[#F2EFE7] dark:shadow-none"
+                className="fatal-timeline-control w-[8.8rem] border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none dark:border dark:border-[#D8D3C7] dark:bg-[#081318] dark:text-[#F2EFE7] dark:shadow-none"
               />
             </label>
           </div>
@@ -1284,7 +1289,7 @@ export function TimelineWorkspace() {
           <div className="h-6 w-[4px] bg-black hidden md:block dark:w-px dark:bg-[#34515A]" />
 
           {/* Zoom controls */}
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <span className="text-[10px] text-black/60 dark:text-[#6F8F96]">
               ZOOM
             </span>
@@ -1371,7 +1376,7 @@ export function TimelineWorkspace() {
         </div>
 
         {/* Category legend */}
-        <div className="fatal-timeline-legend flex flex-wrap gap-2 border-t-2 border-black/20 px-4 py-2 font-mono text-[10px] font-black uppercase dark:border-[#34515A] dark:text-[#AFAFA7]">
+        <div className="fatal-timeline-legend hide-scrollbar flex gap-2 overflow-x-auto whitespace-nowrap border-t-2 border-black/20 px-3 py-2 font-mono text-[10px] font-black uppercase sm:flex-wrap sm:px-4 dark:border-[#34515A] dark:text-[#AFAFA7]">
           {(Object.entries(CATEGORY_COLORS) as [EventCategory, string][]).map(
             ([category, color]) =>
               visibleCategories.has(category) ? (
@@ -1397,7 +1402,7 @@ export function TimelineWorkspace() {
       <div className="fatal-timeline-main relative flex-1 overflow-hidden">
         {isHeatmapMode ? (
           /* ─── DENSITY HEATMAP MODE ─────────────── */
-          <div className="fatal-timeline-heatmap h-full border-4 border-black bg-white mx-4 my-4 shadow-[4px_4px_0_black] dark:border dark:border-[#34515A] dark:bg-[#0D1A20] dark:shadow-[6px_6px_0_#010506]">
+          <div className="fatal-timeline-heatmap m-1 h-[calc(100%-0.5rem)] border-4 border-black bg-white shadow-[4px_4px_0_black] sm:m-4 sm:h-[calc(100%-2rem)] dark:border dark:border-[#34515A] dark:bg-[#0D1A20] dark:shadow-[6px_6px_0_#010506]">
             <div className="border-b-4 border-black bg-[#F4F4F0] px-4 py-2 font-mono text-[10px] font-black uppercase dark:border-[#426D79] dark:bg-[#08242D] dark:text-[#F4F1DC]">
               Activity Density Heatmap — {densityBuckets.length} Active Days
             </div>
@@ -1414,13 +1419,14 @@ export function TimelineWorkspace() {
           <div
             ref={scrollContainerRef}
             className={`fatal-timeline-scroll h-full overflow-x-auto overflow-y-hidden ${
-              brushActive ? "cursor-crosshair" : ""
+              brushActive ? "touch-none cursor-crosshair" : "touch-pan-x"
             }`}
             onScroll={handleScroll}
-            onMouseDown={handleTimelineMouseDown}
-            onMouseMove={handleTimelineMouseMove}
-            onMouseUp={handleTimelineMouseUp}
-            onMouseLeave={handleTimelineMouseUp}
+            onPointerDown={handleTimelineMouseDown}
+            onPointerMove={handleTimelineMouseMove}
+            onPointerUp={handleTimelineMouseUp}
+            onPointerCancel={handleTimelineMouseUp}
+            onPointerLeave={handleTimelineMouseUp}
           >
             <div
               className="fatal-timeline-stage relative h-full"
@@ -1785,8 +1791,8 @@ export function TimelineWorkspace() {
       </div>
 
       {/* ─── STATUS BAR ───────────────────────────── */}
-      <div className="fatal-timeline-footer shrink-0 border-t-4 border-black bg-black px-4 py-2 font-mono text-[10px] font-black uppercase text-[#F4F4F0] dark:border-t dark:border-[#34515A] dark:bg-[#050B0E] dark:text-[#AFAFA7]">
-        <div className="flex flex-wrap items-center gap-4">
+      <div className="fatal-timeline-footer hide-scrollbar shrink-0 overflow-x-auto whitespace-nowrap border-t-4 border-black bg-black px-3 py-2 font-mono text-[9px] font-black uppercase text-[#F4F4F0] sm:px-4 sm:text-[10px] dark:border-t dark:border-[#34515A] dark:bg-[#050B0E] dark:text-[#AFAFA7]">
+        <div className="flex items-center gap-4">
           <span>
             Range: {timeRange[0]} → {timeRange[1]}
           </span>

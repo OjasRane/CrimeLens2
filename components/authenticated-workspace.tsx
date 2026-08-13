@@ -94,4 +94,3 @@ export function AuthenticatedWorkspace({ children }: { children: ReactNode }) {
     </>
   );
 }
-

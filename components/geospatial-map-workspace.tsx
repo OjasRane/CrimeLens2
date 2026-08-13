@@ -986,7 +986,7 @@ export function GeospatialMapWorkspace() {
       </DeckGL>
 
       {activeLayer === "DENSITY" && activeInvestigation.map.densityNotice ? (
-        <div className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 border-4 border-[var(--ink)] bg-[var(--accent)] px-4 py-3 font-mono text-xs font-black uppercase text-[var(--ink)] shadow-[5px_5px_0_var(--ink)]">
+        <div className="absolute left-1/2 top-1/2 z-20 w-[min(340px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 border-4 border-[var(--ink)] bg-[var(--accent)] px-4 py-3 text-center font-mono text-xs font-black uppercase text-[var(--ink)] shadow-[5px_5px_0_var(--ink)]">
           [ {activeInvestigation.map.densityNotice} ]
         </div>
       ) : null}
@@ -1001,7 +1001,7 @@ export function GeospatialMapWorkspace() {
       ) : null}
 
       {selectedLocation ? (
-        <aside className="absolute bottom-28 right-3 z-20 max-h-[48dvh] w-[min(360px,calc(100%-1.5rem))] overflow-y-auto border-4 border-[var(--ink)] bg-[var(--paper)] p-3 font-mono text-[10px] font-black uppercase text-[var(--ink)] shadow-[6px_6px_0_var(--ink)] md:bottom-28 md:right-4 md:text-xs">
+        <aside className="absolute bottom-3 left-3 right-3 z-40 max-h-[min(60dvh,420px)] overflow-y-auto border-4 border-[var(--ink)] bg-[var(--paper)] p-3 font-mono text-[10px] font-black uppercase text-[var(--ink)] shadow-[6px_6px_0_var(--ink)] md:bottom-28 md:left-auto md:right-4 md:w-[min(360px,calc(100%-1.5rem))] md:text-xs">
           <button
             type="button"
             onClick={() => setSelectedLocationId(null)}
@@ -1067,7 +1067,7 @@ export function GeospatialMapWorkspace() {
       <div
         role="group"
         aria-label="Map view mode"
-        className="absolute right-4 top-4 z-20 flex border-4 border-black bg-white font-mono text-[10px] font-black uppercase shadow-[4px_4px_0_black] dark:border dark:border-[#598392] dark:bg-[#01161E] dark:shadow-[inset_0_0_14px_rgba(174,195,176,0.12),0_0_18px_rgba(1,22,30,0.72)] sm:text-xs"
+        className="absolute right-3 top-3 z-20 flex border-4 border-black bg-white font-mono text-[9px] font-black uppercase shadow-[4px_4px_0_black] dark:border dark:border-[#598392] dark:bg-[#01161E] dark:shadow-[inset_0_0_14px_rgba(174,195,176,0.12),0_0_18px_rgba(1,22,30,0.72)] sm:right-4 sm:top-4 sm:text-xs"
       >
         {(["2D", "3D"] as ViewMode[]).map((mode) => {
           const isActive = viewMode === mode;
@@ -1082,7 +1082,7 @@ export function GeospatialMapWorkspace() {
                 triggerHaptic("light");
                 changeViewMode(mode);
               }}
-              className={`px-3 py-2 sm:px-4 ${
+              className={`px-2 py-2 sm:px-4 ${
                 isActive
                   ? "bg-black text-white dark:bg-[#AEC3B0] dark:text-[#01161E] dark:[text-shadow:none]"
                   : "bg-white text-black dark:bg-transparent dark:text-[#EFF6E0] dark:[text-shadow:0_0_7px_rgba(174,195,176,0.38)]"
@@ -1136,7 +1136,7 @@ export function GeospatialMapWorkspace() {
           triggerHaptic("light");
           setIsMobileFiltersOpen(true);
         }}
-        className="absolute left-3 top-16 z-20 min-h-11 border-4 border-black bg-[#F4F4F0] px-3 font-mono text-[10px] font-black uppercase text-black shadow-[3px_3px_0_black] lg:hidden dark:border dark:border-[#598392] dark:bg-[#01161E] dark:text-[#AEC3B0] dark:shadow-[0_0_12px_rgba(1,22,30,0.75)]"
+        className="absolute left-3 top-16 z-20 min-h-11 max-w-[calc(100%-7rem)] truncate border-4 border-black bg-[#F4F4F0] px-3 font-mono text-[10px] font-black uppercase text-black shadow-[3px_3px_0_black] lg:hidden dark:border dark:border-[#598392] dark:bg-[#01161E] dark:text-[#AEC3B0] dark:shadow-[0_0_12px_rgba(1,22,30,0.75)]"
       >
         [ ACTIVE FILTERS ]
       </button>
@@ -1194,13 +1194,13 @@ export function GeospatialMapWorkspace() {
       {/* Playback bar */}
       <div
         data-testid="map-playback"
-        className="absolute bottom-3 left-3 right-3 z-10 border-4 border-[var(--ink)] bg-[var(--paper)] p-2 font-mono text-[10px] font-black uppercase shadow-[3px_3px_0_var(--ink)] md:bottom-4 md:right-4 md:p-3 md:text-xs md:shadow-[6px_6px_0_var(--ink)] lg:left-[370px]"
+        className="absolute bottom-3 left-3 right-3 z-10 border-4 border-[var(--ink)] bg-[var(--paper)] p-2 font-mono text-[9px] font-black uppercase shadow-[3px_3px_0_var(--ink)] md:bottom-4 md:right-4 md:p-3 md:text-xs md:shadow-[6px_6px_0_var(--ink)] lg:left-[370px]"
       >
-        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="flex items-center gap-2 md:gap-3">
           <button
             type="button"
             onClick={togglePlayback}
-            className="flex h-11 items-center justify-center gap-2 border-4 border-[var(--ink)] bg-[var(--danger)] px-4 text-[var(--paper)] shadow-[4px_4px_0_var(--ink)] active:translate-x-1 active:translate-y-1 active:shadow-none md:w-36"
+            className="flex h-11 shrink-0 items-center justify-center gap-2 border-4 border-[var(--ink)] bg-[var(--danger)] px-3 text-[var(--paper)] shadow-[4px_4px_0_var(--ink)] active:translate-x-1 active:translate-y-1 active:shadow-none md:w-36 md:px-4"
           >
             {isMapPlaying ? (
               <Pause aria-hidden="true" size={18} fill="currentColor" />

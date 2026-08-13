@@ -92,13 +92,13 @@ function FactLedgerView({
         ))}
       </div>
 
-      <table className="w-full border-collapse border-4 border-[var(--ink)] bg-[var(--panel)] text-left text-[11px] uppercase rounded-none">
+      <table className="w-full table-fixed border-collapse border-4 border-[var(--ink)] bg-[var(--panel)] text-left text-[11px] uppercase rounded-none">
         <thead>
           <tr>
             <th className="border-4 border-[var(--ink)] bg-[var(--ink)] px-2 py-2 align-top font-black text-[var(--paper)]">
               Fact
             </th>
-            <th className="w-[116px] border-4 border-[var(--ink)] bg-[var(--ink)] px-2 py-2 align-top font-black text-[var(--paper)]">
+            <th className="w-[92px] border-4 border-[var(--ink)] bg-[var(--ink)] px-2 py-2 align-top font-black text-[var(--paper)] sm:w-[116px]">
               Action
             </th>
           </tr>
@@ -106,7 +106,7 @@ function FactLedgerView({
         <tbody>
           {filteredFacts.map((fact) => (
             <tr key={fact.id}>
-              <td className="border-4 border-[var(--ink)] bg-[var(--paper)] px-2 py-2 align-top font-bold leading-tight">
+              <td className="break-words border-4 border-[var(--ink)] bg-[var(--paper)] px-2 py-2 align-top font-bold leading-tight">
                 <div className="mb-2 flex flex-wrap gap-1 text-[10px]">
                   <span className="border-2 border-[var(--ink)] bg-[var(--panel)] px-1 py-0.5">
                     {fact.type}

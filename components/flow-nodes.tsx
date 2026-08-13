@@ -30,7 +30,7 @@ function StickyNoteCard({
         : "";
 
   return (
-    <div className="relative h-48 w-48 border-2 border-[var(--ink)] bg-[var(--accent)] p-4 pt-6 shadow-[4px_4px_0_var(--ink)] rounded-none">
+    <div className="relative h-40 w-40 border-2 border-[var(--ink)] bg-[var(--accent)] p-3 pt-5 shadow-[4px_4px_0_var(--ink)] rounded-none sm:h-48 sm:w-48 sm:p-4 sm:pt-6">
       <NodeLockTag lockedBy={data.lockedBy} />
       <Handle
         className="w-3 h-3 bg-black border-2 border-black rounded-none dark:w-2 dark:h-2 dark:border-[#00FF41] dark:shadow-[0_0_5px_#00FF41] absolute -top-2"
@@ -98,7 +98,7 @@ export function PolaroidNode({ data }: NodeProps) {
   const caption = typeof data.caption === "string" ? data.caption : "UNTITLED";
 
   return (
-    <div className="relative w-56 border-2 border-[var(--ink)] bg-[var(--panel)] p-3 pb-4 shadow-[4px_4px_0_var(--ink)] rounded-none">
+    <div className="relative w-44 border-2 border-[var(--ink)] bg-[var(--panel)] p-3 pb-4 shadow-[4px_4px_0_var(--ink)] rounded-none sm:w-56">
       <NodeLockTag lockedBy={data.lockedBy} />
       <Handle
         className="w-3 h-3 bg-black border-2 border-black rounded-none dark:w-2 dark:h-2 dark:border-[#00FF41] dark:shadow-[0_0_5px_#00FF41] absolute -top-2"

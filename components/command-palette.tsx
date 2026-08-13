@@ -347,7 +347,7 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
             role="dialog"
             aria-modal="true"
             aria-label="Global intelligence command palette"
-            className="flex w-full max-w-[780px] flex-col overflow-hidden border-4 border-black bg-[#F4F4F0] font-mono text-black shadow-[4px_4px_0_black] max-md:fixed max-md:inset-0 max-md:h-full max-md:w-full max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:shadow-none md:shadow-[8px_8px_0_black] dark:border dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0] dark:shadow-[inset_0_0_20px_rgba(174,195,176,0.16),0_0_20px_rgba(1,22,30,0.7)] dark:[text-shadow:0_0_7px_rgba(174,195,176,0.38)]"
+            className="flex w-full max-w-[780px] flex-col overflow-hidden border-4 border-black bg-[#F4F4F0] font-mono text-black shadow-[4px_4px_0_black] max-md:fixed max-md:inset-0 max-md:h-dvh max-md:w-full max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:pb-[env(safe-area-inset-bottom)] max-md:pt-[env(safe-area-inset-top)] max-md:shadow-none md:shadow-[8px_8px_0_black] dark:border dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0] dark:shadow-[inset_0_0_20px_rgba(174,195,176,0.16),0_0_20px_rgba(1,22,30,0.7)] dark:[text-shadow:0_0_7px_rgba(174,195,176,0.38)]"
             initial={{ opacity: 0, scale: 0.88, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 5 }}

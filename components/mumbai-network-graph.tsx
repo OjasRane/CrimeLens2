@@ -331,7 +331,7 @@ const StoryNode = memo(function StoryNode({
       aria-label={`${data.typeLabel}: ${data.label}. ${data.subtitle}`}
       aria-expanded={data.expandable ? data.expanded : undefined}
       title={isLocation ? "Click to inspect location details" : undefined}
-      className={`nodrag nopan group relative ${heightClass} ${widthClass} rounded-none border-4 border-black ${isTeam || data.compact ? "p-2" : "p-3"} text-left font-mono uppercase shadow-[5px_5px_0_black] dark:border-[#598392] dark:shadow-[5px_5px_0_#01161E] ${palette}`}
+      className={`nodrag nopan group relative ${heightClass} ${widthClass} max-w-[72vw] rounded-none border-4 border-black ${isTeam || data.compact ? "p-2" : "p-3"} text-left font-mono uppercase shadow-[5px_5px_0_black] dark:border-[#598392] dark:shadow-[5px_5px_0_#01161E] ${palette}`}
       style={{
         opacity: isActive
           ? 1
@@ -1388,6 +1388,9 @@ export function MumbaiNetworkGraph({
           nodesFocusable={false}
           edgesFocusable={false}
           elementsSelectable={false}
+          panOnScroll
+          zoomOnPinch
+          zoomOnDoubleClick={false}
           onInit={setFlowInstance}
           onPaneClick={onPaneClick}
           className="bg-[#F4F4F0] dark:bg-[#01161E]"
@@ -1412,7 +1415,7 @@ export function MumbaiNetworkGraph({
                 [ + CONTEXT / EVIDENCE ]
               </button>
             ) : (
-              <div className="max-h-[min(72dvh,560px)] w-[min(370px,calc(100vw-2rem))] overflow-y-auto border-4 border-black bg-white font-mono text-black shadow-[7px_7px_0_black] dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0] dark:shadow-[7px_7px_0_#01161E]">
+              <div className="max-h-[min(45dvh,560px)] w-[min(370px,calc(100vw-1rem))] overflow-y-auto border-4 border-black bg-white font-mono text-black shadow-[7px_7px_0_black] sm:max-h-[min(72dvh,560px)] dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0] dark:shadow-[7px_7px_0_#01161E]">
                 <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b-4 border-black bg-black px-3 py-2.5 text-white dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0]">
                   <div>
                     <div className="text-[8px] font-black opacity-55">
@@ -1527,12 +1530,12 @@ export function MumbaiNetworkGraph({
           </Panel>
 
           {selectedPresentation ? (
-            <Panel position="bottom-left" className="m-3 md:m-4">
+            <Panel position="bottom-left" className="m-2 md:m-4">
               <div
-                className={`max-h-[min(52dvh,400px)] ${
+                className={`max-h-[min(38dvh,400px)] sm:max-h-[min(52dvh,400px)] ${
                   isLedgerOpen
-                    ? "w-[min(220px,calc(100vw-2rem))]"
-                    : "w-[min(320px,calc(100vw-2rem))]"
+                    ? "w-[min(220px,calc(100vw-1rem))]"
+                    : "w-[min(320px,calc(100vw-1rem))]"
                 } overflow-y-auto border-4 border-black bg-white font-mono text-black shadow-[6px_6px_0_black] dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0] dark:shadow-[6px_6px_0_#01161E]`}
               >
                 <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b-4 border-black bg-black px-3 py-2 text-white dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0]">

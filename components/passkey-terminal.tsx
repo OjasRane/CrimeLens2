@@ -344,7 +344,7 @@ export function PasskeyTerminal() {
 
   return (
     <main className="login-terminal min-h-screen w-full bg-[#F4F4F0] bg-[radial-gradient(#000000_1px,transparent_1px)] [background-size:24px_24px] font-mono uppercase tracking-[0.18em] text-black dark:bg-[#06141B] dark:bg-[radial-gradient(#EAE5C9_1px,transparent_1px)] dark:[background-size:24px_24px] dark:text-[#EAE5C9]">
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col justify-center gap-8 px-5 py-10 sm:px-8">
+      <div className="mx-auto flex min-h-dvh max-w-6xl flex-col justify-center gap-5 px-3 py-5 sm:gap-8 sm:px-8 sm:py-10">
         <div className="flex items-center justify-between gap-4 text-[10px] font-bold">
           <span className="bg-[#F4F4F0] px-2 py-1 tracking-[0.24em] dark:bg-[#06141B] sm:tracking-[0.32em]">
             SECURE // {isDark ? "EVIDENCE-LOCKER" : "EVIDENCE-BOARD"} MODE
@@ -365,16 +365,16 @@ export function PasskeyTerminal() {
         </div>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-          <section className={`flex flex-col gap-6 p-6 sm:p-8 ${panel}`}>
+          <section className={`flex flex-col gap-5 p-4 sm:gap-6 sm:p-8 ${panel}`}>
             <header className="flex flex-col gap-3">
               <div className="flex items-center gap-2 text-[9px] font-bold">
                 <span className="inline-block h-2 w-2 bg-black dark:bg-[#EAE5C9]" />
                 SECURE LINK // ROOT ACCESS // LOGIN
               </div>
-              <h1 className="font-serif text-3xl font-black leading-[0.95] tracking-[-0.035em] sm:text-4xl">
+              <h1 className="font-serif text-2xl font-black leading-[0.95] tracking-[-0.035em] sm:text-4xl">
                 GLOBAL INTEL INDEX
                 <br />
-                <span className="text-2xl sm:text-3xl">
+                <span className="text-xl sm:text-3xl">
                   // CLEARANCE TERMINAL V5.0
                 </span>
               </h1>
@@ -467,7 +467,7 @@ export function PasskeyTerminal() {
           </section>
 
           <section className="flex flex-col gap-6">
-            <div className={`relative aspect-square w-full overflow-hidden p-1 ${panel}`}>
+            <div className={`relative aspect-square w-full overflow-hidden p-1 max-[370px]:aspect-[4/5] ${panel}`}>
               <div className="relative flex h-full w-full flex-col overflow-hidden bg-white p-5 dark:bg-[#06141B] sm:p-10">
                 {["left-3 top-3", "right-3 top-3", "left-3 bottom-3", "right-3 bottom-3"].map(
                   (position, index) => (

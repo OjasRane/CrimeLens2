@@ -53,7 +53,7 @@ export function QRUplinkModal() {
     <AnimatePresence>
       {isOpen ? (
         <motion.div
-          className="fixed inset-0 z-[140] flex items-center justify-center bg-black/65 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-[140] flex items-center justify-center overflow-y-auto bg-black/65 p-2 backdrop-blur-md sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -66,7 +66,7 @@ export function QRUplinkModal() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="qr-uplink-title"
-            className="w-full max-w-md rounded-none border-4 border-black bg-[#F4F4F0] p-5 font-mono text-black shadow-[8px_8px_0_black] dark:border dark:border-[#426D79] dark:bg-[#08242D] dark:text-[#F4F1DC] dark:shadow-[4px_4px_0_#011015]"
+            className="max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto rounded-none border-4 border-black bg-[#F4F4F0] p-4 font-mono text-black shadow-[8px_8px_0_black] sm:p-5 dark:border dark:border-[#426D79] dark:bg-[#08242D] dark:text-[#F4F1DC] dark:shadow-[4px_4px_0_#011015]"
             initial={{ opacity: 0, scale: 0.9, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 6 }}
@@ -98,10 +98,11 @@ export function QRUplinkModal() {
             <div className="py-5">
               {roomId ? (
                 <>
-                  <div className="mx-auto w-fit border-4 border-black bg-[#F4F4F0] p-3 shadow-[4px_4px_0_black] dark:border-[#426D79] dark:shadow-[4px_4px_0_#011015]">
+                  <div className="mx-auto w-fit max-w-full border-4 border-black bg-[#F4F4F0] p-2 shadow-[4px_4px_0_black] sm:p-3 dark:border-[#426D79] dark:shadow-[4px_4px_0_#011015]">
                     <QRCodeSVG
                       value={uplinkUrl}
                       size={232}
+                      className="h-auto w-[min(232px,68vw)]"
                       level="M"
                       marginSize={1}
                       bgColor="#F4F4F0"

@@ -113,7 +113,7 @@ export function InvestigationSwitcher() {
         <div
           role="listbox"
           aria-label="Select investigation"
-          className="fixed left-2 top-[calc(env(safe-area-inset-top)+4.5rem)] z-[110] w-[min(340px,calc(100vw-1rem))] border-4 border-[var(--ink)] bg-[var(--paper)] p-2 text-[var(--ink)] shadow-[7px_7px_0_var(--ink)] md:absolute md:left-0 md:top-[calc(100%+10px)] md:w-[360px]"
+          className="fixed left-2 top-[calc(env(safe-area-inset-top)+7.75rem)] z-[110] max-h-[calc(100dvh-env(safe-area-inset-top)-12.5rem)] w-[min(340px,calc(100vw-1rem))] overflow-y-auto border-4 border-[var(--ink)] bg-[var(--paper)] p-2 text-[var(--ink)] shadow-[7px_7px_0_var(--ink)] md:absolute md:left-auto md:right-0 md:top-[calc(100%+10px)] md:max-h-[calc(100dvh-7rem)] md:w-[360px]"
         >
           <div className="mb-2 border-2 border-[var(--ink)] bg-[var(--ink)] px-3 py-2 text-xs font-black text-[var(--paper)]">
             [ SELECT INVESTIGATION ]
@@ -157,7 +157,7 @@ export function InvestigationSwitcher() {
         <div
           role="status"
           aria-live="polite"
-          className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+4.75rem)] z-[115] -translate-x-1/2 whitespace-nowrap border-4 border-[var(--ink)] bg-[var(--accent)] px-3 py-2 text-[10px] font-black text-[var(--ink)] shadow-[4px_4px_0_var(--ink)] md:top-24 md:text-xs"
+          className="fixed left-1/2 top-[calc(env(safe-area-inset-top)+7.75rem)] z-[115] max-w-[calc(100vw-1rem)] -translate-x-1/2 border-4 border-[var(--ink)] bg-[var(--accent)] px-3 py-2 text-center text-[10px] font-black text-[var(--ink)] shadow-[4px_4px_0_var(--ink)] md:top-24 md:max-w-none md:whitespace-nowrap md:text-xs"
         >
           {statusMessage}
         </div>

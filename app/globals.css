@@ -57,6 +57,7 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: "Courier New", Courier, monospace;
+  overscroll-behavior: none;
 }
 
 h1,
@@ -71,6 +72,14 @@ input,
 select,
 textarea {
   font: inherit;
+}
+
+button,
+[role="button"],
+input,
+select,
+textarea {
+  touch-action: manipulation;
 }
 
 .hide-scrollbar {
@@ -616,9 +625,38 @@ textarea {
 }
 
 @media (max-width: 767px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   button,
   [role="button"] {
     min-height: 44px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  .fatal-timeline-stage {
+    touch-action: pan-x pan-y pinch-zoom;
+  }
+
+  .react-flow__pane,
+  .mapboxgl-canvas,
+  .maplibregl-canvas {
+    touch-action: none;
+  }
+
+  .fatal-timeline-controls > *,
+  .fatal-timeline-legend-item {
+    flex-shrink: 0;
+  }
+
+  .fatal-inspector-action {
+    min-height: 44px !important;
   }
 
   .react-flow__controls-button {

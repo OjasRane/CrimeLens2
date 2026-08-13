@@ -74,8 +74,8 @@ function UplinkInterface({ roomId }: { roomId: string }) {
   const isDisabled = !isConnected || !intel.trim() || status !== "idle";
 
   return (
-    <main className="fixed inset-0 flex min-h-screen flex-col justify-center overflow-y-auto bg-[#031820] p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(1.5rem,env(safe-area-inset-top))] font-mono text-[#F4F1DC]">
-      <div className="mx-auto flex w-full max-w-lg flex-col gap-6">
+    <main className="fixed inset-0 flex min-h-dvh flex-col overflow-y-auto bg-[#031820] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] font-mono text-[#F4F1DC] sm:justify-center sm:p-6">
+      <div className="mx-auto flex w-full max-w-lg flex-col gap-4 py-2 sm:gap-6">
         <header className="border-l-2 border-[#32D6A0] pl-4">
           <p
             className={`text-xs font-bold uppercase tracking-[0.16em] ${
@@ -88,7 +88,7 @@ function UplinkInterface({ roomId }: { roomId: string }) {
               ? "[ SECURE UPLINK ESTABLISHED ]"
               : "[ ESTABLISHING SECURE UPLINK... ]"}
           </p>
-          <h1 className="mt-3 text-3xl font-black uppercase leading-none tracking-tight">
+          <h1 className="mt-3 text-2xl font-black uppercase leading-none tracking-tight sm:text-3xl">
             Field Intelligence Relay
           </h1>
           <p className="mt-3 text-xs uppercase tracking-[0.12em] text-[#6F8F96]">
@@ -108,9 +108,9 @@ function UplinkInterface({ roomId }: { roomId: string }) {
             value={intel}
             onChange={(event) => setIntel(event.target.value)}
             placeholder="ENTER FIELD INTELLIGENCE..."
-            rows={8}
+            rows={6}
             autoFocus
-            className="min-h-52 w-full resize-none rounded-none border border-[#426D79] bg-transparent p-4 text-base leading-relaxed text-[#F4F1DC] outline-none placeholder:text-[#6F8F96] focus:border-[#32D6A0] disabled:opacity-50"
+            className="min-h-36 w-full resize-y rounded-none border border-[#426D79] bg-transparent p-4 text-base leading-relaxed text-[#F4F1DC] outline-none placeholder:text-[#6F8F96] focus:border-[#32D6A0] disabled:opacity-50 sm:min-h-52 sm:resize-none"
             disabled={!isConnected || status !== "idle"}
           />
           <button

@@ -246,13 +246,13 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
   };
 
   return (
-    <main className="login-terminal min-h-screen bg-[#F4F4F0] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:24px_24px] px-5 py-10 font-mono uppercase tracking-[0.16em] text-black dark:bg-[#06141B] dark:bg-[radial-gradient(#EAE5C9_1px,transparent_1px)] dark:text-[#EAE5C9] sm:px-8">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-4xl flex-col justify-center gap-6">
-        <header className={`p-6 sm:p-8 ${panel}`}>
+    <main className="login-terminal min-h-dvh bg-[#F4F4F0] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:24px_24px] px-3 py-5 font-mono uppercase tracking-[0.1em] text-black dark:bg-[#06141B] dark:bg-[radial-gradient(#EAE5C9_1px,transparent_1px)] dark:text-[#EAE5C9] sm:px-8 sm:py-10 sm:tracking-[0.16em]">
+      <div className="mx-auto flex min-h-[calc(100dvh-2.5rem)] max-w-4xl flex-col justify-center gap-4 sm:min-h-[calc(100dvh-5rem)] sm:gap-6">
+        <header className={`p-4 sm:p-8 ${panel}`}>
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div>
               <p className="text-[9px] font-bold">SECURE LINK // AUTHENTICATOR CONTROL</p>
-              <h1 className="mt-3 font-serif text-3xl font-black leading-none tracking-[-0.03em] sm:text-5xl">
+              <h1 className="mt-3 break-words font-serif text-2xl font-black leading-none tracking-[-0.03em] sm:text-5xl">
                 SECURITY // PASSKEYS
               </h1>
               <p className="mt-4 max-w-2xl text-[9px] font-bold leading-5 opacity-70">
@@ -271,7 +271,7 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
             [ RESOLVING AUTHENTICATED SESSION... ]
           </section>
         ) : !authenticated && onboarding ? (
-          <section className={`flex flex-col gap-6 p-6 sm:p-8 ${panel}`}>
+          <section className={`flex flex-col gap-5 p-4 sm:gap-6 sm:p-8 ${panel}`}>
             <div className="border-l-4 border-black pl-4 dark:border-[#EAE5C9]">
               <h2 className="text-sm font-black">CONTROLLED INITIAL ENROLLMENT</h2>
               <p className="mt-3 text-[9px] font-bold leading-5 opacity-70">

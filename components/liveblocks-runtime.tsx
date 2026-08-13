@@ -120,7 +120,7 @@ function IncomingOverrideListener() {
         <motion.div
           role="status"
           aria-live="assertive"
-          className="fixed right-4 top-4 z-[120] flex max-w-[calc(100vw-2rem)] items-center gap-3 border-2 border-black bg-[#F4F4F0] px-4 py-3 font-mono text-xs font-black uppercase tracking-[0.12em] text-black shadow-[4px_4px_0_black] dark:border dark:border-[#598392] dark:bg-[#01161E] dark:text-[#AEC3B0] dark:shadow-[inset_0_0_18px_rgba(174,195,176,0.14),0_0_24px_rgba(1,22,30,0.7)] dark:[text-shadow:0_0_7px_rgba(174,195,176,0.45)] sm:right-6 sm:top-6 sm:text-sm"
+          className="fixed right-2 top-[calc(env(safe-area-inset-top)+7.75rem)] z-[120] flex max-w-[calc(100vw-1rem)] items-center gap-3 border-2 border-black bg-[#F4F4F0] px-3 py-3 font-mono text-[10px] font-black uppercase tracking-[0.08em] text-black shadow-[4px_4px_0_black] sm:right-6 sm:top-6 sm:px-4 sm:text-sm sm:tracking-[0.12em] dark:border dark:border-[#598392] dark:bg-[#01161E] dark:text-[#AEC3B0] dark:shadow-[inset_0_0_18px_rgba(174,195,176,0.14),0_0_24px_rgba(1,22,30,0.7)] dark:[text-shadow:0_0_7px_rgba(174,195,176,0.45)]"
           initial={{ opacity: 0, x: 24, scale: 0.96 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: 24 }}

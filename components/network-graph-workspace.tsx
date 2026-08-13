@@ -389,7 +389,7 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
       role="button"
       tabIndex={0}
       aria-label={`${data.kind}; ${data.label}; ${data.status ?? data.subtitle}`}
-      className={`group relative min-h-24 w-44 border-4 border-black p-3 font-mono uppercase shadow-[5px_5px_0_black] transition-all duration-300 rounded-none dark:border-[#598392] ${kindClasses} ${
+      className={`group relative min-h-20 w-36 border-4 border-black p-2 font-mono uppercase shadow-[5px_5px_0_black] transition-all duration-300 rounded-none sm:min-h-24 sm:w-44 sm:p-3 dark:border-[#598392] ${kindClasses} ${
         data.selected ? "scale-105" : ""
       }`}
       onClick={() => {
@@ -775,7 +775,7 @@ function NetworkGraphCanvas() {
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
             >
-              <div className="max-h-[min(60dvh,430px)]">{filterControls}</div>
+              <div className="max-h-[min(45dvh,430px)] sm:max-h-[min(60dvh,430px)]">{filterControls}</div>
             </motion.div>
           ) : null}
         </AnimatePresence>
@@ -791,11 +791,14 @@ function NetworkGraphCanvas() {
           edgeTypes={edgeTypes}
           fitView
           fitViewOptions={{ padding: 0.16 }}
-          minZoom={0.55}
+          minZoom={0.35}
           maxZoom={1.35}
           nodesDraggable={false}
           nodesConnectable={false}
           elementsSelectable
+          panOnScroll
+          zoomOnPinch
+          zoomOnDoubleClick={false}
           className="bg-[#F4F4F0] dark:bg-[#01161E]"
         >
           <Background
@@ -807,7 +810,7 @@ function NetworkGraphCanvas() {
 
           {selectedNode ? (
             <Panel position="bottom-right" className="m-0">
-              <div className="max-w-[320px] border-4 border-black bg-white p-3 font-mono text-xs font-black uppercase shadow-[6px_6px_0_black] dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0] dark:shadow-[6px_6px_0_#01161E]">
+              <div className="max-h-[45dvh] w-[min(320px,calc(100vw-1.5rem))] overflow-y-auto border-4 border-black bg-white p-3 font-mono text-xs font-black uppercase shadow-[6px_6px_0_black] dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0] dark:shadow-[6px_6px_0_#01161E]">
                 <div className="mb-2 flex items-center gap-2 border-b-2 border-black pb-2 dark:border-[#598392]">
                   <Phone aria-hidden="true" size={17} strokeWidth={3} />
                   Subject Locked

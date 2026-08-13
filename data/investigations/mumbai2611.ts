@@ -591,7 +591,7 @@ export const mumbai2611Investigation: Investigation = {
   slug: "mumbai-2611",
   name: "Mumbai 26/11 Attacks",
   shortName: "MUMBAI 26/11",
-  displayName: "MUMBAI 26/11",
+  displayName: "The Fatal Ledger",
   type: "HISTORICAL",
   deskLabel: "Case Desk / Historical Case",
   caseType: "COORDINATED TERROR ATTACK",

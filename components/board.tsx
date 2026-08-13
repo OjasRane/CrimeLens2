@@ -178,7 +178,7 @@ function EvidenceBox({
   }
 
   return (
-    <div className="absolute left-2 top-2 z-10 w-48 border-4 border-[var(--ink)] bg-[var(--panel)] p-2 font-mono shadow-[3px_3px_0_var(--ink)] rounded-none md:left-4 md:top-4 md:p-3 md:shadow-[4px_4px_0_var(--ink)]">
+    <div className="absolute left-2 top-2 z-10 w-[min(12rem,calc(100%-1rem))] border-4 border-[var(--ink)] bg-[var(--panel)] p-2 font-mono shadow-[3px_3px_0_var(--ink)] rounded-none md:left-4 md:top-4 md:p-3 md:shadow-[4px_4px_0_var(--ink)]">
       <button
         type="button"
         onClick={() =>
@@ -358,7 +358,7 @@ function BoardSurface({
       className="relative h-full w-full bg-[var(--paper)]"
     >
       <EvidenceBox onMobilePlace={handleMobilePlace} />
-      <div className="pointer-events-none absolute right-2 top-2 z-10 max-w-[calc(100%-13rem)] border-2 border-[var(--ink)] bg-[var(--paper)] px-2 py-2 text-right font-mono text-[9px] font-black uppercase shadow-[3px_3px_0_var(--ink)] md:right-4 md:top-4 md:text-[10px]">
+      <div className="pointer-events-none absolute right-2 top-2 z-10 max-w-[calc(100%-13rem)] border-2 border-[var(--ink)] bg-[var(--paper)] px-2 py-2 text-right font-mono text-[9px] font-black uppercase shadow-[3px_3px_0_var(--ink)] max-[390px]:hidden md:right-4 md:top-4 md:text-[10px]">
         <div>[ {activeInvestigation.shortName} ]</div>
         <div className="mt-1 hidden font-bold normal-case opacity-65 sm:block">
           Board storage follows the active collaboration room
@@ -376,6 +376,10 @@ function BoardSurface({
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         fitView
+        panOnScroll
+        selectionOnDrag={false}
+        zoomOnPinch
+        zoomOnDoubleClick={false}
         className="bg-[var(--paper)]"
       >
         <Background

@@ -23,7 +23,7 @@ export function MobileWorkspaceNav() {
   return (
     <nav
       aria-label="Mobile workspace"
-      className="hide-scrollbar fixed inset-x-0 bottom-[env(safe-area-inset-bottom)] z-[70] flex h-16 w-full overflow-x-auto whitespace-nowrap border-t-4 border-black bg-[#F4F4F0] p-2 font-mono shadow-[0_-4px_0_black] md:hidden dark:border-[#598392] dark:bg-[#01161E] dark:shadow-[0_-4px_16px_rgba(1,22,30,0.75)]"
+      className="fixed inset-x-0 bottom-[env(safe-area-inset-bottom)] z-[70] grid h-16 w-full grid-cols-4 border-t-4 border-black bg-[#F4F4F0] p-1 font-mono shadow-[0_-4px_0_black] md:hidden dark:border-[#598392] dark:bg-[#01161E] dark:shadow-[0_-4px_16px_rgba(1,22,30,0.75)]"
     >
       {mobileWorkspaces.map(({ id, label, icon: Icon }) => {
         const isActive = activeWorkspace === id;
@@ -37,7 +37,7 @@ export function MobileWorkspaceNav() {
               setActiveWorkspace(id);
             }}
             aria-current={isActive ? "page" : undefined}
-            className={`relative isolate flex min-h-11 min-w-[108px] shrink-0 items-center justify-center gap-2 overflow-hidden border-2 px-3 text-[11px] font-black uppercase dark:border-[#598392] ${
+            className={`relative isolate flex min-h-11 min-w-0 items-center justify-center gap-1 overflow-hidden border-2 px-1 text-[9px] font-black uppercase dark:border-[#598392] sm:gap-2 sm:text-[11px] ${
               isActive
                 ? "border-black bg-white text-white dark:bg-[#01161E] dark:text-[#AEC3B0]"
                 : "border-black bg-white text-black dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0]"
@@ -51,7 +51,7 @@ export function MobileWorkspaceNav() {
               />
             ) : null}
             <Icon aria-hidden="true" size={18} strokeWidth={2.5} />
-            <span>[ {label} ]</span>
+            <span>{label}</span>
           </button>
         );
       })}
