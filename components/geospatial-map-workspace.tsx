@@ -1,8 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Maximize2, Pause, Play, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Maximize2, Pause, Play, Plus, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import Map, { Marker } from "react-map-gl/maplibre";
 import { setWorkerUrl } from "maplibre-gl";
@@ -24,6 +24,25 @@ import {
   getLocationsForEntity,
 } from "@/data/investigations/registry";
 import type { InvestigationLocation } from "@/data/investigations/types";
+import {
+  InvestigationPinDeleteDialog,
+  InvestigationPinDetails,
+  InvestigationPinEditor,
+  InvestigationPinMarker,
+  TemporaryInvestigationPinMarker,
+  type PinLinkOption,
+} from "@/components/investigation-pin-panel";
+import {
+  createInvestigationPin,
+  deleteInvestigationPin,
+  listInvestigationPins,
+  PIN_CATEGORIES,
+  PIN_CATEGORY_DETAILS,
+  updateInvestigationPin,
+  type InvestigationPin,
+  type InvestigationPinCategory,
+  type InvestigationPinFormValues,
+} from "@/lib/investigation-pins";
 
 /* ─── Deck.gl imports ─────────────────────────── */
 
@@ -39,6 +58,8 @@ import {
 
 type ActiveLayerType = "PINS" | "HEAT" | "DENSITY" | "ROUTES";
 type ViewMode = "2D" | "3D";
+type PinVisibility = "all" | "system" | "user";
+type TemporaryPin = { latitude: number; longitude: number };
 
 /* ─── Types ───────────────────────────────────── */
 
@@ -403,6 +424,26 @@ export function GeospatialMapWorkspace() {
   const [viewMode, setViewMode] = useState<ViewMode>("2D");
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [hoveredRouteId, setHoveredRouteId] = useState<string | null>(null);
+  const [pins, setPins] = useState<InvestigationPin[]>([]);
+  const [pinsLoading, setPinsLoading] = useState(true);
+  const [pinsLoadError, setPinsLoadError] = useState<string | null>(null);
+  const [isAddPinMode, setIsAddPinMode] = useState(false);
+  const [temporaryPin, setTemporaryPin] = useState<TemporaryPin | null>(null);
+  const [selectedPinId, setSelectedPinId] = useState<string | null>(null);
+  const [pinEditorMode, setPinEditorMode] = useState<"create" | "edit" | null>(
+    null,
+  );
+  const [pinVisibility, setPinVisibility] = useState<PinVisibility>("all");
+  const [selectedPinCategories, setSelectedPinCategories] = useState<
+    InvestigationPinCategory[]
+  >([...PIN_CATEGORIES]);
+  const [pinMutationError, setPinMutationError] = useState<string | null>(null);
+  const [isSavingPin, setIsSavingPin] = useState(false);
+  const [deletePinId, setDeletePinId] = useState<string | null>(null);
+  const [isDeletingPin, setIsDeletingPin] = useState(false);
+  const [pinFeedback, setPinFeedback] = useState<string | null>(null);
+  const pinMutationInFlightRef = useRef(false);
+  const pinFeedbackTimerRef = useRef<number | null>(null);
 
   const [mounted, setMounted] = useState(false);
 
@@ -428,6 +469,92 @@ export function GeospatialMapWorkspace() {
     new Set(activeInvestigation.timeline.events.map((event) => event.date)),
   ).sort();
 
+  const pinLinkOptions = useMemo(
+    () => ({
+      evidence: activeInvestigation.graph.nodes
+        .filter((node) => node.kind === "evidence")
+        .map<PinLinkOption>((node) => ({ id: node.id, label: node.label })),
+      suspects: activeInvestigation.graph.nodes
+        .filter((node) =>
+          ["suspect", "attacker", "planner"].includes(node.kind),
+        )
+        .map<PinLinkOption>((node) => ({ id: node.id, label: node.label })),
+      timeline: activeInvestigation.timeline.events.map<PinLinkOption>(
+        (event) => ({ id: event.id, label: `${event.id} // ${event.title}` }),
+      ),
+    }),
+    [activeInvestigation],
+  );
+
+  const selectedPin = pins.find((pin) => pin.id === selectedPinId) ?? null;
+  const pinPendingDelete =
+    pins.find((pin) => pin.id === deletePinId) ?? null;
+  const pinOperationActive = isAddPinMode || pinEditorMode === "create";
+  const isAwaitingPinPlacement = isAddPinMode && !temporaryPin;
+
+  const showPinFeedback = useCallback((message: string) => {
+    setPinFeedback(message);
+    if (pinFeedbackTimerRef.current !== null) {
+      window.clearTimeout(pinFeedbackTimerRef.current);
+    }
+    pinFeedbackTimerRef.current = window.setTimeout(() => {
+      setPinFeedback(null);
+      pinFeedbackTimerRef.current = null;
+    }, 2200);
+  }, []);
+
+  const loadPins = useCallback(
+    async (signal?: AbortSignal) => {
+      setPinsLoading(true);
+      setPinsLoadError(null);
+      try {
+        const casePins = await listInvestigationPins(
+          activeInvestigationId,
+          signal,
+        );
+        setPins(casePins);
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setPins([]);
+        setPinsLoadError(
+          error instanceof Error
+            ? error.message
+            : "INVESTIGATION PINS COULD NOT BE LOADED",
+        );
+      } finally {
+        if (!signal?.aborted) setPinsLoading(false);
+      }
+    },
+    [activeInvestigationId],
+  );
+
+  const cancelPinOperation = useCallback(() => {
+    setIsAddPinMode(false);
+    setTemporaryPin(null);
+    setPinEditorMode((mode) => (mode === "create" ? null : mode));
+    setPinMutationError(null);
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setSelectedPinId(null);
+    setDeletePinId(null);
+    setPinEditorMode(null);
+    setTemporaryPin(null);
+    setIsAddPinMode(false);
+    void loadPins(controller.signal);
+    return () => controller.abort();
+  }, [loadPins]);
+
+  useEffect(
+    () => () => {
+      if (pinFeedbackTimerRef.current !== null) {
+        window.clearTimeout(pinFeedbackTimerRef.current);
+      }
+    },
+    [],
+  );
+
   const selectedCrimeTypes = useInvestigationStore((s) => s.selectedCrimeTypes);
   const setSelectedCrimeTypeEnabled = useInvestigationStore(
     (s) => s.setSelectedCrimeTypeEnabled,
@@ -449,6 +576,162 @@ export function GeospatialMapWorkspace() {
     (s) => s.setSelectedLocationId,
   );
   const clearAllFilters = useInvestigationStore((s) => s.clearAllFilters);
+
+  const beginOrCancelPinPlacement = useCallback(() => {
+    if (pinOperationActive) {
+      cancelPinOperation();
+      return;
+    }
+    triggerHaptic("light");
+    setActiveLayer("PINS");
+    setSelectedLocationId(null);
+    setSelectedPinId(null);
+    setDeletePinId(null);
+    setPinEditorMode(null);
+    setTemporaryPin(null);
+    setPinMutationError(null);
+    setIsAddPinMode(true);
+  }, [cancelPinOperation, pinOperationActive, setSelectedLocationId]);
+
+  const selectUserPin = useCallback(
+    (pinId: string) => {
+      triggerHaptic("light");
+      setSelectedLocationId(null);
+      setPinEditorMode(null);
+      setPinMutationError(null);
+      setSelectedPinId(pinId);
+    },
+    [setSelectedLocationId],
+  );
+
+  const handleMapPinPlacement = useCallback(
+    (info: { coordinate?: number[] }) => {
+      if (!isAwaitingPinPlacement || !info.coordinate) return;
+      const [longitude, latitude] = info.coordinate;
+      if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude) ||
+        latitude < -90 ||
+        latitude > 90 ||
+        longitude < -180 ||
+        longitude > 180
+      ) {
+        return;
+      }
+      triggerHaptic("heavy");
+      setTemporaryPin({ latitude, longitude });
+      setIsAddPinMode(false);
+      setPinEditorMode("create");
+      setPinMutationError(null);
+    },
+    [isAwaitingPinPlacement],
+  );
+
+  const savePin = useCallback(
+    async (values: InvestigationPinFormValues) => {
+      if (pinMutationInFlightRef.current) return;
+      const caseId = activeInvestigationId;
+      pinMutationInFlightRef.current = true;
+      setIsSavingPin(true);
+      setPinMutationError(null);
+
+      try {
+        if (pinEditorMode === "create" && temporaryPin) {
+          const created = await createInvestigationPin(caseId, {
+            ...values,
+            latitude: temporaryPin.latitude,
+            longitude: temporaryPin.longitude,
+          });
+          if (useInvestigationStore.getState().activeInvestigationId !== caseId) {
+            return;
+          }
+          setPins((current) => [...current, created]);
+          setSelectedPinId(created.id);
+          setTemporaryPin(null);
+          setPinEditorMode(null);
+          showPinFeedback("PIN ADDED");
+          return;
+        }
+
+        if (pinEditorMode === "edit" && selectedPin) {
+          const updated = await updateInvestigationPin(
+            caseId,
+            selectedPin.id,
+            values,
+          );
+          if (useInvestigationStore.getState().activeInvestigationId !== caseId) {
+            return;
+          }
+          setPins((current) =>
+            current.map((pin) => (pin.id === updated.id ? updated : pin)),
+          );
+          setPinEditorMode(null);
+          showPinFeedback("PIN UPDATED");
+        }
+      } catch (error) {
+        setPinMutationError(
+          error instanceof Error ? error.message : "PIN COULD NOT BE SAVED",
+        );
+      } finally {
+        pinMutationInFlightRef.current = false;
+        setIsSavingPin(false);
+      }
+    },
+    [
+      activeInvestigationId,
+      pinEditorMode,
+      selectedPin,
+      showPinFeedback,
+      temporaryPin,
+    ],
+  );
+
+  const confirmDeletePin = useCallback(async () => {
+    if (!pinPendingDelete || pinMutationInFlightRef.current) return;
+    const caseId = activeInvestigationId;
+    pinMutationInFlightRef.current = true;
+    setIsDeletingPin(true);
+    setPinMutationError(null);
+
+    try {
+      await deleteInvestigationPin(caseId, pinPendingDelete.id);
+      if (useInvestigationStore.getState().activeInvestigationId !== caseId) {
+        return;
+      }
+      setPins((current) =>
+        current.filter((pin) => pin.id !== pinPendingDelete.id),
+      );
+      setSelectedPinId(null);
+      setDeletePinId(null);
+      showPinFeedback("PIN DELETED");
+    } catch (error) {
+      setPinMutationError(
+        error instanceof Error ? error.message : "PIN COULD NOT BE DELETED",
+      );
+    } finally {
+      pinMutationInFlightRef.current = false;
+      setIsDeletingPin(false);
+    }
+  }, [activeInvestigationId, pinPendingDelete, showPinFeedback]);
+
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (deletePinId) {
+        setDeletePinId(null);
+        setPinMutationError(null);
+        return;
+      }
+      if (pinEditorMode === "edit") {
+        setPinEditorMode(null);
+        setPinMutationError(null);
+        return;
+      }
+      if (pinOperationActive) cancelPinOperation();
+    };
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [cancelPinOperation, deletePinId, pinEditorMode, pinOperationActive]);
 
   const selectedLocation = activeInvestigation.map.locations.find(
     (location) => location.id === selectedLocationId,
@@ -598,6 +881,23 @@ export function GeospatialMapWorkspace() {
       ),
     [activeLocations, playbackDate, selectedCrimeTypes, spatialBounds, timeRange],
   );
+  const visibleSystemLocations = useMemo(
+    () =>
+      visibleIncidents.map((location) => ({
+        ...location,
+        source: "system" as const,
+      })),
+    [visibleIncidents],
+  );
+
+  const visibleUserPins = useMemo(
+    () =>
+      pinVisibility === "system"
+        ? []
+        : pins.filter((pin) => selectedPinCategories.includes(pin.category)),
+    [pinVisibility, pins, selectedPinCategories],
+  );
+  const showSystemLocations = pinVisibility !== "user";
 
   const filterCounts = useMemo(
     () =>
@@ -863,6 +1163,9 @@ export function GeospatialMapWorkspace() {
               type="button"
               onClick={() => {
                 triggerHaptic("light");
+                if (pinOperationActive && layer !== "PINS") {
+                  cancelPinOperation();
+                }
                 setActiveLayer(layer);
               }}
               className={`min-h-11 border-2 border-[var(--ink)] px-2 py-2 text-left ${
@@ -907,6 +1210,104 @@ export function GeospatialMapWorkspace() {
           </label>
         );
       })}
+      <div className="border-t-4 border-[var(--ink)] pt-3">
+        <div className="mb-2 flex items-center justify-between">
+          <span>Pin Source</span>
+          <span className="text-[9px] opacity-60">{pins.length} USER</span>
+        </div>
+        <div className="grid grid-cols-3 gap-1" role="group" aria-label="Pin source visibility">
+          {(["all", "system", "user"] as PinVisibility[]).map((visibility) => (
+            <button
+              key={visibility}
+              type="button"
+              aria-pressed={pinVisibility === visibility}
+              onClick={() => {
+                triggerHaptic("light");
+                setPinVisibility(visibility);
+                setActiveLayer("PINS");
+              }}
+              className={`min-h-11 border-2 border-[var(--ink)] px-1 text-[9px] ${
+                pinVisibility === visibility
+                  ? "bg-[var(--ink)] text-[var(--paper)]"
+                  : "bg-[var(--panel)] text-[var(--ink)]"
+              }`}
+            >
+              {visibility === "all"
+                ? "ALL"
+                : visibility === "system"
+                  ? "SYSTEM"
+                  : "USER PINS"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-1">
+        {PIN_CATEGORIES.map((category) => {
+          const detail = PIN_CATEGORY_DETAILS[category];
+          const checked = selectedPinCategories.includes(category);
+          return (
+            <label
+              key={category}
+              className="flex min-h-11 cursor-pointer items-center gap-2 border-2 border-[var(--ink)] bg-[var(--panel)] px-2 py-1 text-[9px]"
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={(event) => {
+                  const enabled = event.target.checked;
+                  setSelectedPinCategories((current) =>
+                    enabled
+                      ? current.includes(category)
+                        ? current
+                        : [...current, category]
+                      : current.filter((item) => item !== category),
+                  );
+                }}
+                className="h-4 w-4 shrink-0 accent-[var(--accent)]"
+              />
+              <span
+                className="h-2.5 w-2.5 shrink-0 rotate-45 border border-current bg-current"
+                style={{ color: detail.color }}
+              />
+              <span>{detail.label}</span>
+            </label>
+          );
+        })}
+      </div>
+
+      <div className="border-2 border-[var(--ink)] bg-[var(--panel)] p-2 text-[9px]">
+        <div className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rotate-45 border border-[var(--ink)] bg-[var(--ink)]" />
+          SYSTEM LOCATION
+        </div>
+        <div className="mt-1 flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rotate-45 border-2 border-[var(--accent)]" />
+          USER-ADDED LOCATION
+        </div>
+      </div>
+
+      {pinsLoadError ? (
+        <div role="alert" className="border-2 border-[var(--danger)] bg-[var(--panel)] p-2 text-[var(--danger)]">
+          <div>INVESTIGATION PINS COULD NOT BE LOADED</div>
+          <div className="mt-1 normal-case opacity-75">{pinsLoadError}</div>
+          <button
+            type="button"
+            onClick={() => void loadPins()}
+            className="mt-2 min-h-11 border-2 border-current px-2"
+          >
+            [ Retry ]
+          </button>
+        </div>
+      ) : pinsLoading ? (
+        <div className="border-2 border-[var(--ink)] bg-[var(--panel)] p-2 text-[9px] opacity-70">
+          LOADING USER PINS...
+        </div>
+      ) : pins.length === 0 ? (
+        <div className="border-2 border-dashed border-[var(--ink)] bg-[var(--panel)] p-2 text-[9px] opacity-70">
+          NO USER PINS // USE + ADD PIN TO MARK A LOCATION
+        </div>
+      ) : null}
       <div className="grid grid-cols-2 gap-2 pt-1">
         <div className="flex min-h-11 items-center border-2 border-[var(--ink)] bg-[var(--panel)] px-2 py-2">
           Visible: {visibleIncidents.length}
@@ -916,6 +1317,8 @@ export function GeospatialMapWorkspace() {
           onClick={() => {
             triggerHaptic("light");
             clearAllFilters();
+            setPinVisibility("all");
+            setSelectedPinCategories([...PIN_CATEGORIES]);
           }}
           className="min-h-11 border-2 border-[var(--ink)] bg-[var(--accent)] px-2 py-2 text-left text-[var(--ink)] shadow-[3px_3px_0_var(--ink)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
         >
@@ -941,6 +1344,10 @@ export function GeospatialMapWorkspace() {
       <DeckGL
         viewState={viewState}
         onViewStateChange={onViewStateChange}
+        onClick={handleMapPinPlacement}
+        getCursor={({ isDragging }) =>
+          isAwaitingPinPlacement ? "crosshair" : isDragging ? "grabbing" : "grab"
+        }
         controller={true}
         layers={layers}
         effects={[lightingEffect]}
@@ -954,7 +1361,8 @@ export function GeospatialMapWorkspace() {
           attributionControl={false}
         >
           {activeLayer === "PINS" &&
-            visibleIncidents.map((incident) => (
+            showSystemLocations &&
+            visibleSystemLocations.map((incident) => (
               <Marker
                 key={incident.id}
                 longitude={incident.coordinates[0]}
@@ -964,8 +1372,12 @@ export function GeospatialMapWorkspace() {
                 <button
                   type="button"
                   aria-label={`${incident.title}; ${incident.type}; ${incident.timeLabel}`}
-                  onClick={() => {
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (pinOperationActive) return;
                     triggerHaptic("light");
+                    setSelectedPinId(null);
+                    setPinEditorMode(null);
                     setSelectedLocationId(incident.id);
                   }}
                   className="grid h-11 w-11 place-items-center focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FCD34D]"
@@ -982,6 +1394,31 @@ export function GeospatialMapWorkspace() {
                 </button>
               </Marker>
             ))}
+          {activeLayer === "PINS" &&
+            visibleUserPins.map((pin) => (
+              <Marker
+                key={pin.id}
+                longitude={pin.longitude}
+                latitude={pin.latitude}
+                anchor="bottom"
+              >
+                <InvestigationPinMarker
+                  pin={pin}
+                  selected={selectedPinId === pin.id}
+                  placementActive={pinOperationActive}
+                  onSelect={selectUserPin}
+                />
+              </Marker>
+            ))}
+          {temporaryPin ? (
+            <Marker
+              longitude={temporaryPin.longitude}
+              latitude={temporaryPin.latitude}
+              anchor="center"
+            >
+              <TemporaryInvestigationPinMarker />
+            </Marker>
+          ) : null}
         </Map>
       </DeckGL>
 
@@ -1000,7 +1437,7 @@ export function GeospatialMapWorkspace() {
         </div>
       ) : null}
 
-      {selectedLocation ? (
+      {selectedLocation && !selectedPin && !pinEditorMode ? (
         <aside className="absolute bottom-3 left-3 right-3 z-40 max-h-[min(60dvh,420px)] overflow-y-auto border-4 border-[var(--ink)] bg-[var(--paper)] p-3 font-mono text-[10px] font-black uppercase text-[var(--ink)] shadow-[6px_6px_0_var(--ink)] md:bottom-28 md:left-auto md:right-4 md:w-[min(360px,calc(100%-1.5rem))] md:text-xs">
           <button
             type="button"
@@ -1063,6 +1500,69 @@ export function GeospatialMapWorkspace() {
         </aside>
       ) : null}
 
+      {selectedPin && !pinEditorMode ? (
+        <InvestigationPinDetails
+          pin={selectedPin}
+          linkOptions={pinLinkOptions}
+          onClose={() => setSelectedPinId(null)}
+          onEdit={() => {
+            setPinMutationError(null);
+            setPinEditorMode("edit");
+          }}
+          onDelete={() => {
+            setPinMutationError(null);
+            setDeletePinId(selectedPin.id);
+          }}
+        />
+      ) : null}
+
+      {pinEditorMode === "create" && temporaryPin ? (
+        <InvestigationPinEditor
+          key={`create-${temporaryPin.latitude}-${temporaryPin.longitude}`}
+          mode="create"
+          latitude={temporaryPin.latitude}
+          longitude={temporaryPin.longitude}
+          linkOptions={pinLinkOptions}
+          isSaving={isSavingPin}
+          error={pinMutationError}
+          onCancel={cancelPinOperation}
+          onSave={savePin}
+        />
+      ) : null}
+
+      {pinEditorMode === "edit" && selectedPin ? (
+        <InvestigationPinEditor
+          key={`edit-${selectedPin.id}-${selectedPin.updatedAt}`}
+          mode="edit"
+          pin={selectedPin}
+          latitude={selectedPin.latitude}
+          longitude={selectedPin.longitude}
+          linkOptions={pinLinkOptions}
+          isSaving={isSavingPin}
+          error={pinMutationError}
+          onCancel={() => {
+            setPinEditorMode(null);
+            setPinMutationError(null);
+          }}
+          onSave={savePin}
+        />
+      ) : null}
+
+      {isAwaitingPinPlacement ? (
+        <div className="pointer-events-none absolute left-1/2 top-28 z-40 w-[min(390px,calc(100%-1.5rem))] -translate-x-1/2 border-4 border-[var(--ink)] bg-[var(--accent)] px-3 py-2 text-center font-mono text-[9px] font-black uppercase text-[var(--ink)] shadow-[4px_4px_0_var(--ink)] md:text-xs lg:top-28">
+          <div>+ ADD PIN MODE</div>
+          <div className="mt-1 text-[8px] opacity-70 md:text-[10px]">
+            CLICK OR TAP EMPTY MAP TO PLACE LOCATION // ESC TO CANCEL
+          </div>
+        </div>
+      ) : null}
+
+      {pinFeedback ? (
+        <div role="status" aria-live="polite" className="absolute left-1/2 top-3 z-[60] -translate-x-1/2 border-2 border-[var(--ink)] bg-[var(--accent)] px-3 py-2 font-mono text-[10px] font-black uppercase text-[var(--ink)] shadow-[3px_3px_0_var(--ink)] md:top-4">
+          [ {pinFeedback} ]
+        </div>
+      ) : null}
+
       {/* 2D / 3D camera mode */}
       <div
         role="group"
@@ -1100,8 +1600,12 @@ export function GeospatialMapWorkspace() {
           (layer) => (
             <button
               key={layer}
+              type="button"
               onClick={() => {
                 triggerHaptic("light");
+                if (pinOperationActive && layer !== "PINS") {
+                  cancelPinOperation();
+                }
                 setActiveLayer(layer);
               }}
               className={`px-3 py-2 transition-colors ${
@@ -1114,6 +1618,23 @@ export function GeospatialMapWorkspace() {
             </button>
           ),
         )}
+        <button
+          type="button"
+          aria-pressed={pinOperationActive}
+          onClick={beginOrCancelPinPlacement}
+          className={`flex items-center gap-1 border-l-2 px-3 py-2 transition-[transform,background-color,color] duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FCD34D] ${
+            pinOperationActive
+              ? "border-[#EFF6E0] bg-[#D22B2B] text-white"
+              : "border-[#598392] bg-[#FCD34D] text-black"
+          }`}
+        >
+          {pinOperationActive ? (
+            <X aria-hidden="true" size={14} strokeWidth={3} />
+          ) : (
+            <Plus aria-hidden="true" size={14} strokeWidth={3} />
+          )}
+          {pinOperationActive ? "CANCEL PIN" : "ADD PIN"}
+        </button>
       </div>
 
       {/* Border overlay */}
@@ -1130,16 +1651,35 @@ export function GeospatialMapWorkspace() {
         {filterPanelContent}
       </aside>
 
-      <button
-        type="button"
-        onClick={() => {
-          triggerHaptic("light");
-          setIsMobileFiltersOpen(true);
-        }}
-        className="absolute left-3 top-16 z-20 min-h-11 max-w-[calc(100%-7rem)] truncate border-4 border-black bg-[#F4F4F0] px-3 font-mono text-[10px] font-black uppercase text-black shadow-[3px_3px_0_black] lg:hidden dark:border dark:border-[#598392] dark:bg-[#01161E] dark:text-[#AEC3B0] dark:shadow-[0_0_12px_rgba(1,22,30,0.75)]"
-      >
-        [ ACTIVE FILTERS ]
-      </button>
+      <div className="absolute left-3 right-[4.25rem] top-16 z-20 flex min-w-0 font-mono text-[9px] font-black uppercase lg:hidden">
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic("light");
+            setIsMobileFiltersOpen(true);
+          }}
+          className="min-h-11 min-w-0 flex-1 truncate border-4 border-black bg-[#F4F4F0] px-2 text-black shadow-[3px_3px_0_black] dark:border-[#598392] dark:bg-[#01161E] dark:text-[#AEC3B0] dark:shadow-[0_0_12px_rgba(1,22,30,0.75)]"
+        >
+          [ FILTERS ]
+        </button>
+        <button
+          type="button"
+          aria-pressed={pinOperationActive}
+          onClick={beginOrCancelPinPlacement}
+          className={`ml-2 flex min-h-11 shrink-0 items-center gap-1 border-4 border-black px-2 shadow-[3px_3px_0_black] dark:border-[#598392] ${
+            pinOperationActive
+              ? "bg-[#D22B2B] text-white"
+              : "bg-[#FCD34D] text-black dark:bg-[#AEC3B0] dark:text-[#01161E]"
+          }`}
+        >
+          {pinOperationActive ? (
+            <X aria-hidden="true" size={13} strokeWidth={3} />
+          ) : (
+            <Plus aria-hidden="true" size={13} strokeWidth={3} />
+          )}
+          {pinOperationActive ? "CANCEL" : "ADD PIN"}
+        </button>
+      </div>
 
       <AnimatePresence>
         {isMobileFiltersOpen ? (
@@ -1229,6 +1769,19 @@ export function GeospatialMapWorkspace() {
           </label>
         </div>
       </div>
+
+      {pinPendingDelete ? (
+        <InvestigationPinDeleteDialog
+          pin={pinPendingDelete}
+          isDeleting={isDeletingPin}
+          error={pinMutationError}
+          onCancel={() => {
+            setDeletePinId(null);
+            setPinMutationError(null);
+          }}
+          onConfirm={() => void confirmDeletePin()}
+        />
+      ) : null}
     </div>
   );
 }

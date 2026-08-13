@@ -274,6 +274,9 @@ NEXT_PUBLIC_SITE_URL=https://crimelens.example.com
 
 # Protected FastAPI intelligence endpoint.
 NEXT_PUBLIC_TIMELINE_INTEL_URL=http://localhost:8000/api/v1/intel/timeline/SUSPECT-001
+
+# Authenticated FastAPI base URL for investigation-pin CRUD.
+NEXT_PUBLIC_CRIMELENS_API_URL=http://localhost:8000
 ```
 
 Liveblocks remains optional. Supabase configuration is required for the clearance terminal and protected investigation workspaces.
@@ -282,7 +285,7 @@ Liveblocks remains optional. Supabase configuration is required for the clearanc
 
 CrimeLens uses Supabase Auth as the only production identity and session authority. The browser asks Supabase for a challenge, the device authenticator signs it, Supabase verifies the assertion and issues the session JWT, and FastAPI validates that JWT before serving protected intelligence.
 
-1. Apply the migrations in `supabase/migrations`, including `20260813000000_create_authorized_profiles.sql`.
+1. Apply the migrations in `supabase/migrations`, including `20260813000000_create_authorized_profiles.sql` and `20260813010000_create_investigation_pins.sql`.
 2. In Supabase Dashboard, open **Authentication → Passkeys**, enable passkey authentication, and configure:
    - RP display name: `CrimeLens`
    - RP ID: the stable bare production domain, for example `crimelens.example.com`
@@ -338,6 +341,8 @@ The geospatial analysis workspace built on **MapLibre GL** (rendered via `react-
 
 **Controls:**
 - Filter by crime type (Burglary, Assault, Fraud, Robbery, Arson)
+- Add, inspect, filter, edit, and safely delete case-scoped investigator pins
+- Link user pins to existing evidence, suspects, and timeline events
 - Filter by date range and animated playback scrubber
 - Spatial bounding box draw (select area to filter)
 - 2D / 3D view toggle

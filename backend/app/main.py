@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from supabase import Client, create_client
 
 from .timeline_router import router as timeline_router
+from .pins_router import build_pins_router
 
 
 load_dotenv()
@@ -59,7 +60,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
@@ -197,3 +198,5 @@ app.include_router(
     timeline_router,
     dependencies=[Depends(require_active_profile)],
 )
+
+app.include_router(build_pins_router(require_active_profile))

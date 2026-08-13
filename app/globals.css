@@ -92,6 +92,44 @@ textarea {
   display: none;
 }
 
+/* ── Investigator-added map pins ─────────────── */
+
+.fatal-investigation-pin {
+  transform-origin: bottom center;
+  transition:
+    transform 160ms ease,
+    filter 160ms ease;
+}
+
+.fatal-investigation-pin:hover,
+.fatal-investigation-pin:focus-visible {
+  transform: scale(1.1) translateY(-1px);
+}
+
+.fatal-investigation-pin.is-selected {
+  filter: drop-shadow(0 0 5px var(--accent));
+  transform: scale(1.14) translateY(-2px);
+}
+
+.fatal-investigation-pin.is-selected > span:first-child {
+  border-width: 3px;
+}
+
+.fatal-pin-placement-marker > span:first-child {
+  animation: fatal-pin-placement-ring 260ms ease-out both;
+}
+
+@keyframes fatal-pin-placement-ring {
+  from {
+    opacity: 1;
+    transform: scale(0.2);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+
 /* ── React Flow ──────────────────────────────── */
 
 .react-flow__node {
@@ -668,7 +706,12 @@ textarea {
 
 @media (prefers-reduced-motion: reduce) {
   .fatal-terminal-cursor,
-  .fatal-command-radio {
+  .fatal-command-radio,
+  .fatal-pin-placement-marker > span:first-child {
     animation: none;
+  }
+
+  .fatal-investigation-pin {
+    transition: none;
   }
 }
