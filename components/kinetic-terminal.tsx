@@ -80,9 +80,9 @@ const physicalButton =
 
 const stabilityFrameTarget = 30;
 const verificationSampleTarget = 10;
-const verificationSampleStride = 8;
+const verificationSampleStride = 4;
 const enrollmentSampleTarget = 10;
-const enrollmentSampleStride = 8;
+const enrollmentSampleStride = 4;
 const handsPackageUrl =
   "https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240";
 const verificationEndpoint =
@@ -610,10 +610,10 @@ export function KineticTerminal() {
     }
     if (mode === "LOGIN" && !agentId.trim()) return "ENTER AGENT ID TO VERIFY";
     if (mode === "LOGIN" && verificationSampleCount < verificationSampleTarget) {
-      return `REPRODUCE PRIVATE GESTURE ${verificationSampleCount}/${verificationSampleTarget}`;
+      return `HOLD REGISTERED STATIC POSE ${verificationSampleCount}/${verificationSampleTarget}`;
     }
     if (mode === "ENROLL" && enrollmentSampleCount < enrollmentSampleTarget) {
-      return `RECORD PRIVATE GESTURE ${enrollmentSampleCount}/${enrollmentSampleTarget}`;
+      return `RECORD STATIC HAND POSE ${enrollmentSampleCount}/${enrollmentSampleTarget}`;
     }
     if (mode === "ENROLL" && !provisionToken.trim()) {
       return "AWAITING PROVISIONING TOKEN";
@@ -677,8 +677,8 @@ export function KineticTerminal() {
 
             <p className="border-2 border-dashed border-black bg-white px-4 py-3 text-[9px] font-bold leading-5 dark:border-[#EAE5C9] dark:bg-[#132E3A]">
               {mode === "LOGIN"
-                ? "AFTER STABILITY LOCK: REPRODUCE YOUR PRIVATE 10-STEP FINGER MOTION."
-                : "AFTER STABILITY LOCK: CREATE A PRIVATE 10-STEP FINGER MOTION. DO NOT USE A HELD POSE."}
+                ? "AFTER STABILITY LOCK: HOLD YOUR REGISTERED HAND POSE STILL UNTIL 10/10."
+                : "AFTER STABILITY LOCK: CHOOSE ONE DISTINCT HAND POSE AND HOLD IT STILL UNTIL 10/10."}
             </p>
 
             {mode === "LOGIN" ? (

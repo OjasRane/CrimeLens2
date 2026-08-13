@@ -264,12 +264,51 @@ Copy `.env.example` to `.env.local` and fill in the values:
 # Get one free at https://liveblocks.io/dashboard
 NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY=pk_dev_replace_me
 
-# The Liveblocks room ID all collaborators share.
-# You can override this via ?case=<id> in the URL.
-NEXT_PUBLIC_LIVEBLOCKS_ROOM_ID=case-tb-001041
+# Public browser credentials from Supabase Settings > API Keys.
+# Never put a secret/service-role key in NEXT_PUBLIC_*.
+NEXT_PUBLIC_SUPABASE_URL=https://project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_replace_me
+
+# Protected FastAPI intelligence endpoint.
+NEXT_PUBLIC_TIMELINE_INTEL_URL=http://localhost:8000/api/v1/intel/timeline/SUSPECT-001
 ```
 
-> **Note:** Liveblocks public keys are intentionally embedded in the browser bundle. The project ships a fallback dev key so the app works out-of-the-box in demo environments.
+Liveblocks remains optional. Supabase configuration is required for the clearance terminal and protected investigation workspaces.
+
+### Passkey / WebAuthn configuration
+
+CrimeLens uses Supabase Auth as the only production identity and session authority. The browser asks Supabase for a challenge, the device authenticator signs it, Supabase verifies the assertion and issues the session JWT, and FastAPI validates that JWT before serving protected intelligence.
+
+1. Apply the migrations in `supabase/migrations`, including `20260813000000_create_authorized_profiles.sql`.
+2. In Supabase Dashboard, open **Authentication → Passkeys**, enable passkey authentication, and configure:
+   - RP display name: `CrimeLens`
+   - RP ID: the stable bare production domain, for example `crimelens.example.com`
+   - RP origins: the exact HTTPS origins, for example `https://crimelens.example.com`
+3. Do not use a Vercel preview hostname or another changing URL as the production RP ID. Changing the RP ID invalidates existing passkeys.
+4. Add the production origin to `CORS_ORIGINS` in the FastAPI deployment.
+
+The checked-in `supabase/config.toml` enables passkeys for local Supabase development with `localhost` / `127.0.0.1`. WebAuthn works on supported localhost contexts; production requires HTTPS.
+
+### Enroll the first legitimate investigator
+
+Create or invite the user through the Supabase Dashboard, confirm their email, then insert their server-administered profile using the SQL editor or another service-role-only admin path:
+
+```sql
+insert into public.profiles (
+  user_id, agent_id, display_name, role, clearance, active
+)
+values (
+  '<auth.users.id>', 'CR-0174', 'Investigator Name', 'investigator', 'LEVEL RED', true
+);
+```
+
+Open `/enroll`, enter that existing account email, follow the confirmation link, and select **Register new passkey**. The enrollment page sets `shouldCreateUser: false`, requires a real Supabase session, and also requires an active server-controlled CrimeLens profile. It cannot create an investigator from a typed Agent ID.
+
+### Test authentication
+
+- Local: run the Supabase stack/config (or use a configured hosted project), start FastAPI from `backend`, then run `npm run dev` and open `http://localhost:3000` in a supported browser.
+- Production: deploy to the stable HTTPS origin configured as the RP origin, enroll a fresh production credential, verify login/cancel/no-credential cases, and call a protected FastAPI route with the Supabase access token.
+- Security check: `POST /api/v1/auth/verify-kinetic` returns `410 Gone` by default. Set `ENABLE_LEGACY_KINETIC_AUTH=false` in production. Even if explicitly enabled for an isolated legacy demo, its old token is not a Supabase session and is rejected by protected FastAPI routes.
 
 ---
 

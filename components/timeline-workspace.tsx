@@ -2,13 +2,32 @@
 
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, Eye, FileText, X, ZoomIn, ZoomOut } from "lucide-react";
+import {
+  ArrowLeft,
+  Camera,
+  Eye,
+  FileText,
+  Files,
+  MapPinned,
+  Network,
+  Radar,
+  X,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
+import { useTheme } from "next-themes";
+import { BlindSpotTimelineWorkspace } from "@/components/blind-spot-timeline-workspace";
+import { getInvestigation } from "@/data/investigations/registry";
+import type {
+  Investigation,
+  InvestigationTimelineEvent,
+  TimelineCategory,
+} from "@/data/investigations/types";
 import { useInvestigationStore } from "@/store/use-investigation-store";
 
 /* ─── TYPES ─────────────────────────────────────────────────── */
 
-type EventCategory =
-  "CALL" | "ARREST" | "EVIDENCE" | "CCTV" | "FORENSIC" | "ANALYSIS";
+type EventCategory = TimelineCategory;
 
 type TimelineEvent = {
   id: string;
@@ -18,7 +37,13 @@ type TimelineEvent = {
   category: EventCategory;
   title: string;
   description: string;
-  severity: number; // 1–10
+  severity: number;
+  timePrecision?: InvestigationTimelineEvent["timePrecision"];
+  confidence?: InvestigationTimelineEvent["confidence"];
+  sourceRef?: string;
+  timezone?: string;
+  linkedEntityIds?: string[];
+  linkedLocationIds?: string[];
 };
 
 type AnnotationType = "cctv" | "eyewitness" | "document";
@@ -238,6 +263,13 @@ const CATEGORY_COLORS: Record<EventCategory, string> = {
   CCTV: "#6366F1",
   FORENSIC: "#059669",
   ANALYSIS: "#D97706",
+  LANDING: "#FCD34D",
+  ATTACK: "#D22B2B",
+  MOVEMENT: "#6366F1",
+  POLICE: "#111111",
+  RESPONSE: "#111111",
+  SECONDARY: "#D97706",
+  CLEARANCE: "#059669",
 };
 
 const CATEGORY_DARK_STYLES: Record<
@@ -251,46 +283,95 @@ const CATEGORY_DARK_STYLES: Record<
   }
 > = {
   CALL: {
-    cardHover: "hover:dark:border-[#FF4D55] hover:dark:bg-[#1B5262]",
+    cardHover: "hover:dark:border-[#FF4D55] hover:dark:bg-[#12242C]",
     label: "dark:border-[#FF4D55] dark:text-[#FF4D55]",
     markerBorder: "dark:border-[#FF4D55]",
     markerActive: "scale-110",
     strip: "dark:!bg-[#FF4D55]",
   },
   ARREST: {
-    cardHover: "hover:dark:border-[#C5CBD0] hover:dark:bg-[#1B5262]",
+    cardHover: "hover:dark:border-[#C5CBD0] hover:dark:bg-[#12242C]",
     label: "dark:border-[#C5CBD0] dark:text-[#C5CBD0]",
     markerBorder: "dark:border-[#C5CBD0]",
     markerActive: "scale-110",
     strip: "dark:!bg-[#C5CBD0]",
   },
   EVIDENCE: {
-    cardHover: "hover:dark:border-[#FFD45A] hover:dark:bg-[#1B5262]",
+    cardHover: "hover:dark:border-[#FFD45A] hover:dark:bg-[#12242C]",
     label: "dark:border-[#FFD45A] dark:text-[#FFD45A]",
     markerBorder: "dark:border-[#FFD45A]",
     markerActive: "scale-110",
     strip: "dark:!bg-[#FFD45A]",
   },
   CCTV: {
-    cardHover: "hover:dark:border-[#7C83FF] hover:dark:bg-[#1B5262]",
+    cardHover: "hover:dark:border-[#7C83FF] hover:dark:bg-[#12242C]",
     label: "dark:border-[#7C83FF] dark:text-[#7C83FF]",
     markerBorder: "dark:border-[#7C83FF]",
     markerActive: "scale-110",
     strip: "dark:!bg-[#7C83FF]",
   },
   FORENSIC: {
-    cardHover: "hover:dark:border-[#32D6A0] hover:dark:bg-[#1B5262]",
+    cardHover: "hover:dark:border-[#32D6A0] hover:dark:bg-[#12242C]",
     label: "dark:border-[#32D6A0] dark:text-[#32D6A0]",
     markerBorder: "dark:border-[#32D6A0]",
     markerActive: "scale-110",
     strip: "dark:!bg-[#32D6A0]",
   },
   ANALYSIS: {
-    cardHover: "hover:dark:border-[#FF9F43] hover:dark:bg-[#1B5262]",
+    cardHover: "hover:dark:border-[#FF9F43] hover:dark:bg-[#12242C]",
     label: "dark:border-[#FF9F43] dark:text-[#FF9F43]",
     markerBorder: "dark:border-[#FF9F43]",
     markerActive: "scale-110",
     strip: "dark:!bg-[#FF9F43]",
+  },
+  LANDING: {
+    cardHover: "hover:dark:border-[#FFD45A] hover:dark:bg-[#12242C]",
+    label: "dark:border-[#FFD45A] dark:text-[#FFD45A]",
+    markerBorder: "dark:border-[#FFD45A]",
+    markerActive: "scale-110",
+    strip: "dark:!bg-[#FFD45A]",
+  },
+  ATTACK: {
+    cardHover: "hover:dark:border-[#FF4D55] hover:dark:bg-[#12242C]",
+    label: "dark:border-[#FF4D55] dark:text-[#FF4D55]",
+    markerBorder: "dark:border-[#FF4D55]",
+    markerActive: "scale-110",
+    strip: "dark:!bg-[#FF4D55]",
+  },
+  MOVEMENT: {
+    cardHover: "hover:dark:border-[#7C83FF] hover:dark:bg-[#12242C]",
+    label: "dark:border-[#7C83FF] dark:text-[#7C83FF]",
+    markerBorder: "dark:border-[#7C83FF]",
+    markerActive: "scale-110",
+    strip: "dark:!bg-[#7C83FF]",
+  },
+  POLICE: {
+    cardHover: "hover:dark:border-[#C5CBD0] hover:dark:bg-[#12242C]",
+    label: "dark:border-[#C5CBD0] dark:text-[#C5CBD0]",
+    markerBorder: "dark:border-[#C5CBD0]",
+    markerActive: "scale-110",
+    strip: "dark:!bg-[#C5CBD0]",
+  },
+  RESPONSE: {
+    cardHover: "hover:dark:border-[#C5CBD0] hover:dark:bg-[#12242C]",
+    label: "dark:border-[#C5CBD0] dark:text-[#C5CBD0]",
+    markerBorder: "dark:border-[#C5CBD0]",
+    markerActive: "scale-110",
+    strip: "dark:!bg-[#C5CBD0]",
+  },
+  SECONDARY: {
+    cardHover: "hover:dark:border-[#FF9F43] hover:dark:bg-[#12242C]",
+    label: "dark:border-[#FF9F43] dark:text-[#FF9F43]",
+    markerBorder: "dark:border-[#FF9F43]",
+    markerActive: "scale-110",
+    strip: "dark:!bg-[#FF9F43]",
+  },
+  CLEARANCE: {
+    cardHover: "hover:dark:border-[#32D6A0] hover:dark:bg-[#12242C]",
+    label: "dark:border-[#32D6A0] dark:text-[#32D6A0]",
+    markerBorder: "dark:border-[#32D6A0]",
+    markerActive: "scale-110",
+    strip: "dark:!bg-[#32D6A0]",
   },
 };
 
@@ -351,7 +432,15 @@ type CompressedLayout = {
   segments: { date: string; x: number; width: number; eventCount: number }[];
 };
 
-function computeCompressedLayout(events: TimelineEvent[]): CompressedLayout {
+function computeCompressedLayout(
+  events: TimelineEvent[],
+  options: {
+    baseDayWidth?: number;
+    denseBonus?: number;
+    eventNodeSpacing?: number;
+    outerPadding?: number;
+  } = {},
+): CompressedLayout {
   if (events.length === 0) {
     return { positions: new Map(), totalWidth: 0, segments: [] };
   }
@@ -370,13 +459,14 @@ function computeCompressedLayout(events: TimelineEvent[]): CompressedLayout {
   const positions = new Map<string, number>();
   const segments: CompressedLayout["segments"] = [];
 
-  const BASE_DAY_WIDTH = 120;
-  const DENSE_BONUS = 40; // extra width per event in a cluster
+  const BASE_DAY_WIDTH = options.baseDayWidth ?? 120;
+  const DENSE_BONUS = options.denseBonus ?? 40; // extra width per event in a cluster
   const MIN_GAP_WIDTH = 32;
   const MAX_GAP_WIDTH = 60;
-  const EVENT_NODE_SPACING = 56;
+  const EVENT_NODE_SPACING = options.eventNodeSpacing ?? 56;
+  const OUTER_PADDING = options.outerPadding ?? 60;
 
-  let cursor = 60; // left padding
+  let cursor = OUTER_PADDING;
 
   for (let i = 0; i < dates.length; i++) {
     const date = dates[i];
@@ -415,7 +505,7 @@ function computeCompressedLayout(events: TimelineEvent[]): CompressedLayout {
     }
   }
 
-  cursor += 60; // right padding
+  cursor += OUTER_PADDING;
 
   return { positions, totalWidth: cursor, segments };
 }
@@ -460,18 +550,20 @@ function AnnotationPanel({
   annotations,
   onAdd,
   onClose,
+  className = "",
 }: {
   event: TimelineEvent;
   annotations: Annotation[];
   onAdd: (type: AnnotationType, note: string) => void;
   onClose: () => void;
+  className?: string;
 }) {
   const [selectedType, setSelectedType] = useState<AnnotationType>("cctv");
   const [noteText, setNoteText] = useState("");
   const eventAnnotations = annotations.filter((a) => a.eventId === event.id);
 
   return (
-    <div className="absolute right-0 top-0 z-50 h-full w-[380px] overflow-y-auto border-l-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[-6px_0_0_black] dark:border-[#426D79] dark:bg-[#031820] dark:text-[#F4F1DC] dark:shadow-none">
+    <div className={`fatal-timeline-annotation absolute right-0 top-0 z-50 h-full w-[380px] overflow-y-auto border-l-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[-6px_0_0_black] dark:border-[#D8D3C7] dark:bg-[#081318] dark:text-[#F2EFE7] dark:shadow-[-7px_0_0_#010506] ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between border-b-4 border-black bg-black px-4 py-3 text-white dark:border-[#426D79] dark:bg-[#08242D] dark:text-[#F4F1DC]">
         <span>Annotate Event</span>
@@ -668,11 +760,12 @@ function DensityHeatmapView({
 
             <div className="flex flex-1 items-end w-full">
               <div
-                className={`w-full border-2 border-black transition-all cursor-crosshair dark:border-[#426D79] ${
+                className={`fatal-density-bar w-full border-2 border-black transition-all cursor-crosshair dark:border-[#34515A] ${
                   brushed
                     ? "border-[#D22B2B] dark:!border-[#FF4D55] dark:!bg-[#FF4D55]"
                     : "dark:!bg-[#144453]"
                 }`}
+                data-brushed={brushed}
                 style={{
                   height: `${Math.max(heightPct, 8)}%`,
                   backgroundColor: brushed
@@ -693,13 +786,210 @@ function DensityHeatmapView({
   );
 }
 
+function formatInspectorDate(date: string): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  })
+    .format(new Date(`${date}T00:00:00Z`))
+    .toUpperCase();
+}
+
+function EventInspector({
+  event,
+  investigation,
+  onClear,
+  onAnnotate,
+}: {
+  event: TimelineEvent;
+  investigation: Investigation;
+  onClear: () => void;
+  onAnnotate: () => void;
+}) {
+  const setActiveWorkspace = useInvestigationStore(
+    (state) => state.setActiveWorkspace,
+  );
+  const setSelectedEntityId = useInvestigationStore(
+    (state) => state.setSelectedEntityId,
+  );
+  const setSelectedLocationId = useInvestigationStore(
+    (state) => state.setSelectedLocationId,
+  );
+  const requestMapPan = useInvestigationStore((state) => state.requestMapPan);
+  const openLedger = useInvestigationStore((state) => state.openLedger);
+
+  const linkedLocations = investigation.map.locations.filter((location) =>
+    event.linkedLocationIds?.includes(location.id),
+  );
+  const linkedRoutes = investigation.map.routes.filter(
+    (route) =>
+      route.locationIds.some((id) => event.linkedLocationIds?.includes(id)) ||
+      route.memberEntityIds.some((id) => event.linkedEntityIds?.includes(id)),
+  );
+  const linkedFacts = investigation.facts.filter((fact) =>
+    fact.linkedTimelineEventIds.includes(event.id),
+  );
+  const primaryLocation = linkedLocations[0];
+  const networkTarget =
+    event.linkedEntityIds?.[0] ??
+    primaryLocation?.graphNodeId ??
+    primaryLocation?.id;
+  const sourceLabel =
+    linkedFacts[0]?.sourceTitle ??
+    (event.sourceRef ? new URL(event.sourceRef).hostname : investigation.badge);
+
+  return (
+    <motion.aside
+      aria-label={`Event inspector for ${event.title}`}
+      className="fatal-event-inspector absolute inset-x-4 bottom-3 z-40 border-2 border-[#D8D3C7] bg-[#0D1A20] text-[#F2EFE7] shadow-[7px_7px_0_#010506]"
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.18, ease: "easeOut" }}
+    >
+      <div className="flex items-center justify-between border-b border-[#34515A] bg-[#050B0E] px-3 py-2 font-mono text-[9px] font-black uppercase tracking-[0.14em] text-[#AFAFA7]">
+        <span>
+          Event // <span className="text-[#F2EFE7]">{event.id}</span>
+        </span>
+        <button
+          type="button"
+          onClick={onClear}
+          className="flex items-center gap-1.5 border border-[#D8D3C7] bg-[#0D1A20] px-2 py-1 text-[9px] text-[#F2EFE7] transition-colors duration-150 hover:bg-[#F2EFE7] hover:text-[#050B0E]"
+        >
+          <X aria-hidden="true" className="size-3" strokeWidth={3} />
+          Clear Focus
+        </button>
+      </div>
+
+      <div className="grid grid-cols-[minmax(0,1.25fr)_minmax(330px,1fr)] gap-4 px-3 py-3">
+        <div className="min-w-0">
+          <div className="mb-1.5 flex flex-wrap items-center gap-2 font-mono font-black uppercase">
+            <span className="text-base tabular-nums text-[#F2EFE7]">
+              {event.time}
+            </span>
+            <span
+              className={`border bg-[#050B0E] px-1.5 py-0.5 text-[9px] ${CATEGORY_DARK_STYLES[event.category].label}`}
+            >
+              {event.category}
+            </span>
+            <span className="border border-[#34515A] px-1.5 py-0.5 text-[9px] text-[#AFAFA7]">
+              {event.timePrecision ?? "EXACT"}
+            </span>
+          </div>
+          <h3 className="truncate font-mono text-sm font-black uppercase tracking-[0.02em] text-[#F2EFE7]">
+            {event.title}
+          </h3>
+          <p className="mt-1 line-clamp-2 font-mono text-[10px] font-bold leading-relaxed text-[#AFAFA7]">
+            {event.description}
+          </p>
+        </div>
+
+        <div className="flex min-w-0 flex-col justify-between gap-2">
+          <dl className="grid grid-cols-4 gap-x-3 font-mono text-[9px] uppercase">
+            <div className="min-w-0 border-l border-[#34515A] pl-2">
+              <dt className="text-[#70878D]">Location</dt>
+              <dd className="mt-0.5 truncate font-black text-[#F2EFE7]">
+                {linkedLocations.map((location) => location.title).join(" / ") ||
+                  "—"}
+              </dd>
+            </div>
+            <div className="min-w-0 border-l border-[#34515A] pl-2">
+              <dt className="text-[#70878D]">Date</dt>
+              <dd className="mt-0.5 truncate font-black text-[#F2EFE7]">
+                {formatInspectorDate(event.date)}
+              </dd>
+            </div>
+            <div className="min-w-0 border-l border-[#34515A] pl-2">
+              <dt className="text-[#70878D]">Related Team</dt>
+              <dd className="mt-0.5 truncate font-black text-[#F2EFE7]">
+                {Array.from(new Set(linkedRoutes.map((route) => route.label))).join(
+                  " / ",
+                ) || "—"}
+              </dd>
+            </div>
+            <div className="min-w-0 border-l border-[#34515A] pl-2">
+              <dt className="text-[#70878D]">Source</dt>
+              <dd className="mt-0.5 truncate font-black text-[#F2EFE7]">
+                {sourceLabel}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="flex flex-wrap justify-end gap-2 font-mono text-[9px] font-black uppercase">
+            {primaryLocation ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedLocationId(primaryLocation.id);
+                  if (primaryLocation.coordinates) {
+                    requestMapPan(primaryLocation.coordinates, primaryLocation.id);
+                  }
+                  setActiveWorkspace("map");
+                }}
+                className="fatal-inspector-action"
+              >
+                <MapPinned aria-hidden="true" className="size-3" />
+                View on Map
+              </button>
+            ) : null}
+            {networkTarget ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedEntityId(networkTarget);
+                  setActiveWorkspace("network");
+                }}
+                className="fatal-inspector-action"
+              >
+                <Network aria-hidden="true" className="size-3" />
+                View Network
+              </button>
+            ) : null}
+            {linkedFacts.length > 0 ? (
+              <button
+                type="button"
+                onClick={openLedger}
+                className="fatal-inspector-action"
+              >
+                <Files aria-hidden="true" className="size-3" />
+                Related Evidence ({linkedFacts.length})
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={onAnnotate}
+              className="fatal-inspector-action"
+            >
+              <FileText aria-hidden="true" className="size-3" />
+              Add Note
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.aside>
+  );
+}
+
 /* ─── MAIN TIMELINE COMPONENT ────────────────────────────────── */
 
 export function TimelineWorkspace() {
+  const { resolvedTheme } = useTheme();
+  const isDarkMode = resolvedTheme === "dark";
+  const activeInvestigationId = useInvestigationStore(
+    (state) => state.activeInvestigationId,
+  );
+  const activeInvestigation = getInvestigation(activeInvestigationId);
   const timeRange = useInvestigationStore((state) => state.timeRange);
   const setTimeRange = useInvestigationStore((state) => state.setTimeRange);
-  const selectedSuspectId = useInvestigationStore(
-    (state) => state.selectedSuspectId,
+  const selectedEntityId = useInvestigationStore(
+    (state) => state.selectedEntityId,
+  );
+  const selectedTimelineEventId = useInvestigationStore(
+    (state) => state.selectedTimelineEventId,
+  );
+  const setSelectedTimelineEventId = useInvestigationStore(
+    (state) => state.setSelectedTimelineEventId,
   );
 
   const [zoomLevel, setZoomLevel] = useState(1); // 0 = heatmap, 1–3 = detail zoom
@@ -712,35 +1002,114 @@ export function TimelineWorkspace() {
   const [brushStart, setBrushStart] = useState<number | null>(null);
   const [brushEnd, setBrushEnd] = useState<number | null>(null);
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null);
+  const [hoveredCategory, setHoveredCategory] =
+    useState<EventCategory | null>(null);
+  const [showDarkAnnotationPanel, setShowDarkAnnotationPanel] = useState(false);
+  const [showBlindSpotDetector, setShowBlindSpotDetector] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isDraggingBrush = useRef(false);
 
-  // Suspect-linked timeline event IDs for highlighting
-  const suspectLinkedEvents = useMemo(
+  useEffect(() => {
+    setZoomLevel(1);
+    setSelectedEvent(null);
+    setAnnotations([]);
+    setBrushActive(false);
+    setBrushStart(null);
+    setBrushEnd(null);
+    setHoveredCategory(null);
+    setShowDarkAnnotationPanel(false);
+    setShowBlindSpotDetector(false);
+  }, [activeInvestigationId]);
+
+  const investigationEvents = useMemo<TimelineEvent[]>(
     () =>
-      selectedSuspectId
-        ? new Set(suspectTimelineLinks[selectedSuspectId] ?? [])
-        : null,
-    [selectedSuspectId],
+      activeInvestigation.timeline.events.map((event) => ({
+        id: event.id,
+        date: event.date,
+        time: event.time,
+        timestamp:
+          new Date(`${event.date}T00:00:00+05:30`).getTime() + event.sortOrder,
+        category: event.category,
+        title: event.title,
+        description: event.description,
+        severity: event.severity,
+        timePrecision: event.timePrecision,
+        confidence: event.confidence,
+        sourceRef: event.sourceRef,
+        timezone: event.timezone,
+        linkedEntityIds: event.linkedEntityIds,
+        linkedLocationIds: event.linkedLocationIds,
+      })),
+    [activeInvestigation],
+  );
+
+  const timelineEvents =
+    activeInvestigationId === "demo" ? EVENTS : investigationEvents;
+
+  useEffect(() => {
+    if (!selectedTimelineEventId) {
+      setSelectedEvent(null);
+      return;
+    }
+
+    setSelectedEvent(
+      timelineEvents.find((event) => event.id === selectedTimelineEventId) ??
+        null,
+    );
+  }, [selectedTimelineEventId, timelineEvents]);
+
+  // Entity-linked timeline event IDs for highlighting
+  const suspectLinkedEvents = useMemo(
+    () => {
+      if (!selectedEntityId) return null;
+      if (activeInvestigationId === "demo") {
+        return new Set(suspectTimelineLinks[selectedEntityId] ?? []);
+      }
+      return new Set(
+        investigationEvents
+          .filter(
+            (event) =>
+              event.linkedEntityIds?.includes(selectedEntityId) ||
+              event.linkedLocationIds?.includes(selectedEntityId),
+          )
+          .map((event) => event.id),
+      );
+    }, [activeInvestigationId, investigationEvents, selectedEntityId],
   );
 
   // Filter events by current time range
   const filteredEvents = useMemo(
     () =>
-      EVENTS.filter((e) => e.date >= timeRange[0] && e.date <= timeRange[1]),
-    [timeRange],
+      timelineEvents.filter(
+        (event) => event.date >= timeRange[0] && event.date <= timeRange[1],
+      ),
+    [timeRange, timelineEvents],
   );
 
-  const layout = useMemo(
-    () => computeCompressedLayout(filteredEvents),
-    [filteredEvents],
-  );
+  const layout = useMemo(() => {
+    if (!isDarkMode) return computeCompressedLayout(filteredEvents);
+
+    return computeCompressedLayout(filteredEvents, {
+      baseDayWidth: 184,
+      denseBonus: 148,
+      eventNodeSpacing: 178,
+      outerPadding: 96,
+    });
+  }, [filteredEvents, isDarkMode]);
 
   const densityBuckets = useMemo(
     () => computeDensityBuckets(filteredEvents),
     [filteredEvents],
   );
+  const visibleCategories = useMemo(
+    () => new Set(timelineEvents.map((event) => event.category)),
+    [timelineEvents],
+  );
+  const focusedDate = selectedEvent?.date ?? null;
+  const hoveredDate = hoveredEvent
+    ? filteredEvents.find((event) => event.id === hoveredEvent)?.date ?? null
+    : null;
 
   const scaledWidth = layout.totalWidth * zoomLevel;
 
@@ -833,25 +1202,62 @@ export function TimelineWorkspace() {
 
   const isHeatmapMode = zoomLevel === 0;
 
+  if (showBlindSpotDetector) {
+    return (
+      <div className="relative h-full min-h-0">
+        <BlindSpotTimelineWorkspace />
+        <button
+          type="button"
+          onClick={() => setShowBlindSpotDetector(false)}
+          className="absolute right-16 top-3 z-30 flex h-9 items-center gap-2 border-2 border-white bg-black px-3 font-mono text-[10px] font-black uppercase text-white shadow-[3px_3px_0_#EF4444] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none sm:right-20 dark:border-[#EAE5C9] dark:bg-[#06141B] dark:text-[#EAE5C9]"
+        >
+          <ArrowLeft aria-hidden="true" className="size-4" strokeWidth={3} />
+          <span className="hidden sm:inline">Back to Timeline</span>
+          <span className="sm:hidden">Back</span>
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-[#F4F4F0] dark:bg-[#031820]">
+    <div
+      className={`fatal-timeline-root relative flex h-full flex-col overflow-hidden bg-[#F4F4F0] dark:bg-[#050B0E] ${
+        isDarkMode && selectedEvent ? "fatal-timeline-focused" : ""
+      }`}
+    >
       {/* ─── TOP TOOLBAR ──────────────────────────── */}
-      <div className="shrink-0 border-b-4 border-black bg-[#F4F4F0] dark:border-b-[1px] dark:border-[#426D79] dark:bg-[#08242D]">
-        <div className="flex items-center justify-between border-b-4 border-black bg-black px-4 py-3 dark:border-b-[1px] dark:border-[#426D79] dark:bg-[#08242D]">
-          <h2 className="font-serif text-2xl font-black uppercase leading-none text-white md:text-3xl dark:text-[#F4F1DC]">
+      <div className="fatal-timeline-toolbar shrink-0 border-b-4 border-black bg-[#F4F4F0] dark:border-b dark:border-[#34515A] dark:bg-[#0D1A20]">
+        <div className="fatal-timeline-commandbar flex items-center justify-between border-b-4 border-black bg-black px-4 py-3 dark:border-b dark:border-[#34515A] dark:bg-[#050B0E]">
+          <h2 className="fatal-timeline-title font-serif text-2xl font-black uppercase leading-none text-white md:text-3xl dark:text-[#F2EFE7]">
             Timeline Analysis
           </h2>
-          <div className="flex items-center gap-2 font-mono text-[10px] font-black uppercase text-white dark:text-[#F4F1DC]">
-            <span className="hidden md:inline">
+          <div className="flex items-center gap-2 font-mono text-[10px] font-black uppercase text-white dark:text-[#F2EFE7]">
+            <button
+              type="button"
+              onClick={() => setShowBlindSpotDetector(true)}
+              disabled={activeInvestigationId === "mumbai-2611"}
+              className="fatal-historical-badge mr-1 flex h-8 items-center gap-1.5 border-2 border-[#EF4444] bg-[#EF4444] px-2.5 text-[9px] font-black uppercase tracking-[0.08em] text-white transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 dark:border-[#D8D3C7] dark:bg-[#0D1A20] dark:text-[#F2EFE7]"
+            >
+              <Radar aria-hidden="true" className="size-3.5" strokeWidth={3} />
+              <span className="hidden sm:inline">
+                {activeInvestigationId === "mumbai-2611"
+                  ? "Historical Record"
+                  : "Blind-Spot Detector"}
+              </span>
+              <span className="sm:hidden">
+                {activeInvestigationId === "mumbai-2611" ? "Record" : "Blind Spots"}
+              </span>
+            </button>
+            <span className="fatal-events-loaded hidden md:inline dark:text-[#AFAFA7]">
               {filteredEvents.length} Events Loaded
             </span>
-            <span className="inline-block h-2 w-2 bg-[#D22B2B] dark:h-3 dark:w-3 dark:animate-pulse dark:rounded-none dark:bg-[#FF4D55] dark:shadow-none" />
-            <span>LIVE</span>
+            <span className="inline-block h-2 w-2 bg-[#D22B2B] dark:h-2 dark:w-2 dark:rounded-none dark:bg-[#FF4D55] dark:shadow-none" />
+            <span className="dark:text-[#AFAFA7]">LIVE</span>
           </div>
         </div>
 
         {/* Controls strip */}
-        <div className="flex flex-wrap items-center gap-3 px-4 py-3 font-mono text-xs font-black uppercase dark:text-[#F4F1DC]">
+        <div className="fatal-timeline-controls flex flex-wrap items-center gap-3 px-4 py-3 font-mono text-xs font-black uppercase dark:text-[#F2EFE7]">
           {/* Date range */}
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-1">
@@ -860,7 +1266,7 @@ export function TimelineWorkspace() {
                 type="date"
                 value={timeRange[0]}
                 onChange={(e) => setTimeRange([e.target.value, timeRange[1]])}
-                className="border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none dark:border-[1px] dark:border-[#426D79] dark:bg-[#031820] dark:text-[#F4F1DC] dark:shadow-none"
+                className="fatal-timeline-control border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none dark:border dark:border-[#D8D3C7] dark:bg-[#081318] dark:text-[#F2EFE7] dark:shadow-none"
               />
             </label>
             <span className="text-black/40 dark:text-[#6F8F96]">→</span>
@@ -870,12 +1276,12 @@ export function TimelineWorkspace() {
                 type="date"
                 value={timeRange[1]}
                 onChange={(e) => setTimeRange([timeRange[0], e.target.value])}
-                className="border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none dark:border-[1px] dark:border-[#426D79] dark:bg-[#031820] dark:text-[#F4F1DC] dark:shadow-none"
+                className="fatal-timeline-control border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none dark:border dark:border-[#D8D3C7] dark:bg-[#081318] dark:text-[#F2EFE7] dark:shadow-none"
               />
             </label>
           </div>
 
-          <div className="h-6 w-[4px] bg-black hidden md:block dark:bg-[#426D79]" />
+          <div className="h-6 w-[4px] bg-black hidden md:block dark:w-px dark:bg-[#34515A]" />
 
           {/* Zoom controls */}
           <div className="flex items-center gap-2">
@@ -885,11 +1291,11 @@ export function TimelineWorkspace() {
             <button
               type="button"
               onClick={() => setZoomLevel((z) => Math.max(z - 0.5, 0))}
-              className="flex h-8 w-8 items-center justify-center border-4 border-black bg-white shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[1px] dark:border-[#426D79] dark:bg-[#031820] dark:shadow-none"
+              className="fatal-timeline-control flex h-8 w-8 items-center justify-center border-4 border-black bg-white shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border dark:border-[#D8D3C7] dark:bg-[#081318] dark:shadow-none"
             >
               <ZoomOut size={14} strokeWidth={3} />
             </button>
-            <div className="flex h-8 w-28 items-center border-4 border-black bg-white px-1 dark:border-[1px] dark:border-[#426D79] dark:bg-[#031820]">
+            <div className="fatal-timeline-control flex h-8 w-28 items-center border-4 border-black bg-white px-1 dark:border dark:border-[#D8D3C7] dark:bg-[#081318]">
               <div className="relative h-1 w-full bg-black/20 dark:bg-[#426D79]/30">
                 <div
                   className="absolute left-0 top-0 h-full bg-black transition-all dark:bg-[#426D79]"
@@ -907,16 +1313,16 @@ export function TimelineWorkspace() {
             <button
               type="button"
               onClick={() => setZoomLevel((z) => Math.min(z + 0.5, 3))}
-              className="flex h-8 w-8 items-center justify-center border-4 border-black bg-white shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[1px] dark:border-[#426D79] dark:bg-[#031820] dark:shadow-none"
+              className="fatal-timeline-control flex h-8 w-8 items-center justify-center border-4 border-black bg-white shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border dark:border-[#D8D3C7] dark:bg-[#081318] dark:shadow-none"
             >
               <ZoomIn size={14} strokeWidth={3} />
             </button>
-            <span className="ml-1 tabular-nums text-[10px]">
+            <span className="fatal-zoom-readout ml-1 tabular-nums text-[10px] dark:border dark:border-[#34515A] dark:bg-[#050B0E] dark:px-1.5 dark:py-1 dark:text-[#F2EFE7]">
               {isHeatmapMode ? "HEATMAP" : `${zoomLevel.toFixed(1)}×`}
             </span>
           </div>
 
-          <div className="h-6 w-[4px] bg-black hidden md:block dark:bg-[#426D79]" />
+          <div className="h-6 w-[4px] bg-black hidden md:block dark:w-px dark:bg-[#34515A]" />
 
           {/* Brush toggle */}
           <button
@@ -928,8 +1334,8 @@ export function TimelineWorkspace() {
             }}
             className={`flex h-8 items-center gap-1.5 border-4 border-black px-3 shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[1px] dark:shadow-none ${
               brushActive
-                ? "bg-[#D22B2B] text-white dark:border-[#32D6A0] dark:bg-[#32D6A0] dark:text-[#031820]"
-                : "bg-white hover:-translate-x-0.5 hover:-translate-y-0.5 dark:border-[#426D79] dark:bg-[#031820] dark:text-[#F4F1DC] hover:dark:border-[#32D6A0] hover:dark:text-[#32D6A0]"
+                ? "bg-[#D22B2B] text-white dark:border-[#F2EFE7] dark:bg-[#F2EFE7] dark:text-[#050B0E]"
+                : "bg-white hover:-translate-x-0.5 hover:-translate-y-0.5 dark:border-[#D8D3C7] dark:bg-[#081318] dark:text-[#F2EFE7] hover:dark:bg-[#12242C]"
             }`}
           >
             <svg
@@ -950,38 +1356,48 @@ export function TimelineWorkspace() {
           <button
             type="button"
             onClick={() => {
-              setTimeRange(["2026-07-18", "2026-07-28"]);
+              setTimeRange([
+                activeInvestigation.timeline.startDate,
+                activeInvestigation.timeline.endDate,
+              ]);
               setZoomLevel(1);
               setBrushStart(null);
               setBrushEnd(null);
             }}
-            className="flex h-8 items-center gap-1 border-4 border-black bg-[#FCD34D] px-3 shadow-[3px_3px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none dark:border-[1px] dark:border-[#32D6A0] dark:bg-[#144453] dark:text-[#32D6A0] dark:shadow-none hover:dark:bg-[#32D6A0] hover:dark:text-[#031820]"
+            className="fatal-reset-control flex h-8 items-center gap-1 border-4 border-black bg-[#FCD34D] px-3 shadow-[3px_3px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none dark:border dark:border-[#FFD45A] dark:bg-[#0D1A20] dark:text-[#FFD45A] dark:shadow-none hover:dark:bg-[#FFD45A] hover:dark:text-[#050B0E]"
           >
             RESET
           </button>
         </div>
 
         {/* Category legend */}
-        <div className="flex flex-wrap gap-2 border-t-2 border-black/20 px-4 py-2 font-mono text-[10px] font-black uppercase dark:border-[#426D79] dark:text-[#F4F1DC]">
+        <div className="fatal-timeline-legend flex flex-wrap gap-2 border-t-2 border-black/20 px-4 py-2 font-mono text-[10px] font-black uppercase dark:border-[#34515A] dark:text-[#AFAFA7]">
           {(Object.entries(CATEGORY_COLORS) as [EventCategory, string][]).map(
-            ([category, color]) => (
-              <span key={category} className="flex items-center gap-1">
+            ([category, color]) =>
+              visibleCategories.has(category) ? (
+              <span
+                key={category}
+                className="fatal-timeline-legend-item flex items-center gap-1"
+                data-active={hoveredCategory === category}
+                onMouseEnter={() => setHoveredCategory(category)}
+                onMouseLeave={() => setHoveredCategory(null)}
+              >
                 <span
                   className={`inline-block h-3 w-3 border-2 border-black dark:border-[1px] dark:border-[#426D79] ${CATEGORY_DARK_STYLES[category].strip}`}
                   style={{ backgroundColor: color }}
                 />
                 {category}
               </span>
-            ),
+              ) : null,
           )}
         </div>
       </div>
 
       {/* ─── MAIN TIMELINE AREA ───────────────────── */}
-      <div className="relative flex-1 overflow-hidden">
+      <div className="fatal-timeline-main relative flex-1 overflow-hidden">
         {isHeatmapMode ? (
           /* ─── DENSITY HEATMAP MODE ─────────────── */
-          <div className="h-full border-4 border-black bg-white mx-4 my-4 shadow-[4px_4px_0_black] dark:border-[1px] dark:border-[#426D79] dark:bg-[#144453] dark:shadow-[4px_4px_0_#011015]">
+          <div className="fatal-timeline-heatmap h-full border-4 border-black bg-white mx-4 my-4 shadow-[4px_4px_0_black] dark:border dark:border-[#34515A] dark:bg-[#0D1A20] dark:shadow-[6px_6px_0_#010506]">
             <div className="border-b-4 border-black bg-[#F4F4F0] px-4 py-2 font-mono text-[10px] font-black uppercase dark:border-[#426D79] dark:bg-[#08242D] dark:text-[#F4F1DC]">
               Activity Density Heatmap — {densityBuckets.length} Active Days
             </div>
@@ -997,7 +1413,7 @@ export function TimelineWorkspace() {
           /* ─── DETAIL TIMELINE MODE ─────────────── */
           <div
             ref={scrollContainerRef}
-            className={`h-full overflow-x-auto overflow-y-hidden fatal-timeline-scroll ${
+            className={`fatal-timeline-scroll h-full overflow-x-auto overflow-y-hidden ${
               brushActive ? "cursor-crosshair" : ""
             }`}
             onScroll={handleScroll}
@@ -1007,7 +1423,7 @@ export function TimelineWorkspace() {
             onMouseLeave={handleTimelineMouseUp}
           >
             <div
-              className="relative h-full"
+              className="fatal-timeline-stage relative h-full"
               style={{
                 width: `${Math.max(scaledWidth, 900)}px`,
                 minHeight: "100%",
@@ -1015,9 +1431,9 @@ export function TimelineWorkspace() {
             >
               {/* ─── AXIS LINE ──────────────────────── */}
               <div
-                className="absolute border-t-4 border-black dark:h-[2px] dark:border-0 dark:bg-[#426D79]"
+                className="fatal-timeline-axis absolute border-t-4 border-black dark:h-[2px] dark:border-0 dark:bg-[#D8D3C7]"
                 style={{
-                  top: "60%",
+                  top: "var(--fatal-axis-y)",
                   left: 0,
                   right: 0,
                 }}
@@ -1027,14 +1443,15 @@ export function TimelineWorkspace() {
               {layout.segments.map((seg) => (
                 <div
                   key={seg.date}
-                  className="absolute font-mono text-[10px] font-black uppercase"
+                  className="fatal-timeline-date absolute font-mono text-[10px] font-black uppercase"
+                  data-active={focusedDate === seg.date || hoveredDate === seg.date}
                   style={{
                     left: `${seg.x * zoomLevel}px`,
-                    top: "calc(60% + 12px)",
+                    top: "calc(var(--fatal-axis-y) + 12px)",
                   }}
                 >
-                  <div className="border-l-4 border-black pl-2 py-1 dark:border-l-[1px] dark:border-[#426D79]">
-                    <span className="bg-black px-1.5 py-0.5 text-white dark:border-[1px] dark:border-[#426D79] dark:bg-[#144453] dark:text-[#32D6A0]">
+                  <div className="border-l-4 border-black pl-2 py-1 dark:border-l-2 dark:border-[#34515A]">
+                    <span className="fatal-timeline-date-label bg-black px-1.5 py-0.5 text-white dark:border dark:border-[#34515A] dark:bg-[#050B0E] dark:text-[#D8D3C7]">
                       {formatDate(seg.date)}
                     </span>
                     {seg.eventCount > 1 && (
@@ -1063,7 +1480,7 @@ export function TimelineWorkspace() {
                     style={{
                       left: `${gapStart}px`,
                       width: `${gapEnd - gapStart}px`,
-                      top: "calc(60% - 8px)",
+                      top: "calc(var(--fatal-axis-y) - 8px)",
                     }}
                   >
                     {/* Zig-zag line */}
@@ -1097,25 +1514,55 @@ export function TimelineWorkspace() {
                 const eventAnnotations = annotations.filter(
                   (a) => a.eventId === event.id,
                 );
-                const isSelected = selectedEvent?.id === event.id;
+                const isSelected = selectedTimelineEventId === event.id;
                 const isHovered = hoveredEvent === event.id;
                 const isSuspectLinked =
                   suspectLinkedEvents !== null &&
                   suspectLinkedEvents.has(event.id);
-                const isDimmed =
+                const isEntityDimmed =
                   suspectLinkedEvents !== null &&
                   !suspectLinkedEvents.has(event.id);
+                const isFocusDimmed =
+                  isDarkMode &&
+                  selectedTimelineEventId !== null &&
+                  !isSelected;
+                const isHoverDimmed =
+                  isDarkMode &&
+                  !selectedTimelineEventId &&
+                  hoveredEvent !== null &&
+                  !isHovered;
+                const isCategoryDimmed =
+                  isDarkMode &&
+                  hoveredCategory !== null &&
+                  hoveredCategory !== event.category;
+                const isDimmed = isDarkMode
+                  ? !isSelected &&
+                    (isEntityDimmed ||
+                      isFocusDimmed ||
+                      isHoverDimmed ||
+                      isCategoryDimmed)
+                  : isEntityDimmed;
+                const prominence = isEntityDimmed
+                  ? 0.25
+                  : isFocusDimmed || isCategoryDimmed
+                    ? 0.42
+                    : isHoverDimmed
+                      ? 0.72
+                      : 1;
                 const categoryStyles = CATEGORY_DARK_STYLES[event.category];
 
                 return (
                   <div
                     key={event.id}
-                    className="absolute"
+                    className="fatal-timeline-node absolute"
+                    data-selected={isSelected}
+                    data-hovered={isHovered}
                     style={{
                       left: `${x * zoomLevel}px`,
                       top: 0,
                       height: "100%",
-                    }}
+                      "--event-color": CATEGORY_COLORS[event.category],
+                    } as React.CSSProperties}
                   >
                     {/* Annotation callouts (pinned above node) */}
                     {eventAnnotations.map((ann, annIdx) => (
@@ -1124,47 +1571,72 @@ export function TimelineWorkspace() {
                         annotation={ann}
                         style={{
                           left: "-8px",
-                          top: `calc(60% - ${88 + annIdx * 44}px)`,
+                          top: `calc(var(--fatal-axis-y) - ${88 + annIdx * 44}px)`,
                         }}
                       />
                     ))}
 
                     {/* Vertical connector stem */}
                     <div
-                      className="absolute w-0 border-l-[3px] border-dashed border-black/40 dark:border-l-[1px] dark:border-[#426D79]"
+                      className="fatal-timeline-stem absolute w-0 border-l-[3px] border-dashed border-black/40 dark:border-l dark:border-[#526970]"
+                      data-selected={isSelected}
+                      data-hovered={isHovered}
                       style={{
                         left: "12px",
-                        top: "14%",
-                        height: "46%",
-                        opacity: isDimmed ? 0.2 : 1,
+                        top: isDarkMode ? "11%" : "14%",
+                        height: isDarkMode
+                          ? "calc(var(--fatal-axis-y) - 11%)"
+                          : "46%",
+                        opacity: isDimmed ? prominence : 1,
                       }}
                     />
 
                     {/* Event card (above axis) */}
                     <motion.div
-                      className={`absolute w-[140px] transition-all duration-200 hover:-translate-y-1 ${
+                      role="button"
+                      tabIndex={brushActive ? -1 : 0}
+                      aria-label={`${event.date} ${event.time}; ${event.category}; ${event.title}; ${event.timePrecision ?? "EXACT"}`}
+                      className={`fatal-timeline-event-card absolute w-[140px] transition-all duration-200 hover:-translate-y-1 dark:w-[168px] ${
                         brushActive ? "pointer-events-none" : "cursor-pointer"
                       }`}
                       initial={false}
-                      animate={{ opacity: isDimmed ? 0.25 : 1 }}
+                      animate={{ opacity: isDimmed ? prominence : 1 }}
                       transition={{ duration: 0.2 }}
                       style={{
-                        left: "-46px",
-                        top: "calc(14% - 4px)",
-                        filter: isDimmed ? "grayscale(1)" : "none",
+                        left: isDarkMode ? "-72px" : "-46px",
+                        top: isDarkMode
+                          ? "calc(11% - 4px)"
+                          : "calc(14% - 4px)",
+                        filter: isEntityDimmed ? "grayscale(1)" : "none",
                       }}
                       onClick={() => {
-                        if (!brushActive) setSelectedEvent(event);
+                        if (!brushActive) {
+                          setSelectedEvent(event);
+                          setSelectedTimelineEventId(event.id);
+                          setShowDarkAnnotationPanel(false);
+                        }
+                      }}
+                      onKeyDown={(keyboardEvent) => {
+                        if (
+                          !brushActive &&
+                          (keyboardEvent.key === "Enter" ||
+                            keyboardEvent.key === " ")
+                        ) {
+                          keyboardEvent.preventDefault();
+                          setSelectedEvent(event);
+                          setSelectedTimelineEventId(event.id);
+                          setShowDarkAnnotationPanel(false);
+                        }
                       }}
                       onMouseEnter={() => setHoveredEvent(event.id)}
                       onMouseLeave={() => setHoveredEvent(null)}
                     >
                       <div
-                        className={`relative rounded-none border-4 p-2 font-mono text-[10px] font-black uppercase leading-tight transition-colors duration-150 dark:border dark:border-[#426D79] dark:bg-[#144453] dark:text-[#F4F1DC] dark:shadow-[4px_4px_0_#011015] ${categoryStyles.cardHover} ${
+                        className={`fatal-timeline-card-surface relative min-h-0 rounded-none border-4 p-2 font-mono text-[10px] font-black uppercase leading-tight transition-colors duration-150 dark:min-h-[124px] dark:border-2 dark:border-[#D8D3C7] dark:bg-[#0D1A20] dark:p-3 dark:text-[#F2EFE7] dark:shadow-[6px_6px_0_#010506] ${categoryStyles.cardHover} ${
                           isSelected
-                            ? "border-black bg-[#FCD34D] shadow-[6px_6px_0_black]"
+                            ? "border-black bg-[#FCD34D] shadow-[6px_6px_0_black] dark:border-[#F2EFE7] dark:bg-[#12242C] dark:shadow-[8px_8px_0_#010506]"
                             : isSuspectLinked
-                              ? "border-[#D22B2B] bg-[#D22B2B]/10 shadow-[6px_6px_0_#D22B2B]"
+                              ? "border-[#D22B2B] bg-[#D22B2B]/10 shadow-[6px_6px_0_#D22B2B] dark:border-[#D8D3C7] dark:bg-[#0D1A20] dark:shadow-[6px_6px_0_#010506]"
                               : "border-black bg-white shadow-[4px_4px_0_black] hover:shadow-[6px_6px_0_black]"
                         }`}
                       >
@@ -1182,12 +1654,19 @@ export function TimelineWorkspace() {
                         >
                           {event.category}
                         </div>
-                        <p className="text-[10px]">{event.time}</p>
-                        <p className="mt-1 normal-case leading-tight text-[10px]">
+                        <p className="fatal-timeline-card-time text-[10px] dark:text-[12px] dark:text-[#F2EFE7]">
+                          {event.time}
+                        </p>
+                        {event.timePrecision ? (
+                          <p className="mt-1 text-[8px] opacity-60">
+                            {event.timePrecision}
+                          </p>
+                        ) : null}
+                        <p className="fatal-timeline-card-title mt-1 normal-case leading-tight text-[10px] dark:mt-2 dark:text-[11px] dark:leading-[1.25] dark:text-[#F2EFE7]">
                           {event.title}
                         </p>
                         {/* Severity bar */}
-                        <div className="mt-2 flex gap-[2px]">
+                        <div className="fatal-timeline-severity mt-2 flex gap-[2px]">
                           {Array.from({ length: 10 }, (_, i) => (
                             <div
                               key={i}
@@ -1205,7 +1684,7 @@ export function TimelineWorkspace() {
                             />
                           ))}
                         </div>
-                        <div className="mt-2 hidden grid-cols-5 gap-[2px] dark:grid">
+                        <div className="fatal-timeline-category-accent mt-2 hidden grid-cols-5 gap-[2px] dark:grid">
                           {Array.from({ length: 5 }, (_, segment) => (
                             <span
                               key={segment}
@@ -1224,7 +1703,7 @@ export function TimelineWorkspace() {
 
                     {/* Node dot on axis */}
                     <div
-                      className={`absolute h-5 w-5 rounded-none border-4 transition-transform duration-150 hover:scale-110 dark:border ${categoryStyles.markerBorder} ${categoryStyles.strip} ${
+                      className={`fatal-timeline-marker absolute h-5 w-5 rounded-none border-4 transition-transform duration-150 hover:scale-110 dark:border-2 ${categoryStyles.markerBorder} ${categoryStyles.strip} ${
                         isHovered ? categoryStyles.markerActive : ""
                       } ${
                         isSelected
@@ -1233,16 +1712,19 @@ export function TimelineWorkspace() {
                             ? "scale-125 border-[#D22B2B] bg-[#D22B2B]"
                             : "border-black bg-white"
                       }`}
+                      data-selected={isSelected}
+                      data-hovered={isHovered}
                       style={{
                         left: "3px",
-                        top: "calc(60% - 10px)",
+                        top: "calc(var(--fatal-axis-y) - 10px)",
                         backgroundColor: isSelected
                           ? "#FCD34D"
                           : isSuspectLinked
                             ? "#D22B2B"
                             : CATEGORY_COLORS[event.category],
-                        opacity: isDimmed ? 0.2 : 1,
-                      }}
+                        opacity: isDimmed ? prominence : 1,
+                        "--event-color": CATEGORY_COLORS[event.category],
+                      } as React.CSSProperties}
                     />
                   </div>
                 );
@@ -1254,7 +1736,7 @@ export function TimelineWorkspace() {
                 brushEnd !== null &&
                 isDraggingBrush.current && (
                   <div
-                    className="absolute top-0 h-full border-x-4 border-[#D22B2B] bg-[#D22B2B]/10 pointer-events-none z-20 dark:border-[#FF4D55] dark:bg-[#FF4D55]/10"
+                    className="fatal-timeline-brush absolute top-0 z-20 h-full border-x-4 border-[#D22B2B] bg-[#D22B2B]/10 pointer-events-none dark:border-[#D8D3C7] dark:bg-[#D8D3C7]/10"
                     style={{
                       left: `${Math.min(brushStart, brushEnd)}px`,
                       width: `${Math.abs(brushEnd - brushStart)}px`,
@@ -1266,18 +1748,44 @@ export function TimelineWorkspace() {
         )}
 
         {/* ─── ANNOTATION PANEL (slides in from right) ── */}
-        {selectedEvent && !isHeatmapMode && (
+        {selectedEvent && !isHeatmapMode && !isDarkMode && (
           <AnnotationPanel
             event={selectedEvent}
             annotations={annotations}
             onAdd={addAnnotation}
-            onClose={() => setSelectedEvent(null)}
+            onClose={() => {
+              setSelectedEvent(null);
+              setSelectedTimelineEventId(null);
+            }}
           />
         )}
+        {selectedEvent && !isHeatmapMode && isDarkMode && (
+          <EventInspector
+            event={selectedEvent}
+            investigation={activeInvestigation}
+            onAnnotate={() => setShowDarkAnnotationPanel(true)}
+            onClear={() => {
+              setSelectedEvent(null);
+              setSelectedTimelineEventId(null);
+              setShowDarkAnnotationPanel(false);
+            }}
+          />
+        )}
+        {selectedEvent &&
+          !isHeatmapMode &&
+          isDarkMode &&
+          showDarkAnnotationPanel && (
+            <AnnotationPanel
+              event={selectedEvent}
+              annotations={annotations}
+              onAdd={addAnnotation}
+              onClose={() => setShowDarkAnnotationPanel(false)}
+            />
+          )}
       </div>
 
       {/* ─── STATUS BAR ───────────────────────────── */}
-      <div className="shrink-0 border-t-4 border-black bg-black px-4 py-2 font-mono text-[10px] font-black uppercase text-[#F4F4F0] dark:border-[#426D79] dark:bg-[#08242D] dark:text-[#F4F1DC]">
+      <div className="fatal-timeline-footer shrink-0 border-t-4 border-black bg-black px-4 py-2 font-mono text-[10px] font-black uppercase text-[#F4F4F0] dark:border-t dark:border-[#34515A] dark:bg-[#050B0E] dark:text-[#AFAFA7]">
         <div className="flex flex-wrap items-center gap-4">
           <span>
             Range: {timeRange[0]} → {timeRange[1]}

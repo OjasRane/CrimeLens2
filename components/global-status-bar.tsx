@@ -1,14 +1,19 @@
 "use client";
 
 import { useInvestigationStore } from "@/store/use-investigation-store";
+import { getInvestigation } from "@/data/investigations/registry";
 
 export function GlobalStatusBar() {
+  const activeInvestigationId = useInvestigationStore(
+    (state) => state.activeInvestigationId,
+  );
+  const activeInvestigation = getInvestigation(activeInvestigationId);
   const timeRange = useInvestigationStore((state) => state.timeRange);
   const selectedCrimeTypes = useInvestigationStore(
     (state) => state.selectedCrimeTypes,
   );
-  const selectedSuspectId = useInvestigationStore(
-    (state) => state.selectedSuspectId,
+  const selectedEntityId = useInvestigationStore(
+    (state) => state.selectedEntityId,
   );
   const spatialBounds = useInvestigationStore((state) => state.spatialBounds);
   const clearAllFilters = useInvestigationStore(
@@ -17,24 +22,22 @@ export function GlobalStatusBar() {
 
   // Determine if any filters are non-default
   const isDefaultTime =
-    timeRange[0] === "2026-07-18" && timeRange[1] === "2026-07-28";
+    timeRange[0] === activeInvestigation.timeline.startDate &&
+    timeRange[1] === activeInvestigation.timeline.endDate;
   const isDefaultCrimeTypes =
-    selectedCrimeTypes.length === 5 &&
-    ["Burglary", "Assault", "Fraud", "Robbery", "Arson"].every((t) =>
-      selectedCrimeTypes.includes(t),
+    selectedCrimeTypes.length === activeInvestigation.map.filterGroups.length &&
+    activeInvestigation.map.filterGroups.every((type) =>
+      selectedCrimeTypes.includes(type),
     );
   const hasActiveFilters =
     !isDefaultTime ||
     !isDefaultCrimeTypes ||
-    selectedSuspectId !== null ||
+    selectedEntityId !== null ||
     spatialBounds !== null;
 
-  // Suspect label map
-  const suspectLabels: Record<string, string> = {
-    "sus-ada": "ADA CROSS",
-    "sus-marlowe": "JON MARLOWE",
-    "sus-vale": "MIRA VALE",
-  };
+  const selectedEntityLabel = activeInvestigation.graph.nodes.find(
+    (node) => node.id === selectedEntityId,
+  )?.label;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 hidden border-t-4 border-[var(--ink)] bg-[var(--ink)] px-4 py-2 font-mono text-[10px] font-black uppercase text-[var(--paper)] md:block">
@@ -43,7 +46,7 @@ export function GlobalStatusBar() {
 
         {/* Crime types */}
         <span className="opacity-80">
-          CRIME[
+          {activeInvestigationId === "demo" ? "CRIME" : "SITE TYPE"}[
           <span
             className={
               isDefaultCrimeTypes ? "opacity-40" : "text-[var(--danger)]"
@@ -86,14 +89,14 @@ export function GlobalStatusBar() {
 
         {/* Suspect */}
         <span className="opacity-80">
-          SUSPECT[
+          {activeInvestigationId === "demo" ? "SUSPECT" : "ENTITY"}[
           <span
             className={
-              selectedSuspectId ? "text-[var(--danger)]" : "opacity-40"
+              selectedEntityId ? "text-[var(--danger)]" : "opacity-40"
             }
           >
-            {selectedSuspectId
-              ? (suspectLabels[selectedSuspectId] ?? selectedSuspectId)
+            {selectedEntityId
+              ? (selectedEntityLabel ?? selectedEntityId)
               : "NONE"}
           </span>
           ]

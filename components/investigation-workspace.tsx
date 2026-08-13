@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { CaseAccessTerminal } from "@/components/case-access-terminal";
 import { FactLedger } from "@/components/fact-ledger";
 import { GlobalStatusBar } from "@/components/global-status-bar";
+import { InvestigationSwitcher } from "@/components/investigation-switcher";
 import { LiveblocksRuntime } from "@/components/liveblocks-runtime";
 import { MobileWorkspaceNav } from "@/components/mobile-workspace-nav";
 import { QRUplinkModal } from "@/components/qr-uplink-modal";
@@ -13,11 +14,19 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { WorkspaceBar } from "@/components/workspace-bar";
 import { WorkspaceViewport } from "@/components/workspace-viewport";
 import { triggerHaptic } from "@/lib/haptics";
+import { getInvestigation } from "@/data/investigations/registry";
 import { useInvestigationStore } from "@/store/use-investigation-store";
 
 export function InvestigationWorkspace() {
-  const { activeWorkspace, isLedgerOpen, toggleLedger } =
-    useInvestigationStore();
+  const activeInvestigationId = useInvestigationStore(
+    (state) => state.activeInvestigationId,
+  );
+  const activeWorkspace = useInvestigationStore(
+    (state) => state.activeWorkspace,
+  );
+  const isLedgerOpen = useInvestigationStore((state) => state.isLedgerOpen);
+  const toggleLedger = useInvestigationStore((state) => state.toggleLedger);
+  const activeInvestigation = getInvestigation(activeInvestigationId);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [isMobileLedgerOpen, setIsMobileLedgerOpen] = useState(false);
 
@@ -51,14 +60,17 @@ export function InvestigationWorkspace() {
   return (
     <LiveblocksRuntime>
       <div className="h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom))] overflow-hidden bg-[var(--paper)] text-[var(--ink)] md:h-screen">
-        <header className="fixed left-0 top-[env(safe-area-inset-top)] z-50 flex h-16 w-full items-center justify-between gap-2 border-b-4 border-[var(--ink)] bg-[var(--paper)] p-2 shadow-[0_4px_0_var(--ink)] rounded-none md:top-0 md:z-20 md:h-20 md:px-5">
-          <div className="hidden min-w-0 md:block">
-            <p className="hidden font-mono text-xs uppercase tracking-normal md:block">
-              Case Desk / Hackathon Edition
-            </p>
-            <h1 className="hidden truncate font-serif text-2xl font-black leading-none md:block md:text-5xl">
-              The Fatal Ledger
-            </h1>
+        <header className="fixed left-0 top-[env(safe-area-inset-top)] z-50 flex h-16 w-full items-center justify-between gap-2 overflow-x-auto border-b-4 border-[var(--ink)] bg-[var(--paper)] p-2 shadow-[0_4px_0_var(--ink)] rounded-none md:top-0 md:z-20 md:h-20 md:overflow-visible md:px-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="hidden min-w-0 md:block">
+              <p className="hidden font-mono text-xs uppercase tracking-normal md:block">
+                {activeInvestigation.deskLabel}
+              </p>
+              <h1 className="hidden max-w-[360px] truncate font-serif text-2xl font-black leading-none md:block md:text-5xl">
+                {activeInvestigation.displayName}
+              </h1>
+            </div>
+            <InvestigationSwitcher />
           </div>
           <div className="flex min-w-0 flex-1 items-center gap-2 md:flex-none md:gap-3">
             {activeWorkspace === "canvas" ? (
@@ -109,7 +121,7 @@ export function InvestigationWorkspace() {
               isLedgerOpen ? "md:w-[clamp(280px,30vw,360px)]" : "md:w-0"
             }`}
           >
-            <FactLedger />
+            {isLedgerOpen ? <FactLedger /> : null}
           </aside>
         </main>
 

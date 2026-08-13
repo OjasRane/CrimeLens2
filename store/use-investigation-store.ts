@@ -9,6 +9,14 @@ import {
 } from "@xyflow/react";
 import { create } from "zustand";
 import {
+  getInvestigation,
+  investigationRegistry,
+} from "@/data/investigations/registry";
+import type {
+  InvestigationFact,
+  InvestigationId,
+} from "@/data/investigations/types";
+import {
   deserializeFlowEdges,
   deserializeFlowNodes,
   INITIAL_EVIDENCE_EDGES,
@@ -31,12 +39,7 @@ export type MapPanRequest = {
   sequence: number;
 };
 
-export type InvestigationFact = {
-  id: string;
-  type: "forensic" | "testimonial";
-  text: string;
-  status: "verified" | "disputed" | "pending";
-};
+export type { InvestigationFact, InvestigationId };
 
 /* ─── Deck.gl data types ──────────────────────── */
 
@@ -47,6 +50,9 @@ export type IncidentPoint = {
 };
 
 export type MovementArc = {
+  routeId?: string;
+  memberEntityIds?: string[];
+  locationIds?: string[];
   from: { coordinates: [number, number] };
   to: { coordinates: [number, number] };
   inbound: number;
@@ -263,11 +269,15 @@ const MOVEMENT_DATA = generateMovementData();
 type InvestigationState = {
   isCommandPaletteOpen: boolean;
   isQrModalOpen: boolean;
+  activeInvestigationId: InvestigationId;
   activeWorkspace: ActiveWorkspace;
   timeRange: TimeRange;
   playbackDate: string;
   isMapPlaying: boolean;
   selectedSuspectId: string | null;
+  selectedEntityId: string | null;
+  selectedLocationId: string | null;
+  selectedTimelineEventId: string | null;
   selectedCrimeTypes: string[];
   spatialBounds: SpatialBounds | null;
   nodes: Node[];
@@ -278,11 +288,15 @@ type InvestigationState = {
   toggleCommandPalette: () => void;
   closeCommandPalette: () => void;
   setQrModalOpen: (isOpen: boolean) => void;
+  setActiveInvestigationId: (investigationId: InvestigationId) => void;
   setActiveWorkspace: (workspace: ActiveWorkspace) => void;
   setTimeRange: (timeRange: TimeRange) => void;
   setPlaybackDate: (date: string) => void;
   setIsMapPlaying: (isPlaying: boolean) => void;
   setSelectedSuspectId: (suspectId: string | null) => void;
+  setSelectedEntityId: (entityId: string | null) => void;
+  setSelectedLocationId: (locationId: string | null) => void;
+  setSelectedTimelineEventId: (eventId: string | null) => void;
   toggleSelectedCrimeType: (crimeType: string) => void;
   setSelectedCrimeTypeEnabled: (crimeType: string, isEnabled: boolean) => void;
   setSpatialBounds: (bounds: SpatialBounds | null) => void;
@@ -291,7 +305,7 @@ type InvestigationState = {
   onEdgesChange: (changes: EdgeChange[]) => void;
   addNode: (intelText: string) => void;
   addEvidenceNode: (nodeType: EvidenceNodeType, position: XYPosition) => void;
-  pinFactToBoard: (text: string) => void;
+  pinFactToBoard: (fact: InvestigationFact) => void;
   updateNodeData: (nodeId: string, data: Record<string, unknown>) => void;
   lockNode: (nodeId: string, agentId: string) => void;
   unlockNode: (nodeId: string, agentId: string) => void;
@@ -306,12 +320,19 @@ export const useInvestigationStore = create<InvestigationState>()(
   (set, get) => ({
     isCommandPaletteOpen: false,
     isQrModalOpen: false,
+    activeInvestigationId: "demo",
     activeWorkspace: "map",
-    timeRange: ["2026-07-18", "2026-07-28"],
-    playbackDate: "2026-07-28",
+    timeRange: [
+      investigationRegistry.demo.timeline.startDate,
+      investigationRegistry.demo.timeline.endDate,
+    ],
+    playbackDate: investigationRegistry.demo.timeline.endDate,
     isMapPlaying: false,
     selectedSuspectId: null,
-    selectedCrimeTypes: ["Burglary", "Assault", "Fraud", "Robbery", "Arson"],
+    selectedEntityId: null,
+    selectedLocationId: null,
+    selectedTimelineEventId: null,
+    selectedCrimeTypes: [...investigationRegistry.demo.map.filterGroups],
     spatialBounds: null,
     incidentData: INCIDENT_DATA,
     movementData: MOVEMENT_DATA,
@@ -324,6 +345,27 @@ export const useInvestigationStore = create<InvestigationState>()(
       })),
     closeCommandPalette: () => set({ isCommandPaletteOpen: false }),
     setQrModalOpen: (isOpen) => set({ isQrModalOpen: isOpen }),
+    setActiveInvestigationId: (investigationId) => {
+      const investigation = getInvestigation(investigationId);
+
+      set({
+        activeInvestigationId: investigation.id,
+        timeRange: [
+          investigation.timeline.startDate,
+          investigation.timeline.endDate,
+        ],
+        playbackDate: investigation.timeline.endDate,
+        selectedSuspectId: null,
+        selectedEntityId: null,
+        selectedLocationId: null,
+        selectedTimelineEventId: null,
+        selectedCrimeTypes: [...investigation.map.filterGroups],
+        spatialBounds: null,
+        mapPanRequest: null,
+        isMapPlaying: false,
+        facts: investigation.facts,
+      });
+    },
     setActiveWorkspace: (workspace) => {
       set({ activeWorkspace: workspace });
     },
@@ -337,7 +379,28 @@ export const useInvestigationStore = create<InvestigationState>()(
       set({ isMapPlaying: isPlaying });
     },
     setSelectedSuspectId: (suspectId) => {
-      set({ selectedSuspectId: suspectId });
+      set({
+        selectedSuspectId: suspectId,
+        selectedEntityId: suspectId,
+        selectedLocationId: null,
+      });
+    },
+    setSelectedEntityId: (entityId) => {
+      set({
+        selectedEntityId: entityId,
+        selectedSuspectId: null,
+        selectedLocationId: null,
+      });
+    },
+    setSelectedLocationId: (locationId) => {
+      set({
+        selectedLocationId: locationId,
+        selectedEntityId: locationId,
+        selectedSuspectId: null,
+      });
+    },
+    setSelectedTimelineEventId: (eventId) => {
+      set({ selectedTimelineEventId: eventId });
     },
     toggleSelectedCrimeType: (crimeType) => {
       const selectedCrimeTypes = get().selectedCrimeTypes;
@@ -424,7 +487,7 @@ export const useInvestigationStore = create<InvestigationState>()(
         ],
       });
     },
-    pinFactToBoard: (text) => {
+    pinFactToBoard: (fact) => {
       const randomOffset = () => Math.round(Math.random() * 180 - 90);
       const centerX =
         typeof window === "undefined" ? 420 : Math.round(window.innerWidth / 2);
@@ -444,7 +507,14 @@ export const useInvestigationStore = create<InvestigationState>()(
               y: centerY + randomOffset(),
             },
             data: {
-              text,
+              text: fact.text,
+              investigationId: fact.investigationId,
+              sourceEntityId: fact.linkedEntityIds[0] ?? null,
+              sourceType:
+                fact.investigationId === "mumbai-2611"
+                  ? "historical-fact"
+                  : "investigation-fact",
+              sourceFactId: fact.id,
             },
           },
         ],
@@ -495,49 +565,26 @@ export const useInvestigationStore = create<InvestigationState>()(
         ),
       });
     },
-    facts: [
-      {
-        id: "fact-001",
-        type: "forensic",
-        text: "The victim entered the station at 21:14 and never appeared on the northbound camera.",
-        status: "verified",
-      },
-      {
-        id: "fact-002",
-        type: "forensic",
-        text: "A torn ticket stub was recovered from the inner coat pocket.",
-        status: "pending",
-      },
-      {
-        id: "fact-003",
-        type: "testimonial",
-        text: "The night clerk claims a second visitor arrived fifteen minutes after closing.",
-        status: "disputed",
-      },
-      {
-        id: "fact-004",
-        type: "testimonial",
-        text: "The ledger clock differs from station time by seven minutes.",
-        status: "pending",
-      },
-    ],
+    facts: investigationRegistry.demo.facts,
     isLedgerOpen: true,
     toggleLedger: () => set((state) => ({ isLedgerOpen: !state.isLedgerOpen })),
     openLedger: () => set({ isLedgerOpen: true }),
-    clearAllFilters: () =>
+    clearAllFilters: () => {
+      const investigation = getInvestigation(get().activeInvestigationId);
       set({
-        timeRange: ["2026-07-18", "2026-07-28"],
-        playbackDate: "2026-07-28",
-        selectedSuspectId: null,
-        selectedCrimeTypes: [
-          "Burglary",
-          "Assault",
-          "Fraud",
-          "Robbery",
-          "Arson",
+        timeRange: [
+          investigation.timeline.startDate,
+          investigation.timeline.endDate,
         ],
+        playbackDate: investigation.timeline.endDate,
+        selectedSuspectId: null,
+        selectedEntityId: null,
+        selectedLocationId: null,
+        selectedTimelineEventId: null,
+        selectedCrimeTypes: [...investigation.map.filterGroups],
         spatialBounds: null,
         isMapPlaying: false,
-      }),
+      });
+    },
   }),
 );

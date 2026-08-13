@@ -19,11 +19,16 @@ import {
   useInvestigationStore,
 } from "@/store/use-investigation-store";
 import { triggerHaptic } from "@/lib/haptics";
+import {
+  getInvestigation,
+  getLocationsForEntity,
+} from "@/data/investigations/registry";
+import type { InvestigationLocation } from "@/data/investigations/types";
 
 /* ─── Deck.gl imports ─────────────────────────── */
 
 import { DeckGL } from "@deck.gl/react";
-import { HexagonLayer } from "@deck.gl/aggregation-layers";
+import { HeatmapLayer, HexagonLayer } from "@deck.gl/aggregation-layers";
 import { ArcLayer, PathLayer, ScatterplotLayer } from "@deck.gl/layers";
 import {
   AmbientLight,
@@ -397,6 +402,7 @@ export function GeospatialMapWorkspace() {
   const [activeLayer, setActiveLayer] = useState<ActiveLayerType>("PINS");
   const [viewMode, setViewMode] = useState<ViewMode>("2D");
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const [hoveredRouteId, setHoveredRouteId] = useState<string | null>(null);
 
   const [mounted, setMounted] = useState(false);
 
@@ -407,12 +413,26 @@ export function GeospatialMapWorkspace() {
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 
+  const activeInvestigationId = useInvestigationStore(
+    (s) => s.activeInvestigationId,
+  );
+  const activeInvestigation = getInvestigation(activeInvestigationId);
+  const crimeTypes = activeInvestigation.map.filterGroups;
+  const activeLocations = activeInvestigation.map.locations.filter(
+    (
+      location,
+    ): location is InvestigationLocation & { coordinates: [number, number] } =>
+      Boolean(location.coordinates),
+  );
+  const playbackDates = Array.from(
+    new Set(activeInvestigation.timeline.events.map((event) => event.date)),
+  ).sort();
+
   const selectedCrimeTypes = useInvestigationStore((s) => s.selectedCrimeTypes);
   const setSelectedCrimeTypeEnabled = useInvestigationStore(
     (s) => s.setSelectedCrimeTypeEnabled,
   );
   const spatialBounds = useInvestigationStore((s) => s.spatialBounds);
-  const setSpatialBounds = useInvestigationStore((s) => s.setSpatialBounds);
   const playbackDate = useInvestigationStore((s) => s.playbackDate);
   const setPlaybackDate = useInvestigationStore((s) => s.setPlaybackDate);
   const isMapPlaying = useInvestigationStore((s) => s.isMapPlaying);
@@ -421,6 +441,71 @@ export function GeospatialMapWorkspace() {
   const incidentData = useInvestigationStore((s) => s.incidentData);
   const movementData = useInvestigationStore((s) => s.movementData);
   const mapPanRequest = useInvestigationStore((s) => s.mapPanRequest);
+  const selectedEntityId = useInvestigationStore((s) => s.selectedEntityId);
+  const selectedLocationId = useInvestigationStore(
+    (s) => s.selectedLocationId,
+  );
+  const setSelectedLocationId = useInvestigationStore(
+    (s) => s.setSelectedLocationId,
+  );
+  const clearAllFilters = useInvestigationStore((s) => s.clearAllFilters);
+
+  const selectedLocation = activeInvestigation.map.locations.find(
+    (location) => location.id === selectedLocationId,
+  );
+  const relatedLocationIds = useMemo(
+    () =>
+      new Set(
+        selectedEntityId
+          ? getLocationsForEntity(activeInvestigation, selectedEntityId).map(
+              (location) => location.id,
+            )
+          : [],
+      ),
+    [activeInvestigation, selectedEntityId],
+  );
+
+  const activeIncidentData = useMemo<IncidentPoint[]>(
+    () =>
+      activeInvestigationId === "demo"
+        ? incidentData
+        : activeLocations
+            .filter((location) => (location.killed ?? 0) + (location.injured ?? 0) > 0)
+            .map((location) => ({
+              coordinates: location.coordinates,
+              weight: (location.killed ?? 0) + (location.injured ?? 0),
+              date: location.date,
+            })),
+    [activeInvestigationId, activeLocations, incidentData],
+  );
+
+  const activeMovementData = useMemo<MovementArc[]>(() => {
+    if (activeInvestigationId === "demo") return movementData;
+
+    const locationById = new globalThis.Map(
+      activeLocations.map((location) => [location.id, location] as const),
+    );
+    return activeInvestigation.map.routes.flatMap((route) =>
+      route.locationIds.slice(1).flatMap((locationId, index) => {
+        const from = locationById.get(route.locationIds[index]);
+        const to = locationById.get(locationId);
+        if (!from || !to) return [];
+        return [
+          {
+            from: { coordinates: from.coordinates },
+            to: { coordinates: to.coordinates },
+            routeId: route.id,
+            memberEntityIds: route.memberEntityIds,
+            locationIds: route.locationIds,
+            inbound: 0,
+            outbound: 0,
+            date: activeInvestigation.timeline.startDate,
+            label: `${route.label} // ${route.teamLabel}`,
+          },
+        ];
+      }),
+    );
+  }, [activeInvestigation, activeInvestigationId, activeLocations, movementData]);
 
   const playbackIndex = Math.max(0, playbackDates.indexOf(playbackDate));
 
@@ -433,6 +518,17 @@ export function GeospatialMapWorkspace() {
     pitch: 0,
     bearing: 0,
   });
+
+  useEffect(() => {
+    setActiveLayer("PINS");
+    setViewState({
+      longitude: activeInvestigation.map.center[0],
+      latitude: activeInvestigation.map.center[1],
+      zoom: activeInvestigation.map.zoom,
+      pitch: 0,
+      bearing: 0,
+    });
+  }, [activeInvestigation]);
 
   const changeViewMode = useCallback((mode: ViewMode) => {
     const camera =
@@ -466,48 +562,50 @@ export function GeospatialMapWorkspace() {
 
   const filteredIncidents = useMemo(
     () =>
-      incidentData.filter(
+      activeIncidentData.filter(
         (d) =>
           d.date <= playbackDate &&
           d.date >= timeRange[0] &&
           d.date <= timeRange[1] &&
           isWithinBounds(d.coordinates, spatialBounds),
       ),
-    [incidentData, playbackDate, timeRange, spatialBounds],
+    [activeIncidentData, playbackDate, timeRange, spatialBounds],
   );
 
   const filteredMovements = useMemo(
     () =>
-      movementData.filter(
+      activeMovementData.filter(
         (d) =>
           d.date <= playbackDate &&
           d.date >= timeRange[0] &&
           d.date <= timeRange[1],
       ),
-    [movementData, playbackDate, timeRange],
+    [activeMovementData, playbackDate, timeRange],
   );
 
   // Original incidents for filter counts
   const visibleIncidents = useMemo(
     () =>
-      incidents.filter(
+      activeLocations.filter(
         (incident) =>
-          selectedCrimeTypes.includes(incident.type) &&
+          incident.filterGroups.some((group) =>
+            selectedCrimeTypes.includes(group),
+          ) &&
           incident.date <= playbackDate &&
           incident.date >= timeRange[0] &&
           incident.date <= timeRange[1] &&
           isWithinBounds(incident.coordinates, spatialBounds),
       ),
-    [playbackDate, selectedCrimeTypes, spatialBounds, timeRange],
+    [activeLocations, playbackDate, selectedCrimeTypes, spatialBounds, timeRange],
   );
 
   const filterCounts = useMemo(
     () =>
-      crimeTypes.reduce<Record<CrimeType, number>>(
+      crimeTypes.reduce<Record<string, number>>(
         (counts, crimeType) => {
-          counts[crimeType] = incidents.filter(
+          counts[crimeType] = activeLocations.filter(
             (incident) =>
-              incident.type === crimeType &&
+              incident.filterGroups.includes(crimeType) &&
               incident.date <= playbackDate &&
               incident.date >= timeRange[0] &&
               incident.date <= timeRange[1] &&
@@ -515,16 +613,36 @@ export function GeospatialMapWorkspace() {
           ).length;
           return counts;
         },
-        {} as Record<CrimeType, number>,
+        {},
       ),
-    [playbackDate, spatialBounds, timeRange],
+    [activeLocations, crimeTypes, playbackDate, spatialBounds, timeRange],
   );
 
   /* ── Deck.gl layers ────────────────────────── */
 
   const layers = useMemo(() => {
     const result = [];
-    if (activeLayer === "DENSITY") {
+    if (activeLayer === "HEAT" && activeInvestigationId === "mumbai-2611") {
+      result.push(
+        new HeatmapLayer<IncidentPoint>({
+          id: "heat-layer",
+          data: filteredIncidents,
+          getPosition: (d) => d.coordinates,
+          getWeight: (d) => d.weight,
+          radiusPixels: 60,
+          intensity: 1,
+          threshold: 0.03,
+          colorRange: [
+            [252, 211, 77, 35],
+            [252, 211, 77, 120],
+            [210, 43, 43, 180],
+            [210, 43, 43, 255],
+          ],
+          pickable: true,
+        }),
+      );
+    }
+    if (activeLayer === "DENSITY" && activeInvestigationId === "demo") {
       result.push(
         new HexagonLayer<IncidentPoint>({
           id: "hexagon-layer",
@@ -550,7 +668,11 @@ export function GeospatialMapWorkspace() {
         }),
       );
     }
-    if (activeLayer === "ROUTES" && viewMode === "3D") {
+    if (
+      activeLayer === "ROUTES" &&
+      viewMode === "3D" &&
+      activeInvestigationId === "demo"
+    ) {
       result.push(
         new ArcLayer<MovementArc>({
           id: "arc-glow-layer",
@@ -580,12 +702,44 @@ export function GeospatialMapWorkspace() {
         }),
       );
     } else if (activeLayer === "ROUTES") {
-      const telemetryPaths: TelemetryPath[] = filteredMovements.map(
-        (movement, index, movements) => ({
-          ...movement,
-          path: [movement.from.coordinates, movement.to.coordinates],
-          opacity: Math.round(70 + (185 * (index + 1)) / movements.length),
-        }),
+      const telemetryPaths: TelemetryPath[] = filteredMovements.flatMap(
+        (movement, index, movements) => {
+          const opacity = Math.round(
+            70 + (185 * (index + 1)) / movements.length,
+          );
+          if (activeInvestigationId === "demo") {
+            return [
+              {
+                ...movement,
+                path: [movement.from.coordinates, movement.to.coordinates],
+                opacity,
+              },
+            ];
+          }
+
+          const [fromLng, fromLat] = movement.from.coordinates;
+          const [toLng, toLat] = movement.to.coordinates;
+          return Array.from({ length: 18 }, (_, segment) => segment)
+            .filter((segment) => segment % 2 === 0)
+            .map((segment) => {
+              const start = segment / 18;
+              const end = Math.min((segment + 1) / 18, 1);
+              return {
+                ...movement,
+                path: [
+                  [
+                    fromLng + (toLng - fromLng) * start,
+                    fromLat + (toLat - fromLat) * start,
+                  ] as [number, number],
+                  [
+                    fromLng + (toLng - fromLng) * end,
+                    fromLat + (toLat - fromLat) * end,
+                  ] as [number, number],
+                ],
+                opacity,
+              };
+            });
+        },
       );
 
       const targets: TrackingTarget[] = filteredMovements.map(
@@ -609,6 +763,8 @@ export function GeospatialMapWorkspace() {
           capRounded: false,
           jointRounded: false,
           pickable: true,
+          onHover: ({ object }) =>
+            setHoveredRouteId((object as TelemetryPath | undefined)?.routeId ?? null),
         }),
         new ScatterplotLayer<TrackingTarget>({
           id: "tracking-target-layer",
@@ -628,7 +784,14 @@ export function GeospatialMapWorkspace() {
       );
     }
     return result;
-  }, [activeLayer, filteredIncidents, filteredMovements, isDark, viewMode]);
+  }, [
+    activeInvestigationId,
+    activeLayer,
+    filteredIncidents,
+    filteredMovements,
+    isDark,
+    viewMode,
+  ]);
 
   /* ── Playback timer ────────────────────────── */
 
@@ -643,7 +806,13 @@ export function GeospatialMapWorkspace() {
       setPlaybackDate(playbackDates[nextIndex]);
     }, 850);
     return () => window.clearInterval(timer);
-  }, [isMapPlaying, playbackIndex, setIsMapPlaying, setPlaybackDate]);
+  }, [
+    isMapPlaying,
+    playbackDates,
+    playbackIndex,
+    setIsMapPlaying,
+    setPlaybackDate,
+  ]);
 
   const togglePlayback = () => {
     if (isMapPlaying) {
@@ -680,6 +849,9 @@ export function GeospatialMapWorkspace() {
 
   const mapDimensions = { width: "100%", height: "100%" };
   const currentMapStyle = isDark ? DARK_MAP_STYLE : LIGHT_MAP_STYLE;
+  const hoveredRoute = activeInvestigation.map.routes.find(
+    (route) => route.id === hoveredRouteId,
+  );
 
   const filterPanelContent = (
     <div className="space-y-2 p-3">
@@ -706,7 +878,14 @@ export function GeospatialMapWorkspace() {
       </div>
       {crimeTypes.map((crimeType) => {
         const count = filterCounts[crimeType];
-        const incidentLabel = count === 1 ? "INCIDENT" : "INCIDENTS";
+        const incidentLabel =
+          activeInvestigationId === "demo"
+            ? count === 1
+              ? "INCIDENT"
+              : "INCIDENTS"
+            : count === 1
+              ? "SITE"
+              : "SITES";
 
         return (
           <label
@@ -736,15 +915,15 @@ export function GeospatialMapWorkspace() {
           type="button"
           onClick={() => {
             triggerHaptic("light");
-            setSpatialBounds(null);
+            clearAllFilters();
           }}
           className="min-h-11 border-2 border-[var(--ink)] bg-[var(--accent)] px-2 py-2 text-left text-[var(--ink)] shadow-[3px_3px_0_var(--ink)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
         >
-          Clear Query
+          Clear Filters
         </button>
       </div>
       <div className="flex min-h-11 items-center border-2 border-[var(--ink)] bg-[var(--panel)] px-2 py-2">
-        Bounds: {spatialBounds ? "ACTIVE" : "NONE"}
+        Bounds: {spatialBounds ? "ACTIVE" : activeInvestigation.map.boundsLabel}
       </div>
     </div>
   );
@@ -782,11 +961,107 @@ export function GeospatialMapWorkspace() {
                 latitude={incident.coordinates[1]}
                 anchor="center"
               >
-                <TacticalMarker color={getMarkerColor(incident.id)} />
+                <button
+                  type="button"
+                  aria-label={`${incident.title}; ${incident.type}; ${incident.timeLabel}`}
+                  onClick={() => {
+                    triggerHaptic("light");
+                    setSelectedLocationId(incident.id);
+                  }}
+                  className="grid h-11 w-11 place-items-center focus:outline-none focus-visible:ring-4 focus-visible:ring-[#FCD34D]"
+                >
+                  <TacticalMarker
+                    color={
+                      selectedLocationId === incident.id ||
+                      relatedLocationIds.has(incident.id) ||
+                      hoveredRoute?.locationIds.includes(incident.id)
+                        ? "#FCD34D"
+                        : getMarkerColor(incident.id)
+                    }
+                  />
+                </button>
               </Marker>
             ))}
         </Map>
       </DeckGL>
+
+      {activeLayer === "DENSITY" && activeInvestigation.map.densityNotice ? (
+        <div className="absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 border-4 border-[var(--ink)] bg-[var(--accent)] px-4 py-3 font-mono text-xs font-black uppercase text-[var(--ink)] shadow-[5px_5px_0_var(--ink)]">
+          [ {activeInvestigation.map.densityNotice} ]
+        </div>
+      ) : null}
+
+      {hoveredRoute ? (
+        <div className="pointer-events-none absolute right-4 top-28 z-20 max-w-sm border-4 border-[var(--ink)] bg-[var(--accent)] px-3 py-2 font-mono text-[10px] font-black uppercase text-[var(--ink)] shadow-[4px_4px_0_var(--ink)]">
+          <div>{hoveredRoute.label} // {hoveredRoute.teamLabel}</div>
+          <div className="mt-1 normal-case opacity-70">
+            {hoveredRoute.description}
+          </div>
+        </div>
+      ) : null}
+
+      {selectedLocation ? (
+        <aside className="absolute bottom-28 right-3 z-20 max-h-[48dvh] w-[min(360px,calc(100%-1.5rem))] overflow-y-auto border-4 border-[var(--ink)] bg-[var(--paper)] p-3 font-mono text-[10px] font-black uppercase text-[var(--ink)] shadow-[6px_6px_0_var(--ink)] md:bottom-28 md:right-4 md:text-xs">
+          <button
+            type="button"
+            onClick={() => setSelectedLocationId(null)}
+            aria-label="Close location details"
+            className="absolute right-2 top-2 grid h-8 w-8 place-items-center border-2 border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]"
+          >
+            [ X ]
+          </button>
+          <div className="mb-3 border-b-4 border-[var(--ink)] pb-2 pr-10">
+            <div className="text-[9px] opacity-60">LOCATION</div>
+            <div className="font-serif text-xl font-black leading-none">
+              {selectedLocation.title}
+            </div>
+            {selectedLocation.expandedName ? (
+              <div className="mt-1 normal-case opacity-70">
+                {selectedLocation.expandedName}
+              </div>
+            ) : null}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="border-2 border-[var(--ink)] p-2">
+              <div className="text-[9px] opacity-60">DATE / TIME</div>
+              {selectedLocation.date} / {selectedLocation.timeLabel}
+            </div>
+            <div className="border-2 border-[var(--ink)] p-2">
+              <div className="text-[9px] opacity-60">PRECISION</div>
+              {selectedLocation.timePrecision}
+            </div>
+            <div className="border-2 border-[var(--ink)] p-2">
+              <div className="text-[9px] opacity-60">KILLED</div>
+              {selectedLocation.killed ?? "N/A"}
+            </div>
+            <div className="border-2 border-[var(--ink)] p-2">
+              <div className="text-[9px] opacity-60">INJURED</div>
+              {selectedLocation.injured ?? "N/A"}
+            </div>
+          </div>
+          {selectedLocation.casualtyBreakdown ? (
+            <div className="mt-2 border-2 border-[var(--ink)] p-2">
+              {selectedLocation.casualtyBreakdown.map((phase) => (
+                <div key={phase.id}>
+                  {phase.label}: {phase.killed} KILLED / {phase.injured} INJURED
+                </div>
+              ))}
+            </div>
+          ) : null}
+          {selectedLocation.assignedTeam ? (
+            <div className="mt-2 border-2 border-[var(--ink)] p-2 normal-case">
+              <div className="text-[9px] uppercase opacity-60">ASSIGNED TEAM</div>
+              {selectedLocation.assignedTeam}
+            </div>
+          ) : null}
+          <p className="mt-2 border-2 border-[var(--ink)] p-2 normal-case leading-tight">
+            {selectedLocation.description}
+          </p>
+          <div className="mt-2 text-[9px] opacity-60">
+            SOURCE STATUS: {selectedLocation.confidence} / COORDINATE: {selectedLocation.coordinateStatus}
+          </div>
+        </aside>
+      ) : null}
 
       {/* 2D / 3D camera mode */}
       <div

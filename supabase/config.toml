@@ -1,0 +1,17 @@
+project_id = "crimelens-local"
+
+[auth]
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://127.0.0.1:3000/enroll", "http://localhost:3000/enroll"]
+
+[auth.passkey]
+enabled = true
+
+# This section is intentionally for local Supabase development only. Configure
+# the deployed project in Dashboard > Authentication > Passkeys using the
+# stable production domain documented in README.md before enrolling credentials.
+[auth.webauthn]
+rp_display_name = "CrimeLens"
+rp_id = "localhost"
+rp_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+

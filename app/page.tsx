@@ -1,5 +1,5 @@
-import { KineticTerminal } from "@/components/kinetic-terminal";
+import { PasskeyTerminal } from "@/components/passkey-terminal";
 
 export default function Home() {
-  return <KineticTerminal />;
+  return <PasskeyTerminal />;
 }

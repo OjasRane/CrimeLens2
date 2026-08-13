@@ -14,11 +14,14 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Security, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security.api_key import APIKeyHeader
+from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat
 from sklearn.svm import OneClassSVM
 from supabase import Client, create_client
+
+from .timeline_router import router as timeline_router
 
 
 load_dotenv()
@@ -27,15 +30,17 @@ JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 ADMIN_ACCESS_TOKEN = os.getenv("ADMIN_ACCESS_TOKEN")
+LEGACY_KINETIC_AUTH_ENABLED = (
+    os.getenv("ENABLE_LEGACY_KINETIC_AUTH", "false").lower() == "true"
+)
 PROVISION_TOKEN_EXPIRE_MINUTES = 15
 PROVISION_TOKEN_ISSUER = "fatal_ledger_auth_system"
-KINETIC_ENVELOPE_FACTOR = 2.5
+KINETIC_ENVELOPE_FACTOR = 1.75
 MIN_GEOMETRY_THRESHOLD = 0.18
 MAX_GEOMETRY_THRESHOLD = 0.26
 KINETIC_SIGNATURE_VERSION = 2
-MIN_SEQUENCE_PATH_LENGTH = 1.25
-MIN_SEQUENCE_EXCURSION = 0.35
-MAX_SEQUENCE_DTW_DISTANCE = 0.42
+MIN_STATIC_POSE_THRESHOLD = 0.30
+MAX_STATIC_POSE_THRESHOLD = 0.70
 HAND_BONE_CONNECTIONS = (
     (0, 1), (1, 2), (2, 3), (3, 4),
     (0, 5), (5, 6), (6, 7), (7, 8),
@@ -51,6 +56,7 @@ supabase_client: Client | None = (
     else None
 )
 admin_api_key_header = APIKeyHeader(name="X-Admin-Token", auto_error=False)
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
 Vector63 = Annotated[list[FiniteFloat], Field(min_length=63, max_length=63)]
@@ -93,6 +99,20 @@ class VerificationResponse(BaseModel):
     access_token: str
 
 
+class AuthenticatedUser(BaseModel):
+    user_id: str
+    email: str | None = None
+
+
+class AuthorizedProfile(BaseModel):
+    user_id: str
+    agent_id: str
+    display_name: str
+    role: str
+    clearance: str
+    active: bool
+
+
 class KineticProfile(NamedTuple):
     samples: list[list[float]]
     clearance_status: str
@@ -100,15 +120,24 @@ class KineticProfile(NamedTuple):
 
 
 app = FastAPI(
-    title="Kinetic Authentication Service",
-    version="1.0.0",
+    title="CrimeLens Intelligence API",
+    version="2.0.0",
 )
+
+cors_origins = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000",
+    ).split(",")
+    if origin.strip()
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "X-Admin-Token"],
 )
 
@@ -150,6 +179,123 @@ async def verify_admin(
             detail="Unauthorized: Invalid Admin Token",
         )
     return api_key
+
+
+def require_supabase_user(
+    credentials: Annotated[
+        HTTPAuthorizationCredentials | None,
+        Security(bearer_scheme),
+    ],
+) -> AuthenticatedUser:
+    """Validate a Supabase access token using the current Supabase SDK.
+
+    `get_claims` verifies asymmetric tokens against the project's cached JWKS.
+    The SDK safely falls back to the Auth service for legacy HS256 projects,
+    without exposing the signing secret to this application.
+    """
+    if credentials is None or credentials.scheme.lower() != "bearer":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Supabase bearer token required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if supabase_client is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Supabase Auth validation is not configured",
+        )
+
+    try:
+        response = supabase_client.auth.get_claims(credentials.credentials)
+        claims = response.claims if response is not None else None
+    except Exception as error:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired Supabase access token",
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from error
+
+    expected_issuer = f"{SUPABASE_URL.rstrip('/')}/auth/v1"
+    audience = claims.get("aud") if claims else None
+    audience_matches = (
+        audience == "authenticated"
+        or isinstance(audience, list) and "authenticated" in audience
+    )
+    user_id = claims.get("sub") if claims else None
+
+    if (
+        not isinstance(user_id, str)
+        or not user_id
+        or claims.get("iss") != expected_issuer
+        or not audience_matches
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Supabase token claims are invalid",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    email = claims.get("email")
+    return AuthenticatedUser(
+        user_id=user_id,
+        email=email if isinstance(email, str) else None,
+    )
+
+
+def _load_authorized_profile(user_id: str) -> AuthorizedProfile | None:
+    try:
+        with psycopg.connect(_database_url()) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT user_id, agent_id, display_name, role, clearance, active
+                    FROM public.profiles
+                    WHERE user_id = %s
+                    """,
+                    (user_id,),
+                )
+                row = cursor.fetchone()
+    except psycopg.Error as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authorization profile database is unavailable",
+        ) from error
+
+    if row is None:
+        return None
+
+    return AuthorizedProfile(
+        user_id=str(row[0]),
+        agent_id=row[1],
+        display_name=row[2],
+        role=row[3],
+        clearance=row[4],
+        active=row[5],
+    )
+
+
+def require_active_profile(
+    user: Annotated[AuthenticatedUser, Depends(require_supabase_user)],
+) -> AuthorizedProfile:
+    profile = _load_authorized_profile(user.user_id)
+    if profile is None or not profile.active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Active CrimeLens authorization profile required",
+        )
+    return profile
+
+
+def require_legacy_kinetic_auth() -> None:
+    if not LEGACY_KINETIC_AUTH_ENABLED:
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail=(
+                "Legacy kinetic authentication is disabled. "
+                "Use Supabase passkey authentication."
+            ),
+        )
 
 
 def _create_access_token(agent_id: str, clearance_status: str) -> str:
@@ -297,67 +443,34 @@ def _geometry_match_metrics(
     )
 
 
-def _sequence_features(samples: list[list[float]]) -> tuple[np.ndarray, float, float]:
-    sequence = np.asarray(samples, dtype=np.float64)
-    if sequence.shape != (10, 63):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Kinetic gesture must contain exactly 10 normalized frames",
-        )
-
-    smoothed = sequence.copy()
-    smoothed[1:-1] = (
-        sequence[:-2] + 2.0 * sequence[1:-1] + sequence[2:]
-    ) / 4.0
-    trajectory = smoothed - smoothed[0]
-    step_lengths = np.linalg.norm(np.diff(trajectory, axis=0), axis=1)
-    path_length = float(step_lengths.sum())
-    excursion = float(np.linalg.norm(trajectory, axis=1).max())
-    normalized = trajectory / max(excursion, np.finfo(np.float64).eps)
-    return normalized, path_length, excursion
-
-
-def _validate_enrollment_sequence(samples: list[list[float]]) -> None:
-    _, path_length, excursion = _sequence_features(samples)
-    if (
-        path_length < MIN_SEQUENCE_PATH_LENGTH
-        or excursion < MIN_SEQUENCE_EXCURSION
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                "Gesture is not distinctive enough. Re-enroll using a clear, "
-                "private finger-motion sequence across all 10 captures."
-            ),
-        )
-
-
-def _sequence_dtw_distance(
+def _static_pose_match_metrics(
     enrolled_samples: list[list[float]],
     candidate_samples: list[list[float]],
-) -> tuple[float, float, float]:
-    enrolled, _, _ = _sequence_features(enrolled_samples)
-    candidate, path_length, excursion = _sequence_features(candidate_samples)
-    costs = np.full(
-        (len(enrolled) + 1, len(candidate) + 1),
-        np.inf,
-        dtype=np.float64,
+) -> tuple[bool, float, float, float]:
+    enrolled = np.asarray(enrolled_samples, dtype=np.float64)
+    candidate = np.asarray(candidate_samples, dtype=np.float64)
+    enrolled_center = np.median(enrolled, axis=0)
+    candidate_center = np.median(candidate, axis=0)
+    enrollment_distances = np.linalg.norm(
+        enrolled - enrolled_center,
+        axis=1,
     )
-    costs[0, 0] = 0.0
-
-    for enrolled_index in range(1, len(enrolled) + 1):
-        for candidate_index in range(1, len(candidate) + 1):
-            frame_cost = np.linalg.norm(
-                enrolled[enrolled_index - 1] - candidate[candidate_index - 1]
-            )
-            costs[enrolled_index, candidate_index] = frame_cost + min(
-                costs[enrolled_index - 1, candidate_index],
-                costs[enrolled_index, candidate_index - 1],
-                costs[enrolled_index - 1, candidate_index - 1],
-            )
-
-    distance = float(costs[-1, -1] / max(len(enrolled), len(candidate)))
-    return distance, path_length, excursion
+    median_distance = float(np.median(enrollment_distances))
+    median_absolute_deviation = float(
+        np.median(np.abs(enrollment_distances - median_distance))
+    )
+    threshold = min(
+        MAX_STATIC_POSE_THRESHOLD,
+        max(
+            MIN_STATIC_POSE_THRESHOLD,
+            median_distance + 4.0 * median_absolute_deviation,
+        ),
+    )
+    pose_distance = float(np.linalg.norm(candidate_center - enrolled_center))
+    candidate_jitter = float(
+        np.median(np.linalg.norm(candidate - candidate_center, axis=1))
+    )
+    return pose_distance <= threshold, pose_distance, threshold, candidate_jitter
 
 
 def _consume_token_and_store_signatures(
@@ -479,6 +592,13 @@ def health() -> dict[str, str]:
     return {"status": "OK"}
 
 
+@app.get("/api/v1/auth/me", response_model=AuthorizedProfile)
+def get_current_profile(
+    profile: Annotated[AuthorizedProfile, Depends(require_active_profile)],
+) -> AuthorizedProfile:
+    return profile
+
+
 @app.post(
     "/api/v1/auth/generate-provision-token",
     response_model=ProvisionTokenResponse,
@@ -487,6 +607,7 @@ def generate_provision_token(
     payload: ProvisionRequest,
     _admin_key: Annotated[str, Depends(verify_admin)],
 ) -> ProvisionTokenResponse:
+    require_legacy_kinetic_auth()
     encoded_token, expires_at = _create_provisioning_token(payload.new_agent_id)
 
     if supabase_client is None:
@@ -537,8 +658,8 @@ def generate_provision_token(
     response_model=RegistrationResponse,
 )
 def register_kinetic(payload: RegistrationPayload) -> RegistrationResponse:
+    require_legacy_kinetic_auth()
     samples = [list(sample) for sample in payload.samples]
-    _validate_enrollment_sequence(samples)
     model = _train_model(samples)
     agent_id = _decode_provisioning_token(payload.provisioning_token)
     _consume_token_and_store_signatures(
@@ -558,6 +679,7 @@ def register_kinetic(payload: RegistrationPayload) -> RegistrationResponse:
     response_model=VerificationResponse,
 )
 def verify_kinetic(payload: VerificationPayload) -> VerificationResponse:
+    require_legacy_kinetic_auth()
     # Signature vectors are the durable source of truth. Rebuilding the model
     # here keeps separate FastAPI instances consistent after re-enrollment.
     profile = _load_profile(payload.agent_id)
@@ -590,27 +712,22 @@ def verify_kinetic(payload: VerificationPayload) -> VerificationResponse:
         candidate_vector.tolist(),
         )
     )
-    sequence_distance, sequence_path_length, sequence_excursion = (
-        _sequence_dtw_distance(profile.samples, candidate_samples)
-    )
-    sequence_match = (
-        sequence_path_length >= MIN_SEQUENCE_PATH_LENGTH
-        and sequence_excursion >= MIN_SEQUENCE_EXCURSION
-        and sequence_distance <= MAX_SEQUENCE_DTW_DISTANCE
+    pose_match, pose_distance, pose_threshold, candidate_jitter = (
+        _static_pose_match_metrics(profile.samples, candidate_samples)
     )
 
-    if prediction == -1 or not geometry_match or not sequence_match:
+    if prediction == -1 or not geometry_match or not pose_match:
         logger.warning(
             "Biometric verification denied for agent=%s: "
             "svm_score=%.6f geometry_distance=%.6f geometry_threshold=%.6f "
-            "sequence_distance=%.6f sequence_path=%.6f sequence_excursion=%.6f",
+            "pose_distance=%.6f pose_threshold=%.6f candidate_jitter=%.6f",
             payload.agent_id,
             float(model.decision_function(x_candidate)[0]),
             geometry_distance,
             geometry_threshold,
-            sequence_distance,
-            sequence_path_length,
-            sequence_excursion,
+            pose_distance,
+            pose_threshold,
+            candidate_jitter,
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -624,3 +741,11 @@ def verify_kinetic(payload: VerificationPayload) -> VerificationResponse:
             clearance_status=profile.clearance_status,
         ),
     )
+
+
+# Investigation routes accept only a verified Supabase session whose subject
+# also has an active server-controlled CrimeLens authorization profile.
+app.include_router(
+    timeline_router,
+    dependencies=[Depends(require_active_profile)],
+)

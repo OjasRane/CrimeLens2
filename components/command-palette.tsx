@@ -10,6 +10,10 @@ import {
   useState,
 } from "react";
 import type { ForceMapPanEvent } from "@/liveblocks.config";
+import {
+  getInvestigation,
+  getLocationsForEntity,
+} from "@/data/investigations/registry";
 import { triggerHaptic } from "@/lib/haptics";
 import { useBroadcastEvent } from "@/lib/liveblocks";
 import { useInvestigationStore } from "@/store/use-investigation-store";
@@ -150,6 +154,10 @@ type CommandPaletteProps = {
 };
 
 function CommandPalette({ broadcast }: CommandPaletteProps) {
+  const activeInvestigationId = useInvestigationStore(
+    (state) => state.activeInvestigationId,
+  );
+  const activeInvestigation = getInvestigation(activeInvestigationId);
   const isOpen = useInvestigationStore((state) => state.isCommandPaletteOpen);
   const close = useInvestigationStore((state) => state.closeCommandPalette);
   const toggle = useInvestigationStore((state) => state.toggleCommandPalette);
@@ -160,17 +168,70 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
   const setSelectedSuspectId = useInvestigationStore(
     (state) => state.setSelectedSuspectId,
   );
+  const setSelectedEntityId = useInvestigationStore(
+    (state) => state.setSelectedEntityId,
+  );
+  const setSelectedLocationId = useInvestigationStore(
+    (state) => state.setSelectedLocationId,
+  );
   const requestMapPan = useInvestigationStore((state) => state.requestMapPan);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [query, setQuery] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
 
+  const investigationTargets = useMemo<CommandResult[]>(() => {
+    if (activeInvestigationId === "demo") return TARGETS;
+
+    const systemAction = TARGETS[0];
+    const locationTargets: IntelligenceTarget[] = activeInvestigation.map.locations
+      .filter(
+        (location): location is typeof location & { coordinates: [number, number] } =>
+          Boolean(location.coordinates),
+      )
+      .map((location) => ({
+        id: location.id,
+        category: "SECTORS",
+        type: "intelligence_target",
+        label: location.title,
+        detail: `${location.type} / ${location.timeLabel}`,
+        searchTerms: [
+          location.type,
+          location.expandedName ?? "",
+          location.alternativeLabel ?? "",
+          location.description,
+        ],
+        coords: location.coordinates,
+      }));
+    const entityTargets: IntelligenceTarget[] = activeInvestigation.graph.nodes
+      .filter((node) => node.kind !== "location")
+      .flatMap((node) => {
+        const firstLocation = getLocationsForEntity(
+          activeInvestigation,
+          node.id,
+        ).find((location) => location.coordinates);
+        if (!firstLocation?.coordinates) return [];
+        return [
+          {
+            id: node.id,
+            category: "PERSONNEL" as const,
+            type: "intelligence_target" as const,
+            label: node.label,
+            detail: `${node.kind} / ${node.status ?? node.subtitle}`,
+            searchTerms: [node.kind, node.subtitle, node.status ?? ""],
+            coords: firstLocation.coordinates,
+          },
+        ];
+      });
+
+    return [systemAction, ...entityTargets, ...locationTargets];
+  }, [activeInvestigation, activeInvestigationId]);
+
   const results = useMemo(() => {
     const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-    if (terms.length === 0) return TARGETS;
+    if (terms.length === 0) return investigationTargets;
 
-    return TARGETS.filter((target) => {
+    return investigationTargets.filter((target) => {
       const haystack = [
         target.id,
         target.label,
@@ -181,7 +242,7 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
         .toLocaleLowerCase();
       return terms.every((term) => haystack.includes(term));
     });
-  }, [query]);
+  }, [investigationTargets, query]);
 
   useEffect(() => {
     const onGlobalKeyDown = (event: KeyboardEvent) => {
@@ -224,7 +285,13 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
     requestMapPan(target.coords, target.id);
 
     if (target.category === "PERSONNEL") {
-      setSelectedSuspectId(target.id);
+      if (activeInvestigationId === "demo") {
+        setSelectedSuspectId(target.id);
+      } else {
+        setSelectedEntityId(target.id);
+      }
+    } else if (target.category === "SECTORS") {
+      setSelectedLocationId(target.id);
     }
 
     if (shouldBroadcast && broadcast) {

@@ -4,6 +4,7 @@ import {
   type ActiveWorkspace,
   useInvestigationStore,
 } from "@/store/use-investigation-store";
+import { getInvestigation } from "@/data/investigations/registry";
 
 const workspaces: { id: ActiveWorkspace; label: string }[] = [
   { id: "canvas", label: "01 // EVIDENCE BOARD" },
@@ -13,12 +14,16 @@ const workspaces: { id: ActiveWorkspace; label: string }[] = [
 ];
 
 export function WorkspaceBar() {
+  const activeInvestigationId = useInvestigationStore(
+    (state) => state.activeInvestigationId,
+  );
   const activeWorkspace = useInvestigationStore(
     (state) => state.activeWorkspace,
   );
   const setActiveWorkspace = useInvestigationStore(
     (state) => state.setActiveWorkspace,
   );
+  const activeInvestigation = getInvestigation(activeInvestigationId);
 
   return (
     <nav className="fixed left-0 top-20 z-10 hidden h-16 w-full items-center gap-3 overflow-x-auto border-b-4 border-[var(--ink)] bg-[var(--paper)] px-5 font-mono shadow-[0_4px_0_var(--ink)] rounded-none md:flex">
@@ -41,6 +46,17 @@ export function WorkspaceBar() {
           </button>
         );
       })}
+      <div className="ml-auto flex shrink-0 items-center gap-2 border-2 border-[var(--ink)] bg-[var(--panel)] px-3 py-2 text-[10px] font-black uppercase shadow-[3px_3px_0_var(--ink)]">
+        [ {activeInvestigation.badge} ]
+        <span className="hidden opacity-65 lg:inline">
+          {activeInvestigation.caseId} // {activeInvestigation.caseType}
+        </span>
+        {activeInvestigation.type === "HISTORICAL" ? (
+          <span className="hidden text-[9px] font-bold normal-case opacity-65 xl:inline">
+            Approximate times are marked ≈
+          </span>
+        ) : null}
+      </div>
     </nav>
   );
 }

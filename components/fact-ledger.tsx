@@ -1,22 +1,14 @@
 "use client";
 
 import type { Node } from "@xyflow/react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useCollaborationIdentity } from "@/components/collaboration-context";
+import type { InvestigationFact } from "@/data/investigations/types";
 import { serializeFlowNode } from "@/lib/evidence-board-storage";
 import { useMutation } from "@/lib/liveblocks";
-import {
-  type InvestigationFact,
-  useInvestigationStore,
-} from "@/store/use-investigation-store";
+import { useInvestigationStore } from "@/store/use-investigation-store";
 
-type FactFilter = "all" | "forensic" | "testimonial";
-
-const filters: { label: string; value: FactFilter }[] = [
-  { label: "[ ALL ]", value: "all" },
-  { label: "[ FORENSIC ]", value: "forensic" },
-  { label: "[ TESTIMONIAL ]", value: "testimonial" },
-];
+type FactFilter = "all" | InvestigationFact["type"];
 
 function matchesFilter(fact: InvestigationFact, filter: FactFilter) {
   return filter === "all" || fact.type === filter;
@@ -25,19 +17,58 @@ function matchesFilter(fact: InvestigationFact, filter: FactFilter) {
 function FactLedgerView({
   pinFactToBoard,
 }: {
-  pinFactToBoard: (text: string) => void;
+  pinFactToBoard: (fact: InvestigationFact) => void;
 }) {
   const [activeFilter, setActiveFilter] = useState<FactFilter>("all");
   const facts = useInvestigationStore((state) => state.facts);
-  const filteredFacts = facts.filter((fact) =>
-    matchesFilter(fact, activeFilter),
+  const activeInvestigationId = useInvestigationStore(
+    (state) => state.activeInvestigationId,
   );
+  const selectedEntityId = useInvestigationStore(
+    (state) => state.selectedEntityId,
+  );
+  const selectedLocationId = useInvestigationStore(
+    (state) => state.selectedLocationId,
+  );
+  const selectedTimelineEventId = useInvestigationStore(
+    (state) => state.selectedTimelineEventId,
+  );
+
+  useEffect(() => setActiveFilter("all"), [activeInvestigationId]);
+
+  const filters = useMemo(
+    () => [
+      { label: "[ ALL ]", value: "all" as const },
+      ...Array.from(new Set(facts.map((fact) => fact.type))).map((type) => ({
+        label: `[ ${type.replaceAll("-", " ").toUpperCase()} ]`,
+        value: type,
+      })),
+    ],
+    [facts],
+  );
+
+  const filteredFacts = facts.filter((fact) => {
+    if (!matchesFilter(fact, activeFilter)) return false;
+    if (selectedTimelineEventId) {
+      return fact.linkedTimelineEventIds.includes(selectedTimelineEventId);
+    }
+    if (selectedLocationId) {
+      return fact.linkedLocationIds.includes(selectedLocationId);
+    }
+    if (selectedEntityId) {
+      return (
+        fact.linkedEntityIds.includes(selectedEntityId) ||
+        fact.linkedLocationIds.includes(selectedEntityId)
+      );
+    }
+    return true;
+  });
 
   return (
     <div className="h-full w-full overflow-y-auto p-3 font-mono md:w-[360px] md:p-4">
       <div className="mb-4 border-4 border-[var(--ink)] bg-[var(--panel)] p-3 shadow-[4px_4px_0_var(--ink)] rounded-none">
         <p className="text-xs font-bold uppercase tracking-normal">
-          Indexed Evidence
+          Indexed Evidence / {activeInvestigationId === "demo" ? "Demo Data" : "Historical Record"}
         </p>
         <h2 className="text-2xl font-black uppercase leading-none tracking-normal">
           Fact Ledger
@@ -85,11 +116,17 @@ function FactLedgerView({
                   </span>
                 </div>
                 {fact.text}
+                <div className="mt-2 border-t-2 border-dashed border-[var(--ink)] pt-2 text-[9px] normal-case opacity-65">
+                  <div>{fact.sourceTitle}</div>
+                  <div>
+                    {fact.timePrecision} / {fact.confidence}
+                  </div>
+                </div>
               </td>
               <td className="border-4 border-[var(--ink)] bg-[var(--panel)] px-2 py-2 align-top">
                 <button
                   type="button"
-                  onClick={() => pinFactToBoard(fact.text)}
+                  onClick={() => pinFactToBoard(fact)}
                   className="min-h-11 w-full border-2 border-[var(--ink)] bg-[var(--accent)] px-1 py-2 text-[10px] font-black uppercase leading-tight text-[var(--ink)] shadow-[3px_3px_0_var(--ink)] active:translate-x-1 active:translate-y-1 active:shadow-none rounded-none"
                 >
                   [ PIN TO BOARD ]
@@ -114,7 +151,7 @@ function FactLedgerView({
 }
 
 function LiveFactLedger() {
-  const pinFactToBoard = useMutation(({ storage }, text: string) => {
+  const pinFactToBoard = useMutation(({ storage }, fact: InvestigationFact) => {
     const randomOffset = () => Math.round(Math.random() * 180 - 90);
     const node: Node = {
       id: `stickyNote-${crypto.randomUUID()}`,
@@ -123,7 +160,16 @@ function LiveFactLedger() {
         x: Math.round(window.innerWidth / 2) + randomOffset(),
         y: Math.round(window.innerHeight / 2) + randomOffset(),
       },
-      data: { text },
+      data: {
+        text: fact.text,
+        investigationId: fact.investigationId,
+        sourceEntityId: fact.linkedEntityIds[0] ?? null,
+        sourceType:
+          fact.investigationId === "mumbai-2611"
+            ? "historical-fact"
+            : "investigation-fact",
+        sourceFactId: fact.id,
+      },
     };
 
     storage.get("nodes").push(serializeFlowNode(node));

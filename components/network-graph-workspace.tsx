@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -17,23 +17,29 @@ import {
   type NodeProps,
 } from "@xyflow/react";
 import {
+  Building2,
   FileSearch,
   MapPin,
   Phone,
   ReceiptText,
+  Shield,
   UserRound,
+  UsersRound,
 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { MumbaiNetworkGraph } from "@/components/mumbai-network-graph";
+import { getInvestigation } from "@/data/investigations/registry";
+import type { GraphLinkKind, GraphNodeKind } from "@/data/investigations/types";
 import { triggerHaptic } from "@/lib/haptics";
 import { useInvestigationStore } from "@/store/use-investigation-store";
 
-type GraphNodeKind = "suspect" | "evidence" | "location" | "transaction";
-type LinkKind = "financial" | "phone" | "colocation";
+type LinkKind = GraphLinkKind;
 
 type CaseGraphNodeData = {
   label: string;
   kind: GraphNodeKind;
   subtitle: string;
+  status?: string;
   risk?: "HIGH" | "MED" | "LOW";
   active: boolean;
   selected: boolean;
@@ -278,6 +284,7 @@ const graphLinks: CaseGraphLink[] = [
 function getHopDistances(
   enabledKinds: Set<LinkKind>,
   subjectId: string | null,
+  links: CaseGraphLink[],
 ) {
   if (!subjectId) {
     return new Map<string, number>();
@@ -295,7 +302,7 @@ function getHopDistances(
 
     const currentDistance = distances.get(currentId) ?? 0;
 
-    for (const link of graphLinks) {
+    for (const link of links) {
       if (!enabledKinds.has(link.linkKind)) {
         continue;
       }
@@ -325,12 +332,17 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
   const Icon = (
     {
       suspect: UserRound,
+      attacker: UserRound,
+      team: UsersRound,
+      organization: Building2,
+      planner: FileSearch,
       evidence: FileSearch,
       location: MapPin,
+      response: Shield,
       transaction: ReceiptText,
     } as const
   )[data.kind];
-  const isSuspect = data.kind === "suspect";
+  const isSuspect = data.kind === "suspect" || data.kind === "attacker";
   const isTransaction = data.kind === "transaction";
   const isEvidence = data.kind === "evidence";
   const isLocation = data.kind === "location";
@@ -339,6 +351,15 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
   );
   const setSelectedSuspectId = useInvestigationStore(
     (state) => state.setSelectedSuspectId,
+  );
+  const selectedEntityId = useInvestigationStore(
+    (state) => state.selectedEntityId,
+  );
+  const setSelectedEntityId = useInvestigationStore(
+    (state) => state.setSelectedEntityId,
+  );
+  const setSelectedLocationId = useInvestigationStore(
+    (state) => state.setSelectedLocationId,
   );
 
   // Build the node's class string based on kind + dark mode
@@ -350,7 +371,7 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
     // Selected node: red highlight in both modes
     kindClasses =
       "bg-[#D22B2B] text-white dark:bg-[#D22B2B] dark:text-[#EFF6E0] dark:border-[#D22B2B]";
-  } else if (isSuspect) {
+  } else if (isSuspect || data.kind === "organization") {
     // Suspect: black in light → teal panel in dark
     kindClasses =
       "bg-black text-white dark:bg-[#124559] dark:border dark:border-[#598392] dark:text-[#EFF6E0] dark:shadow-none";
@@ -365,18 +386,36 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-label={`${data.kind}; ${data.label}; ${data.status ?? data.subtitle}`}
       className={`group relative min-h-24 w-44 border-4 border-black p-3 font-mono uppercase shadow-[5px_5px_0_black] transition-all duration-300 rounded-none dark:border-[#598392] ${kindClasses} ${
         data.selected ? "scale-105" : ""
       }`}
       onClick={() => {
         if (isSuspect) {
           setSelectedSuspectId(selectedSuspectId === id ? null : id);
+        } else if (isLocation) {
+          setSelectedLocationId(selectedEntityId === id ? null : id);
+        } else {
+          setSelectedEntityId(selectedEntityId === id ? null : id);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        if (isSuspect) {
+          setSelectedSuspectId(selectedSuspectId === id ? null : id);
+        } else if (isLocation) {
+          setSelectedLocationId(selectedEntityId === id ? null : id);
+        } else {
+          setSelectedEntityId(selectedEntityId === id ? null : id);
         }
       }}
       style={{
         opacity: data.active ? 1 : 0.2,
         filter: data.active ? "none" : "grayscale(1)",
-        cursor: isSuspect ? "pointer" : "default",
+        cursor: "pointer",
       }}
     >
       <Handle
@@ -400,6 +439,11 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
       {data.risk ? (
         <div className="mt-2 inline-block border-2 border-black bg-[#FCD34D] px-1 py-0.5 text-[10px] font-black text-black dark:border-[#AEC3B0] dark:bg-transparent dark:text-[#AEC3B0]">
           {data.risk} RISK
+        </div>
+      ) : null}
+      {data.status ? (
+        <div className="mt-2 inline-block border-2 border-current px-1 py-0.5 text-[9px] font-black">
+          {data.status}
         </div>
       ) : null}
     </div>
@@ -476,16 +520,48 @@ const edgeTypes = {
 /* ─── Canvas ──────────────────────────────────── */
 
 function NetworkGraphCanvas() {
-  const selectedSuspectId = useInvestigationStore(
-    (state) => state.selectedSuspectId,
+  const activeInvestigationId = useInvestigationStore(
+    (state) => state.activeInvestigationId,
   );
-  const setSelectedSuspectId = useInvestigationStore(
-    (state) => state.setSelectedSuspectId,
+  const selectedEntityId = useInvestigationStore(
+    (state) => state.selectedEntityId,
+  );
+  const setSelectedLocationId = useInvestigationStore(
+    (state) => state.setSelectedLocationId,
   );
   const openLedger = useInvestigationStore((state) => state.openLedger);
   const timeRange = useInvestigationStore((state) => state.timeRange);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
+  const activeInvestigation = getInvestigation(activeInvestigationId);
+  const linkFilters = activeInvestigation.graph.filters;
+  const graphNodes = useMemo<CaseGraphNode[]>(
+    () =>
+      activeInvestigation.graph.nodes.map((node) => ({
+        id: node.id,
+        data: {
+          label: node.label,
+          kind: node.kind,
+          subtitle: node.subtitle,
+          status: node.status,
+          risk: node.risk,
+        },
+        position: node.position,
+        dateRange: node.dateRange,
+      })),
+    [activeInvestigation],
+  );
+  const graphLinks = useMemo<CaseGraphLink[]>(
+    () =>
+      activeInvestigation.graph.links.map((link) => ({
+        id: link.id,
+        source: link.source,
+        target: link.target,
+        linkKind: link.linkKind,
+        label: link.label,
+      })),
+    [activeInvestigation],
+  );
 
   const [enabledLinkKinds, setEnabledLinkKinds] = useState<Set<LinkKind>>(
     () => new Set(linkFilters.map((filter) => filter.id)),
@@ -493,9 +569,15 @@ function NetworkGraphCanvas() {
   const [hopLimit, setHopLimit] = useState(2);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
+  useEffect(() => {
+    setEnabledLinkKinds(new Set(linkFilters.map((filter) => filter.id)));
+    setHopLimit(2);
+    setIsFiltersOpen(false);
+  }, [activeInvestigationId]);
+
   const hopDistances = useMemo(
-    () => getHopDistances(enabledLinkKinds, selectedSuspectId),
-    [enabledLinkKinds, selectedSuspectId],
+    () => getHopDistances(enabledLinkKinds, selectedEntityId, graphLinks),
+    [enabledLinkKinds, graphLinks, selectedEntityId],
   );
 
   // Check if a node's date range overlaps with the global timeRange
@@ -508,11 +590,11 @@ function NetworkGraphCanvas() {
   const nodes = useMemo<Node<CaseGraphNodeData>[]>(
     () =>
       graphNodes.map((node) => {
-        const distance = selectedSuspectId
+        const distance = selectedEntityId
           ? hopDistances.get(node.id)
           : undefined;
         const hopActive =
-          !selectedSuspectId ||
+          !selectedEntityId ||
           (typeof distance === "number" && distance <= hopLimit);
         const temporalActive = isInTimeRange(node);
         const active = hopActive && temporalActive;
@@ -524,12 +606,12 @@ function NetworkGraphCanvas() {
           data: {
             ...node.data,
             active,
-            selected: selectedSuspectId === node.id,
+            selected: selectedEntityId === node.id,
           },
           draggable: false,
         };
       }),
-    [hopDistances, hopLimit, selectedSuspectId, timeRange],
+    [graphNodes, hopDistances, hopLimit, selectedEntityId, timeRange],
   );
 
   const activeNodeIds = useMemo(
@@ -574,7 +656,7 @@ function NetworkGraphCanvas() {
     [activeNodeIds, enabledLinkKinds, isDark],
   );
 
-  const selectedNode = graphNodes.find((node) => node.id === selectedSuspectId);
+  const selectedNode = graphNodes.find((node) => node.id === selectedEntityId);
   const visibleEdgeCount = edges.filter((edge) => edge.data?.active).length;
 
   function toggleLinkKind(linkKind: LinkKind) {
@@ -646,7 +728,7 @@ function NetworkGraphCanvas() {
         </div>
         <button
           type="button"
-          onClick={() => setSelectedSuspectId(null)}
+          onClick={() => setSelectedLocationId(null)}
           className="min-h-11 border-2 border-black bg-[#FCD34D] px-2 py-2 text-left text-black shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[#AEC3B0] dark:bg-[#124559] dark:text-[#AEC3B0] dark:shadow-none dark:hover:bg-[#AEC3B0] dark:hover:text-[#01161E]"
         >
           Clear Subject
@@ -693,9 +775,7 @@ function NetworkGraphCanvas() {
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
             >
-              <div className="max-h-[min(60dvh,430px)]">
-                {filterControls}
-              </div>
+              <div className="max-h-[min(60dvh,430px)]">{filterControls}</div>
             </motion.div>
           ) : null}
         </AnimatePresence>
@@ -704,6 +784,7 @@ function NetworkGraphCanvas() {
       {/* ── Graph ───────────────────────────────── */}
       <div className="relative h-full min-h-0 w-full">
         <ReactFlow
+          key={activeInvestigationId}
           nodes={nodes}
           edges={edges}
           nodeTypes={nodeTypes}
@@ -733,7 +814,8 @@ function NetworkGraphCanvas() {
                 </div>
                 <p className="mb-3 leading-tight">
                   {selectedNode.data.label} /{" "}
-                  {selectedNode.data.risk ?? "UNKNOWN"} RISK / {hopLimit} HOPS
+                  {selectedNode.data.status ?? selectedNode.data.kind} /{" "}
+                  {hopLimit} HOPS
                 </p>
                 <button
                   type="button"
@@ -752,8 +834,20 @@ function NetworkGraphCanvas() {
 }
 
 export function NetworkGraphWorkspace() {
+  const activeInvestigationId = useInvestigationStore(
+    (state) => state.activeInvestigationId,
+  );
+
+  if (activeInvestigationId === "mumbai-2611") {
+    return (
+      <ReactFlowProvider key="mumbai-network-graph">
+        <MumbaiNetworkGraph investigation={getInvestigation("mumbai-2611")} />
+      </ReactFlowProvider>
+    );
+  }
+
   return (
-    <ReactFlowProvider>
+    <ReactFlowProvider key="demo-network-graph">
       <NetworkGraphCanvas />
     </ReactFlowProvider>
   );

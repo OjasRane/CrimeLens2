@@ -23,6 +23,7 @@ import {
   type XYPosition,
 } from "@xyflow/react";
 import { useCollaborationIdentity } from "@/components/collaboration-context";
+import { getInvestigation } from "@/data/investigations/registry";
 import { RedStringEdge } from "@/components/flow-edges";
 import {
   LiveStickyNoteNode,
@@ -92,6 +93,11 @@ function EvidenceBox({
   const [touchDrag, setTouchDrag] = useState<TouchEvidenceDrag | null>(null);
   const touchDragRef = useRef<TouchEvidenceDrag | null>(null);
   const lastTouchPlacementAtRef = useRef(0);
+  const activeInvestigationId = useInvestigationStore(
+    (state) => state.activeInvestigationId,
+  );
+  const openLedger = useInvestigationStore((state) => state.openLedger);
+  const activeInvestigation = getInvestigation(activeInvestigationId);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 767px)");
@@ -192,6 +198,19 @@ function EvidenceBox({
 
       {isOpen ? (
         <div id="evidence-box-actions" className="space-y-2">
+          <div className="border-2 border-[var(--ink)] bg-[var(--paper)] px-2 py-2 text-[10px] font-black uppercase">
+            <div>[ {activeInvestigation.shortName} ]</div>
+            <div className="mt-1 normal-case opacity-60">
+              {activeInvestigation.facts.length} indexed case records
+            </div>
+            <button
+              type="button"
+              onClick={openLedger}
+              className="mt-2 hidden min-h-11 w-full border-2 border-[var(--ink)] bg-[var(--accent)] px-2 text-left text-[9px] font-black uppercase shadow-[2px_2px_0_var(--ink)] md:block"
+            >
+              [ OPEN CASE LEDGER ]
+            </button>
+          </div>
           {evidenceItems.map((item) => (
             <div key={item.nodeType}>
               <div
@@ -261,6 +280,10 @@ function BoardSurface({
   const { screenToFlowPosition } = useReactFlow();
   const { agentId } = useCollaborationIdentity();
   const boardRef = useRef<HTMLDivElement>(null);
+  const activeInvestigationId = useInvestigationStore(
+    (state) => state.activeInvestigationId,
+  );
+  const activeInvestigation = getInvestigation(activeInvestigationId);
 
   const renderedNodes = useMemo(
     () =>
@@ -335,6 +358,12 @@ function BoardSurface({
       className="relative h-full w-full bg-[var(--paper)]"
     >
       <EvidenceBox onMobilePlace={handleMobilePlace} />
+      <div className="pointer-events-none absolute right-2 top-2 z-10 max-w-[calc(100%-13rem)] border-2 border-[var(--ink)] bg-[var(--paper)] px-2 py-2 text-right font-mono text-[9px] font-black uppercase shadow-[3px_3px_0_var(--ink)] md:right-4 md:top-4 md:text-[10px]">
+        <div>[ {activeInvestigation.shortName} ]</div>
+        <div className="mt-1 hidden font-bold normal-case opacity-65 sm:block">
+          Board storage follows the active collaboration room
+        </div>
+      </div>
       <ReactFlow
         nodes={renderedNodes}
         edges={edges}
