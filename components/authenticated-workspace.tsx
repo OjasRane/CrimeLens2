@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { loadAuthorizedProfile } from "@/lib/crimelens-auth";
+import { InvestigationDataRuntime } from "@/components/investigation-data-runtime";
 import {
   getSupabaseBrowserClient,
   isSupabaseBrowserConfigured,
@@ -79,6 +80,7 @@ export function AuthenticatedWorkspace({ children }: { children: ReactNode }) {
   return (
     <>
       {children}
+      <InvestigationDataRuntime />
       <nav
         aria-label="Account security"
         className="fixed right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[65] flex border-2 border-black bg-white font-mono text-black shadow-[3px_3px_0_black] dark:border-[#EAE5C9] dark:bg-[#06141B] dark:text-[#EAE5C9] dark:shadow-[3px_3px_0_#EAE5C9]"

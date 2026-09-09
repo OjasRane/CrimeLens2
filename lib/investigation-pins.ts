@@ -15,7 +15,7 @@ export type InvestigationPinCategory = (typeof PIN_CATEGORIES)[number];
 
 export type InvestigationPin = {
   id: string;
-  caseId: string;
+  investigationId: string;
   latitude: number;
   longitude: number;
   title: string;
@@ -154,19 +154,19 @@ function normalizeFormValues(values: InvestigationPinFormValues) {
   };
 }
 
-export function listInvestigationPins(caseId: string, signal?: AbortSignal) {
+export function listInvestigationPins(investigationId: string, signal?: AbortSignal) {
   return pinRequest<InvestigationPin[]>(
-    `/api/v1/cases/${encodeURIComponent(caseId)}/pins`,
+    `/api/v1/investigations/${encodeURIComponent(investigationId)}/pins`,
     { signal },
   );
 }
 
 export function createInvestigationPin(
-  caseId: string,
+  investigationId: string,
   input: InvestigationPinCreateInput,
 ) {
   return pinRequest<InvestigationPin>(
-    `/api/v1/cases/${encodeURIComponent(caseId)}/pins`,
+    `/api/v1/investigations/${encodeURIComponent(investigationId)}/pins`,
     {
       method: "POST",
       body: JSON.stringify({
@@ -179,12 +179,12 @@ export function createInvestigationPin(
 }
 
 export function updateInvestigationPin(
-  caseId: string,
+  investigationId: string,
   pinId: string,
   input: InvestigationPinUpdateInput,
 ) {
   return pinRequest<InvestigationPin>(
-    `/api/v1/cases/${encodeURIComponent(caseId)}/pins/${encodeURIComponent(pinId)}`,
+    `/api/v1/investigations/${encodeURIComponent(investigationId)}/pins/${encodeURIComponent(pinId)}`,
     {
       method: "PATCH",
       body: JSON.stringify(normalizeFormValues(input)),
@@ -192,9 +192,9 @@ export function updateInvestigationPin(
   );
 }
 
-export function deleteInvestigationPin(caseId: string, pinId: string) {
+export function deleteInvestigationPin(investigationId: string, pinId: string) {
   return pinRequest<void>(
-    `/api/v1/cases/${encodeURIComponent(caseId)}/pins/${encodeURIComponent(pinId)}`,
+    `/api/v1/investigations/${encodeURIComponent(investigationId)}/pins/${encodeURIComponent(pinId)}`,
     { method: "DELETE" },
   );
 }

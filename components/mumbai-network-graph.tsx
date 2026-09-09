@@ -43,9 +43,23 @@ import type {
   InvestigationRoute,
 } from "@/data/investigations/types";
 import { triggerHaptic } from "@/lib/haptics";
+import { AddToNetworkWorkspaceButton } from "@/components/add-to-network-workspace-button";
+import type { WorkspaceNodeType } from "@/lib/network-workspace-types";
 import { useInvestigationStore } from "@/store/use-investigation-store";
 
 type OptionalLayer = "planning";
+
+const workspaceTypeByGraphKind: Record<GraphNodeKind, WorkspaceNodeType> = {
+  suspect: "person",
+  attacker: "person",
+  team: "organization",
+  organization: "organization",
+  planner: "person",
+  location: "location",
+  response: "organization",
+  evidence: "evidence",
+  transaction: "transaction",
+};
 
 type StoryNodeData = {
   label: string;
@@ -1377,6 +1391,7 @@ export function MumbaiNetworkGraph({
         <ReactFlow
           nodes={nodes}
           edges={edges}
+          onlyRenderVisibleElements
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
@@ -1635,6 +1650,22 @@ export function MumbaiNetworkGraph({
                   >
                     [ Inspect source ledger ]
                   </button>
+                  {selectedNode ? (
+                    <AddToNetworkWorkspaceButton
+                      source={{
+                        sourceKind:
+                          selectedNode.kind === "location"
+                            ? "location"
+                            : "entity",
+                        sourceId: selectedNode.id,
+                        label: selectedNode.label,
+                        type: workspaceTypeByGraphKind[selectedNode.kind],
+                        description: selectedNode.subtitle,
+                        sourceVerificationStatus: "verified",
+                      }}
+                      className="mt-2 w-full border-4 border-black bg-[#FCD34D] px-3 py-2 text-left text-[10px] font-black uppercase text-black shadow-[4px_4px_0_black] dark:border-[#AEC3B0] dark:bg-[#AEC3B0] dark:text-[#01161E] dark:shadow-none"
+                    />
+                  ) : null}
                 </div>
               </div>
             </Panel>

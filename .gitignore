@@ -2,6 +2,11 @@
 node_modules/
 .venv/
 backend/.venv/
+backend/.data/
+supabase/.branches/
+supabase/.temp/
+__pycache__/
+*.py[cod]
 tsconfig.tsbuildinfo
 
 .env*

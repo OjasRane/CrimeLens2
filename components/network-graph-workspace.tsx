@@ -28,6 +28,8 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { MumbaiNetworkGraph } from "@/components/mumbai-network-graph";
+import { CustomNetworkWorkspace } from "@/components/custom-network-workspace";
+import { AddToNetworkWorkspaceButton } from "@/components/add-to-network-workspace-button";
 import { getInvestigation } from "@/data/investigations/registry";
 import type { GraphLinkKind, GraphNodeKind } from "@/data/investigations/types";
 import { triggerHaptic } from "@/lib/haptics";
@@ -523,6 +525,7 @@ function NetworkGraphCanvas() {
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
+  useInvestigationStore((state) => state.investigationRevision);
   const selectedEntityId = useInvestigationStore(
     (state) => state.selectedEntityId,
   );
@@ -633,7 +636,7 @@ function NetworkGraphCanvas() {
           source: link.source,
           target: link.target,
           type: "networkRedString",
-          animated: active,
+          animated: false,
           data: {
             linkKind: link.linkKind,
             label: link.label,
@@ -653,7 +656,7 @@ function NetworkGraphCanvas() {
           },
         };
       }),
-    [activeNodeIds, enabledLinkKinds, isDark],
+    [activeNodeIds, enabledLinkKinds, graphLinks, isDark],
   );
 
   const selectedNode = graphNodes.find((node) => node.id === selectedEntityId);
@@ -775,7 +778,9 @@ function NetworkGraphCanvas() {
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
             >
-              <div className="max-h-[min(45dvh,430px)] sm:max-h-[min(60dvh,430px)]">{filterControls}</div>
+              <div className="max-h-[min(45dvh,430px)] sm:max-h-[min(60dvh,430px)]">
+                {filterControls}
+              </div>
             </motion.div>
           ) : null}
         </AnimatePresence>
@@ -787,6 +792,7 @@ function NetworkGraphCanvas() {
           key={activeInvestigationId}
           nodes={nodes}
           edges={edges}
+          onlyRenderVisibleElements
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView
@@ -827,6 +833,30 @@ function NetworkGraphCanvas() {
                 >
                   [ INSPECT DOSSIER ]
                 </button>
+                <AddToNetworkWorkspaceButton
+                  source={{
+                    sourceKind:
+                      selectedNode.data.kind === "location"
+                        ? "location"
+                        : "entity",
+                    sourceId: selectedNode.id,
+                    label: selectedNode.data.label,
+                    type:
+                      selectedNode.data.kind === "location"
+                        ? "location"
+                        : selectedNode.data.kind === "transaction"
+                          ? "transaction"
+                          : selectedNode.data.kind === "evidence"
+                            ? "evidence"
+                            : selectedNode.data.kind === "organization"
+                              ? "organization"
+                              : "person",
+                    description: selectedNode.data.subtitle,
+                    sourceVerificationStatus:
+                      activeInvestigation.type === "DEMO" ? "demo" : "verified",
+                  }}
+                  className="mt-2 w-full border-4 border-black bg-[#FCD34D] px-3 py-2 text-left text-[10px] font-black uppercase text-black shadow-[4px_4px_0_black] dark:border-[#AEC3B0] dark:bg-[#AEC3B0] dark:text-[#01161E] dark:shadow-none"
+                />
               </div>
             </Panel>
           ) : null}
@@ -840,18 +870,58 @@ export function NetworkGraphWorkspace() {
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
+  useInvestigationStore((state) => state.investigationRevision);
+  const networkMode = useInvestigationStore((state) => state.networkMode);
+  const setNetworkMode = useInvestigationStore((state) => state.setNetworkMode);
+
+  const modeSelector = (
+    <div className="flex shrink-0 items-center gap-2 border-b-4 border-[var(--ink)] bg-[var(--paper)] px-2 py-2 font-mono text-[10px] font-black uppercase sm:px-4">
+      <span className="mr-1 hidden opacity-60 lg:inline">View //</span>
+      <button
+        type="button"
+        onClick={() => setNetworkMode("case")}
+        aria-pressed={networkMode === "case"}
+        className={`min-h-9 border-2 border-[var(--ink)] px-3 shadow-[3px_3px_0_var(--ink)] ${networkMode === "case" ? "bg-[var(--ink)] text-[var(--paper)]" : "bg-[var(--panel)] text-[var(--ink)]"}`}
+      >
+        Case Graph <span className="hidden sm:inline">// Authoritative</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => setNetworkMode("workspace")}
+        aria-pressed={networkMode === "workspace"}
+        className={`min-h-9 border-2 border-[var(--ink)] px-3 shadow-[3px_3px_0_var(--ink)] ${networkMode === "workspace" ? "bg-[var(--accent)] text-[var(--ink)]" : "bg-[var(--panel)] text-[var(--ink)]"}`}
+      >
+        Custom Workspace <span className="hidden sm:inline">// Analyst</span>
+      </button>
+    </div>
+  );
+
+  if (networkMode === "workspace") {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        {modeSelector}
+        <CustomNetworkWorkspace investigationId={activeInvestigationId} />
+      </div>
+    );
+  }
 
   if (activeInvestigationId === "mumbai-2611") {
     return (
-      <ReactFlowProvider key="mumbai-network-graph">
-        <MumbaiNetworkGraph investigation={getInvestigation("mumbai-2611")} />
-      </ReactFlowProvider>
+      <div className="flex h-full min-h-0 flex-col">
+        {modeSelector}
+        <ReactFlowProvider key="mumbai-network-graph">
+          <MumbaiNetworkGraph investigation={getInvestigation("mumbai-2611")} />
+        </ReactFlowProvider>
+      </div>
     );
   }
 
   return (
-    <ReactFlowProvider key="demo-network-graph">
-      <NetworkGraphCanvas />
-    </ReactFlowProvider>
+    <div className="flex h-full min-h-0 flex-col">
+      {modeSelector}
+      <ReactFlowProvider key="demo-network-graph">
+        <NetworkGraphCanvas />
+      </ReactFlowProvider>
+    </div>
   );
 }

@@ -3,7 +3,6 @@
 @import "@xyflow/react/dist/style.css";
 @import "mapbox-gl/dist/mapbox-gl.css";
 @import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
-@import "../features/case-replay/src/replay.css";
 
 /* next-themes sets class="dark" on <html>; make Tailwind v4 respond to it. */
 @custom-variant dark (&:where(.dark, .dark *));

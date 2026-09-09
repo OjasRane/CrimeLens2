@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Clock3, Map, Network, PanelsTopLeft } from "lucide-react";
+import { Clock3, FileUp, Map, Network, PanelsTopLeft } from "lucide-react";
 import { triggerHaptic } from "@/lib/haptics";
 import { useInvestigationStore } from "@/store/use-investigation-store";
 
@@ -10,6 +10,7 @@ const mobileWorkspaces = [
   { id: "canvas" as const, label: "BOARD", icon: PanelsTopLeft },
   { id: "network" as const, label: "GRAPH", icon: Network },
   { id: "timeline" as const, label: "TIME", icon: Clock3 },
+  { id: "evidence" as const, label: "INTAKE", icon: FileUp },
 ];
 
 export function MobileWorkspaceNav() {
@@ -23,7 +24,7 @@ export function MobileWorkspaceNav() {
   return (
     <nav
       aria-label="Mobile workspace"
-      className="fixed inset-x-0 bottom-[env(safe-area-inset-bottom)] z-[70] grid h-16 w-full grid-cols-4 border-t-4 border-black bg-[#F4F4F0] p-1 font-mono shadow-[0_-4px_0_black] md:hidden dark:border-[#598392] dark:bg-[#01161E] dark:shadow-[0_-4px_16px_rgba(1,22,30,0.75)]"
+      className="fixed inset-x-0 bottom-[env(safe-area-inset-bottom)] z-[70] grid h-16 w-full grid-cols-5 border-t-4 border-black bg-[#F4F4F0] p-1 font-mono shadow-[0_-4px_0_black] md:hidden dark:border-[#598392] dark:bg-[#01161E] dark:shadow-[0_-4px_16px_rgba(1,22,30,0.75)]"
     >
       {mobileWorkspaces.map(({ id, label, icon: Icon }) => {
         const isActive = activeWorkspace === id;

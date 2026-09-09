@@ -1,202 +1,160 @@
 from __future__ import annotations
 
-import os
-from typing import Annotated
+import json
+import logging
+from contextlib import asynccontextmanager
+from typing import Any
 
-import psycopg
-from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, Security, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security.http import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
-from supabase import Client, create_client
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
 
-from .timeline_router import router as timeline_router
+from .api.routes import audit, auth, evidence, health, investigations, workspaces
+from .api.dependencies import require_active_profile
+from .core.config import Settings, get_settings
+from .core.observability import LocalRateLimitMiddleware, RequestContextMiddleware
+from .core.security import SupabaseJwtVerifier
 from .pins_router import build_pins_router
-
-
-load_dotenv()
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-
-supabase_client: Client | None = (
-    create_client(SUPABASE_URL, SUPABASE_KEY)
-    if SUPABASE_URL and SUPABASE_KEY
-    else None
+from .services.repository import (
+    InvestigationRepository,
+    MemoryInvestigationRepository,
+    PostgresInvestigationRepository,
 )
-bearer_scheme = HTTPBearer(auto_error=False)
+from .services.evidence_repository import build_evidence_repository
+from .timeline_router import router as blind_spot_router
 
 
-class AuthenticatedUser(BaseModel):
-    user_id: str
-    email: str | None = None
+logger = logging.getLogger("crimelens.api")
 
 
-class AuthorizedProfile(BaseModel):
-    user_id: str
-    agent_id: str
-    display_name: str
-    role: str
-    clearance: str
-    active: bool
+def _default_repository(settings: Settings) -> InvestigationRepository:
+    if settings.database_url:
+        return PostgresInvestigationRepository(settings.database_url)
+    return MemoryInvestigationRepository.from_seed_file()
 
 
-app = FastAPI(
-    title="CrimeLens Intelligence API",
-    version="2.0.0",
-)
+def create_app(
+    *,
+    settings: Settings | None = None,
+    repository: InvestigationRepository | None = None,
+    jwt_verifier: Any | None = None,
+) -> FastAPI:
+    active_settings = settings or get_settings()
+    active_repository = repository or _default_repository(active_settings)
+    active_verifier = jwt_verifier or SupabaseJwtVerifier(active_settings)
 
-cors_origins = [
-    origin.strip()
-    for origin in os.getenv(
-        "CORS_ORIGINS",
-        "http://localhost:3000,http://127.0.0.1:3000",
-    ).split(",")
-    if origin.strip()
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
-)
-
-
-def _database_url() -> str:
-    database_url = os.getenv("DATABASE_URL")
-    if not database_url:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Authorization profile database is not configured",
+    @asynccontextmanager
+    async def lifespan(application: FastAPI):
+        active_settings.validate_runtime()
+        if not active_repository.ready():
+            raise RuntimeError("CrimeLens investigation database is not ready")
+        logger.info(
+            json.dumps(
+                {
+                    "event": "crimelens_api_started",
+                    "environment": active_settings.environment,
+                    "database_ready": True,
+                    "auth_configuration_ready": bool(active_settings.jwks_url),
+                },
+                separators=(",", ":"),
+            )
         )
-    return database_url
+        yield
 
-
-def require_supabase_user(
-    credentials: Annotated[
-        HTTPAuthorizationCredentials | None,
-        Security(bearer_scheme),
-    ],
-) -> AuthenticatedUser:
-    """Validate a Supabase access token using the current Supabase SDK.
-
-    `get_claims` verifies asymmetric tokens against the project's cached JWKS.
-    The SDK safely falls back to the Auth service for legacy HS256 projects,
-    without exposing the signing secret to this application.
-    """
-    if credentials is None or credentials.scheme.lower() != "bearer":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Supabase bearer token required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    if supabase_client is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Supabase Auth validation is not configured",
-        )
-
-    try:
-        response = supabase_client.auth.get_claims(credentials.credentials)
-        claims = response.claims if response is not None else None
-    except Exception as error:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired Supabase access token",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from error
-
-    expected_issuer = f"{SUPABASE_URL.rstrip('/')}/auth/v1"
-    audience = claims.get("aud") if claims else None
-    audience_matches = (
-        audience == "authenticated"
-        or isinstance(audience, list)
-        and "authenticated" in audience
+    application = FastAPI(
+        title="CrimeLens Intelligence API",
+        version="3.0.0",
+        lifespan=lifespan,
+        docs_url="/docs" if active_settings.expose_docs else None,
+        redoc_url="/redoc" if active_settings.expose_docs else None,
+        openapi_url="/openapi.json" if active_settings.expose_docs else None,
     )
-    user_id = claims.get("sub") if claims else None
+    application.state.settings = active_settings
+    application.state.repository = active_repository
+    application.state.evidence_repository = build_evidence_repository(active_repository)
+    application.state.jwt_verifier = active_verifier
 
-    if (
-        not isinstance(user_id, str)
-        or not user_id
-        or claims.get("iss") != expected_issuer
-        or not audience_matches
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Supabase token claims are invalid",
-            headers={"WWW-Authenticate": "Bearer"},
+    application.add_middleware(GZipMiddleware, minimum_size=1_000)
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=active_settings.allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "X-Request-ID"],
+        expose_headers=["X-Request-ID", "X-Total-Count", "ETag"],
+    )
+    application.add_middleware(
+        LocalRateLimitMiddleware,
+        requests_per_minute=active_settings.rate_limit_per_minute,
+    )
+    application.add_middleware(RequestContextMiddleware)
+
+    @application.exception_handler(HTTPException)
+    async def http_error(request: Request, error: HTTPException) -> JSONResponse:
+        detail = error.detail if isinstance(error.detail, dict) else {}
+        fallback_codes = {
+            400: "BAD_REQUEST",
+            401: "AUTHENTICATION_REQUIRED",
+            403: "ACCESS_DENIED",
+            404: "NOT_FOUND",
+            409: "CONFLICT",
+            422: "VALIDATION_ERROR",
+            429: "RATE_LIMITED",
+            503: "SERVICE_UNAVAILABLE",
+        }
+        body = {
+            "error": {
+                "code": detail.get("code", fallback_codes.get(error.status_code, "REQUEST_FAILED")),
+                "message": detail.get("message", "The CrimeLens request could not be completed."),
+                "requestId": getattr(request.state, "request_id", None),
+            }
+        }
+        return JSONResponse(status_code=error.status_code, content=body, headers=error.headers)
+
+    @application.exception_handler(RequestValidationError)
+    async def validation_error(request: Request, _error: RequestValidationError) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "The request parameters or payload are invalid.",
+                    "requestId": getattr(request.state, "request_id", None),
+                }
+            },
         )
 
-    email = claims.get("email")
-    return AuthenticatedUser(
-        user_id=user_id,
-        email=email if isinstance(email, str) else None,
-    )
-
-
-def _load_authorized_profile(user_id: str) -> AuthorizedProfile | None:
-    try:
-        with psycopg.connect(_database_url()) as connection:
-            with connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                    SELECT user_id, agent_id, display_name, role, clearance, active
-                    FROM public.profiles
-                    WHERE user_id = %s
-                    """,
-                    (user_id,),
-                )
-                row = cursor.fetchone()
-    except psycopg.Error as error:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Authorization profile database is unavailable",
-        ) from error
-
-    if row is None:
-        return None
-
-    return AuthorizedProfile(
-        user_id=str(row[0]),
-        agent_id=row[1],
-        display_name=row[2],
-        role=row[3],
-        clearance=row[4],
-        active=row[5],
-    )
-
-
-def require_active_profile(
-    user: Annotated[AuthenticatedUser, Depends(require_supabase_user)],
-) -> AuthorizedProfile:
-    profile = _load_authorized_profile(user.user_id)
-    if profile is None or not profile.active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Active CrimeLens authorization profile required",
+    @application.exception_handler(Exception)
+    async def internal_error(request: Request, error: Exception) -> JSONResponse:
+        logger.exception(
+            "unhandled_api_error",
+            extra={"request_id": getattr(request.state, "request_id", None)},
         )
-    return profile
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": "The CrimeLens service encountered an internal error.",
+                    "requestId": getattr(request.state, "request_id", None),
+                }
+            },
+        )
+
+    application.include_router(health.router)
+    application.include_router(auth.router)
+    application.include_router(investigations.router)
+    application.include_router(evidence.router)
+    application.include_router(workspaces.router)
+    application.include_router(audit.router)
+    application.include_router(
+        blind_spot_router,
+        dependencies=[Depends(require_active_profile)],
+    )
+    application.include_router(build_pins_router())
+    return application
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "OK"}
-
-
-@app.get("/api/v1/auth/me", response_model=AuthorizedProfile)
-def get_current_profile(
-    profile: Annotated[AuthorizedProfile, Depends(require_active_profile)],
-) -> AuthorizedProfile:
-    return profile
-
-
-app.include_router(
-    timeline_router,
-    dependencies=[Depends(require_active_profile)],
-)
-
-app.include_router(build_pins_router(require_active_profile))
+app = create_app()

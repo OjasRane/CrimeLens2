@@ -1,11 +1,49 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
-import { Board } from "@/components/board";
-import { GeospatialMapWorkspace } from "@/components/geospatial-map-workspace";
-import { NetworkGraphWorkspace } from "@/components/network-graph-workspace";
-import { TimelineWorkspace } from "@/components/timeline-workspace";
 import { useInvestigationStore } from "@/store/use-investigation-store";
+
+function WorkspaceLoading() {
+  return (
+    <div className="grid h-full min-h-0 place-items-center bg-[var(--paper)] font-mono text-xs font-black uppercase text-[var(--dim)]">
+      [ Loading workspace… ]
+    </div>
+  );
+}
+
+const Board = dynamic(
+  () => import("@/components/board").then((module) => module.Board),
+  { ssr: false, loading: WorkspaceLoading },
+);
+const GeospatialMapWorkspace = dynamic(
+  () =>
+    import("@/components/geospatial-map-workspace").then(
+      (module) => module.GeospatialMapWorkspace,
+    ),
+  { ssr: false, loading: WorkspaceLoading },
+);
+const NetworkGraphWorkspace = dynamic(
+  () =>
+    import("@/components/network-graph-workspace").then(
+      (module) => module.NetworkGraphWorkspace,
+    ),
+  { ssr: false, loading: WorkspaceLoading },
+);
+const TimelineWorkspace = dynamic(
+  () =>
+    import("@/components/timeline-workspace").then(
+      (module) => module.TimelineWorkspace,
+    ),
+  { ssr: false, loading: WorkspaceLoading },
+);
+const EvidenceIntakeWorkspace = dynamic(
+  () =>
+    import("@/components/evidence-intake-workspace").then(
+      (module) => module.EvidenceIntakeWorkspace,
+    ),
+  { ssr: false, loading: WorkspaceLoading },
+);
 
 function WorkspaceFrame({
   title,
@@ -47,6 +85,10 @@ export function WorkspaceViewport() {
 
   if (activeWorkspace === "timeline") {
     return <TimelineWorkspace />;
+  }
+
+  if (activeWorkspace === "evidence") {
+    return <EvidenceIntakeWorkspace />;
   }
 
   return <Board />;

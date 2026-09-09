@@ -1,0 +1,3651 @@
+{
+  "generatedFrom": [
+    "data/investigations/demo.ts",
+    "data/investigations/mumbai2611.ts"
+  ],
+  "investigations": [
+    {
+      "id": "demo",
+      "caseId": "DEMO-001",
+      "slug": "demo",
+      "name": "Demo Case",
+      "shortName": "DEMO CASE",
+      "displayName": "The Fatal Ledger",
+      "type": "DEMO",
+      "deskLabel": "Case Desk / Hackathon Edition",
+      "caseType": "FICTIONAL INVESTIGATION",
+      "location": "Chicago, Illinois",
+      "start": "2026-07-18",
+      "end": "2026-07-28",
+      "timezone": "America/Chicago",
+      "overallStatus": "ACTIVE DEMONSTRATION",
+      "summary": "Original CrimeLens fictional demonstration investigation.",
+      "badge": "DEMO DATA",
+      "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+      "timePrecision": "EXACT",
+      "confidence": "DEMO",
+      "map": {
+        "center": [
+          -87.6298,
+          41.8818
+        ],
+        "zoom": 12.7,
+        "boundsLabel": "CHICAGO",
+        "filterGroups": [
+          "Burglary",
+          "Assault",
+          "Fraud",
+          "Robbery",
+          "Arson"
+        ],
+        "locations": [
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-001",
+            "title": "Station Locker Breach",
+            "type": "Burglary",
+            "filterGroups": [
+              "Burglary"
+            ],
+            "date": "2026-07-18",
+            "timeLabel": "2026-07-18",
+            "importance": "HIGH",
+            "coordinates": [
+              -87.6285,
+              41.884
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 8,
+            "description": "Station Locker Breach",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-002",
+            "title": "Alley Witness Report",
+            "type": "Assault",
+            "filterGroups": [
+              "Assault"
+            ],
+            "date": "2026-07-18",
+            "timeLabel": "2026-07-18",
+            "importance": "MED",
+            "coordinates": [
+              -87.632,
+              41.879
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 5,
+            "description": "Alley Witness Report",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-003",
+            "title": "Ticket Ledger Mismatch",
+            "type": "Fraud",
+            "filterGroups": [
+              "Fraud"
+            ],
+            "date": "2026-07-19",
+            "timeLabel": "2026-07-19",
+            "importance": "LOW",
+            "coordinates": [
+              -87.6231,
+              41.8822
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 3,
+            "description": "Ticket Ledger Mismatch",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-004",
+            "title": "North Arcade Holdup",
+            "type": "Robbery",
+            "filterGroups": [
+              "Robbery"
+            ],
+            "date": "2026-07-20",
+            "timeLabel": "2026-07-20",
+            "importance": "HIGH",
+            "coordinates": [
+              -87.6198,
+              41.8894
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 7,
+            "description": "North Arcade Holdup",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-005",
+            "title": "Evidence Room Entry",
+            "type": "Burglary",
+            "filterGroups": [
+              "Burglary"
+            ],
+            "date": "2026-07-20",
+            "timeLabel": "2026-07-20",
+            "importance": "CRITICAL",
+            "coordinates": [
+              -87.6142,
+              41.8757
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 10,
+            "description": "Evidence Room Entry",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-006",
+            "title": "Platform Stairwell Fight",
+            "type": "Assault",
+            "filterGroups": [
+              "Assault"
+            ],
+            "date": "2026-07-21",
+            "timeLabel": "2026-07-21",
+            "importance": "HIGH",
+            "coordinates": [
+              -87.641,
+              41.8866
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 8,
+            "description": "Platform Stairwell Fight",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-007",
+            "title": "Annex Deposit Forgery",
+            "type": "Fraud",
+            "filterGroups": [
+              "Fraud"
+            ],
+            "date": "2026-07-22",
+            "timeLabel": "2026-07-22",
+            "importance": "MED",
+            "coordinates": [
+              -87.6367,
+              41.8921
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 4,
+            "description": "Annex Deposit Forgery",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-008",
+            "title": "Loading Dock Fire",
+            "type": "Arson",
+            "filterGroups": [
+              "Arson"
+            ],
+            "date": "2026-07-22",
+            "timeLabel": "2026-07-22",
+            "importance": "HIGH",
+            "coordinates": [
+              -87.61,
+              41.8695
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 9,
+            "description": "Loading Dock Fire",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-009",
+            "title": "Clerk Office Forced Entry",
+            "type": "Burglary",
+            "filterGroups": [
+              "Burglary"
+            ],
+            "date": "2026-07-23",
+            "timeLabel": "2026-07-23",
+            "importance": "MED",
+            "coordinates": [
+              -87.6465,
+              41.8786
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 6,
+            "description": "Clerk Office Forced Entry",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-010",
+            "title": "Canal Street Bag Snatch",
+            "type": "Robbery",
+            "filterGroups": [
+              "Robbery"
+            ],
+            "date": "2026-07-24",
+            "timeLabel": "2026-07-24",
+            "importance": "MED",
+            "coordinates": [
+              -87.6391,
+              41.8738
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 5,
+            "description": "Canal Street Bag Snatch",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-011",
+            "title": "Transit Hall Battery",
+            "type": "Assault",
+            "filterGroups": [
+              "Assault"
+            ],
+            "date": "2026-07-24",
+            "timeLabel": "2026-07-24",
+            "importance": "CRITICAL",
+            "coordinates": [
+              -87.6287,
+              41.875
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 9,
+            "description": "Transit Hall Battery",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-012",
+            "title": "Counterfeit Transfer Book",
+            "type": "Fraud",
+            "filterGroups": [
+              "Fraud"
+            ],
+            "date": "2026-07-25",
+            "timeLabel": "2026-07-25",
+            "importance": "LOW",
+            "coordinates": [
+              -87.6209,
+              41.8795
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 3,
+            "description": "Counterfeit Transfer Book",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-013",
+            "title": "Archive Cage Breach",
+            "type": "Burglary",
+            "filterGroups": [
+              "Burglary"
+            ],
+            "date": "2026-07-25",
+            "timeLabel": "2026-07-25",
+            "importance": "HIGH",
+            "coordinates": [
+              -87.6173,
+              41.8838
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 8,
+            "description": "Archive Cage Breach",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-014",
+            "title": "Viaduct Accelerant Trace",
+            "type": "Arson",
+            "filterGroups": [
+              "Arson"
+            ],
+            "date": "2026-07-26",
+            "timeLabel": "2026-07-26",
+            "importance": "MED",
+            "coordinates": [
+              -87.6501,
+              41.882
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 6,
+            "description": "Viaduct Accelerant Trace",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-015",
+            "title": "Market Row Threat",
+            "type": "Robbery",
+            "filterGroups": [
+              "Robbery"
+            ],
+            "date": "2026-07-26",
+            "timeLabel": "2026-07-26",
+            "importance": "HIGH",
+            "coordinates": [
+              -87.6338,
+              41.8905
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 7,
+            "description": "Market Row Threat",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-016",
+            "title": "Back-Lot Confrontation",
+            "type": "Assault",
+            "filterGroups": [
+              "Assault"
+            ],
+            "date": "2026-07-27",
+            "timeLabel": "2026-07-27",
+            "importance": "MED",
+            "coordinates": [
+              -87.6117,
+              41.8724
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 5,
+            "description": "Back-Lot Confrontation",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-017",
+            "title": "Tool Room Tamper",
+            "type": "Burglary",
+            "filterGroups": [
+              "Burglary"
+            ],
+            "date": "2026-07-27",
+            "timeLabel": "2026-07-27",
+            "importance": "LOW",
+            "coordinates": [
+              -87.6261,
+              41.8912
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 4,
+            "description": "Tool Room Tamper",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "INC-018",
+            "title": "Signal Ledger Substitution",
+            "type": "Fraud",
+            "filterGroups": [
+              "Fraud"
+            ],
+            "date": "2026-07-28",
+            "timeLabel": "2026-07-28",
+            "importance": "HIGH",
+            "coordinates": [
+              -87.6429,
+              41.8847
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "intensity": 7,
+            "description": "Signal Ledger Substitution",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          }
+        ],
+        "routes": []
+      },
+      "graph": {
+        "nodes": [
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "sus-ada",
+            "label": "ADA CROSS",
+            "kind": "suspect",
+            "subtitle": "Station contractor",
+            "risk": "HIGH",
+            "position": {
+              "x": 70,
+              "y": 210
+            },
+            "dateRange": [
+              "2026-07-18",
+              "2026-07-28"
+            ]
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "sus-marlowe",
+            "label": "JON MARLOWE",
+            "kind": "suspect",
+            "subtitle": "Night clerk",
+            "risk": "MED",
+            "position": {
+              "x": 520,
+              "y": 95
+            },
+            "dateRange": [
+              "2026-07-18",
+              "2026-07-28"
+            ]
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "sus-vale",
+            "label": "MIRA VALE",
+            "kind": "suspect",
+            "subtitle": "Ticket auditor",
+            "risk": "LOW",
+            "position": {
+              "x": 535,
+              "y": 365
+            },
+            "dateRange": [
+              "2026-07-19",
+              "2026-07-28"
+            ]
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "ev-ticket",
+            "label": "TORN TICKET",
+            "kind": "evidence",
+            "subtitle": "Recovered from coat",
+            "position": {
+              "x": 300,
+              "y": 210
+            },
+            "dateRange": [
+              "2026-07-18",
+              "2026-07-19"
+            ]
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "ev-print",
+            "label": "ANNEX PRINT",
+            "kind": "evidence",
+            "subtitle": "Partial latent",
+            "position": {
+              "x": 720,
+              "y": 235
+            },
+            "dateRange": [
+              "2026-07-21",
+              "2026-07-24"
+            ]
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "loc-platform",
+            "label": "PLATFORM 9",
+            "kind": "location",
+            "subtitle": "Victim last seen",
+            "position": {
+              "x": 185,
+              "y": 30
+            },
+            "dateRange": [
+              "2026-07-18",
+              "2026-07-20"
+            ]
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "loc-annex",
+            "label": "ANNEX B",
+            "kind": "location",
+            "subtitle": "Locked service wing",
+            "position": {
+              "x": 790,
+              "y": 45
+            },
+            "dateRange": [
+              "2026-07-20",
+              "2026-07-24"
+            ]
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "txn-ledger",
+            "label": "$4,800 LEDGER",
+            "kind": "transaction",
+            "subtitle": "Duplicate deposit",
+            "position": {
+              "x": 255,
+              "y": 410
+            },
+            "dateRange": [
+              "2026-07-19",
+              "2026-07-25"
+            ]
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "txn-shell",
+            "label": "SHELL TRANSFER",
+            "kind": "transaction",
+            "subtitle": "Off-book routing",
+            "position": {
+              "x": 785,
+              "y": 415
+            },
+            "dateRange": [
+              "2026-07-22",
+              "2026-07-26"
+            ]
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "loc-diner",
+            "label": "RIVER DINER",
+            "kind": "location",
+            "subtitle": "Shared cell ping",
+            "position": {
+              "x": 440,
+              "y": 515
+            },
+            "dateRange": [
+              "2026-07-24",
+              "2026-07-27"
+            ]
+          }
+        ],
+        "links": [
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "ada-ticket-call",
+            "source": "sus-ada",
+            "target": "ev-ticket",
+            "linkKind": "phone",
+            "label": "3 calls"
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "ada-platform-colocation",
+            "source": "sus-ada",
+            "target": "loc-platform",
+            "linkKind": "colocation",
+            "label": "21:14 ping"
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "ada-ledger-financial",
+            "source": "sus-ada",
+            "target": "txn-ledger",
+            "linkKind": "financial",
+            "label": "$1,200"
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "ticket-marlowe-call",
+            "source": "ev-ticket",
+            "target": "sus-marlowe",
+            "linkKind": "phone",
+            "label": "voicemail"
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "marlowe-annex-colocation",
+            "source": "sus-marlowe",
+            "target": "loc-annex",
+            "linkKind": "colocation",
+            "label": "badge echo"
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "marlowe-print-colocation",
+            "source": "sus-marlowe",
+            "target": "ev-print",
+            "linkKind": "colocation",
+            "label": "print match"
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "vale-ledger-financial",
+            "source": "sus-vale",
+            "target": "txn-ledger",
+            "linkKind": "financial",
+            "label": "$4,800"
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "vale-shell-financial",
+            "source": "sus-vale",
+            "target": "txn-shell",
+            "linkKind": "financial",
+            "label": "routing"
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "vale-diner-call",
+            "source": "sus-vale",
+            "target": "loc-diner",
+            "linkKind": "phone",
+            "label": "burner ping"
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "diner-ada-colocation",
+            "source": "loc-diner",
+            "target": "sus-ada",
+            "linkKind": "colocation",
+            "label": "same booth"
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "shell-print-financial",
+            "source": "txn-shell",
+            "target": "ev-print",
+            "linkKind": "financial",
+            "label": "invoice"
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "platform-ticket-colocation",
+            "source": "loc-platform",
+            "target": "ev-ticket",
+            "linkKind": "colocation",
+            "label": "drop site"
+          }
+        ],
+        "filters": [
+          {
+            "id": "financial",
+            "label": "Financial Transactions",
+            "tone": "#D22B2B",
+            "darkTone": "#AEC3B0"
+          },
+          {
+            "id": "phone",
+            "label": "Phone Calls",
+            "tone": "#111111",
+            "darkTone": "#EFF6E0"
+          },
+          {
+            "id": "colocation",
+            "label": "Co-Locations",
+            "tone": "#FCD34D",
+            "darkTone": "#598392"
+          }
+        ]
+      },
+      "timeline": {
+        "startDate": "2026-07-18",
+        "endDate": "2026-07-28",
+        "events": [
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-001",
+            "date": "2026-07-18",
+            "time": "21:14",
+            "sortOrder": 1,
+            "timezone": "America/Chicago",
+            "category": "CCTV",
+            "title": "Victim enters station",
+            "description": "Platform 9 camera captures victim at 21:14. Last confirmed sighting.",
+            "severity": 9,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-002",
+            "date": "2026-07-18",
+            "time": "21:32",
+            "sortOrder": 2,
+            "timezone": "America/Chicago",
+            "category": "CALL",
+            "title": "Anonymous tip received",
+            "description": "Switchboard logs anonymous call referencing Platform 9 disturbance.",
+            "severity": 6,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-003",
+            "date": "2026-07-18",
+            "time": "22:05",
+            "sortOrder": 3,
+            "timezone": "America/Chicago",
+            "category": "EVIDENCE",
+            "title": "Ticket stub recovered",
+            "description": "Torn ticket stub found in inner coat pocket during initial sweep.",
+            "severity": 7,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-004",
+            "date": "2026-07-19",
+            "time": "08:30",
+            "sortOrder": 4,
+            "timezone": "America/Chicago",
+            "category": "FORENSIC",
+            "title": "Ticket ledger mismatch",
+            "description": "Morning audit reveals ledger discrepancy — three entries lack counterfoils.",
+            "severity": 5,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-005",
+            "date": "2026-07-20",
+            "time": "01:15",
+            "sortOrder": 5,
+            "timezone": "America/Chicago",
+            "category": "CCTV",
+            "title": "Night clerk second visitor",
+            "description": "CCTV corroborates clerk testimony: unidentified visitor at 01:15.",
+            "severity": 8,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-006",
+            "date": "2026-07-20",
+            "time": "02:40",
+            "sortOrder": 6,
+            "timezone": "America/Chicago",
+            "category": "CALL",
+            "title": "Clerk reports break-in attempt",
+            "description": "Night clerk dials emergency line reporting forced entry at Annex B.",
+            "severity": 7,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-007",
+            "date": "2026-07-20",
+            "time": "06:10",
+            "sortOrder": 7,
+            "timezone": "America/Chicago",
+            "category": "ARREST",
+            "title": "Suspect A detained",
+            "description": "Individual matching description apprehended near loading dock.",
+            "severity": 9,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-008",
+            "date": "2026-07-20",
+            "time": "11:00",
+            "sortOrder": 8,
+            "timezone": "America/Chicago",
+            "category": "EVIDENCE",
+            "title": "Evidence room entry log",
+            "description": "Critical evidence room shows unauthorized access at 04:47.",
+            "severity": 10,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-009",
+            "date": "2026-07-21",
+            "time": "14:20",
+            "sortOrder": 9,
+            "timezone": "America/Chicago",
+            "category": "FORENSIC",
+            "title": "Partial print from Annex B",
+            "description": "Latent print recovered from forced door handle. Partial match pending.",
+            "severity": 8,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-010",
+            "date": "2026-07-22",
+            "time": "09:00",
+            "sortOrder": 10,
+            "timezone": "America/Chicago",
+            "category": "ANALYSIS",
+            "title": "Cross-reference initiated",
+            "description": "Analyst begins cross-referencing ledger anomalies with CCTV timestamps.",
+            "severity": 4,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-011",
+            "date": "2026-07-24",
+            "time": "16:35",
+            "sortOrder": 11,
+            "timezone": "America/Chicago",
+            "category": "ARREST",
+            "title": "Suspect B identified",
+            "description": "Second suspect identified through partial print match. Warrant issued.",
+            "severity": 9,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-012",
+            "date": "2026-07-24",
+            "time": "17:10",
+            "sortOrder": 12,
+            "timezone": "America/Chicago",
+            "category": "CALL",
+            "title": "Informant tip — Canal St.",
+            "description": "Registered informant provides location intel on Suspect B.",
+            "severity": 7,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-013",
+            "date": "2026-07-24",
+            "time": "19:45",
+            "sortOrder": 13,
+            "timezone": "America/Chicago",
+            "category": "ARREST",
+            "title": "Suspect B apprehended",
+            "description": "Suspect B taken into custody at Canal Street Market without incident.",
+            "severity": 10,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-014",
+            "date": "2026-07-25",
+            "time": "10:00",
+            "sortOrder": 14,
+            "timezone": "America/Chicago",
+            "category": "FORENSIC",
+            "title": "Accelerant trace confirmed",
+            "description": "Lab confirms petroleum-based accelerant on loading dock samples.",
+            "severity": 6,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-015",
+            "date": "2026-07-25",
+            "time": "15:30",
+            "sortOrder": 15,
+            "timezone": "America/Chicago",
+            "category": "EVIDENCE",
+            "title": "Archive cage breach evidence",
+            "description": "Cut lock recovered; tool marks consistent with compact bolt cutter.",
+            "severity": 7,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-016",
+            "date": "2026-07-26",
+            "time": "08:15",
+            "sortOrder": 16,
+            "timezone": "America/Chicago",
+            "category": "ANALYSIS",
+            "title": "Pattern link established",
+            "description": "Analyst connects three incidents to single MO. Crime spree hypothesis elevated.",
+            "severity": 8,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-017",
+            "date": "2026-07-27",
+            "time": "12:00",
+            "sortOrder": 17,
+            "timezone": "America/Chicago",
+            "category": "FORENSIC",
+            "title": "DNA sample submitted",
+            "description": "Biological sample from ticket stub sent for expedited DNA analysis.",
+            "severity": 7,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "demo",
+            "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+            "timePrecision": "EXACT",
+            "confidence": "DEMO",
+            "id": "TL-018",
+            "date": "2026-07-28",
+            "time": "09:30",
+            "sortOrder": 18,
+            "timezone": "America/Chicago",
+            "category": "ANALYSIS",
+            "title": "Cross-case link promoted",
+            "description": "Three-case connection promoted from hypothesis to active lead.",
+            "severity": 9,
+            "linkedEntityIds": [],
+            "linkedLocationIds": []
+          }
+        ]
+      },
+      "casualtyLedger": [],
+      "facts": [
+        {
+          "investigationId": "demo",
+          "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+          "timePrecision": "EXACT",
+          "confidence": "DEMO",
+          "id": "fact-001",
+          "type": "forensic",
+          "text": "The victim entered the station at 21:14 and never appeared on the northbound camera.",
+          "status": "verified",
+          "sourceTitle": "CrimeLens Demo Record",
+          "linkedEntityIds": [],
+          "linkedTimelineEventIds": [
+            "TL-001"
+          ],
+          "linkedLocationIds": [
+            "loc-platform"
+          ]
+        },
+        {
+          "investigationId": "demo",
+          "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+          "timePrecision": "EXACT",
+          "confidence": "DEMO",
+          "id": "fact-002",
+          "type": "forensic",
+          "text": "A torn ticket stub was recovered from the inner coat pocket.",
+          "status": "pending",
+          "sourceTitle": "CrimeLens Demo Record",
+          "linkedEntityIds": [
+            "ev-ticket"
+          ],
+          "linkedTimelineEventIds": [
+            "TL-003"
+          ],
+          "linkedLocationIds": []
+        },
+        {
+          "investigationId": "demo",
+          "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+          "timePrecision": "EXACT",
+          "confidence": "DEMO",
+          "id": "fact-003",
+          "type": "testimonial",
+          "text": "The night clerk claims a second visitor arrived fifteen minutes after closing.",
+          "status": "disputed",
+          "sourceTitle": "CrimeLens Demo Record",
+          "linkedEntityIds": [
+            "sus-marlowe"
+          ],
+          "linkedTimelineEventIds": [
+            "TL-005"
+          ],
+          "linkedLocationIds": []
+        },
+        {
+          "investigationId": "demo",
+          "sourceRef": "CRIMELENS_ORIGINAL_DEMO_DATASET",
+          "timePrecision": "EXACT",
+          "confidence": "DEMO",
+          "id": "fact-004",
+          "type": "testimonial",
+          "text": "The ledger clock differs from station time by seven minutes.",
+          "status": "pending",
+          "sourceTitle": "CrimeLens Demo Record",
+          "linkedEntityIds": [
+            "txn-ledger"
+          ],
+          "linkedTimelineEventIds": [
+            "TL-004"
+          ],
+          "linkedLocationIds": []
+        }
+      ]
+    },
+    {
+      "id": "mumbai-2611",
+      "caseId": "MUM-2611-2008",
+      "slug": "mumbai-2611",
+      "name": "Mumbai 26/11 Attacks",
+      "shortName": "MUMBAI 26/11",
+      "displayName": "The Fatal Ledger",
+      "type": "HISTORICAL",
+      "deskLabel": "Case Desk / Historical Case",
+      "caseType": "COORDINATED TERROR ATTACK",
+      "location": "Mumbai, Maharashtra, India",
+      "start": "2008-11-26T21:15:00+05:30",
+      "end": "2008-11-29T09:00:00+05:30",
+      "timezone": "Asia/Kolkata",
+      "overallStatus": "CLOSED / HISTORICAL CASE",
+      "summary": "A coordinated attack across multiple locations in Mumbai between 26 and 29 November 2008.",
+      "badge": "VERIFIED HISTORICAL DATA",
+      "historicalNote": "Historical reconstruction based on court and government records. Approximate times are marked ≈.",
+      "verifiedTotals": {
+        "attackersInvolved": 10,
+        "attackersKilled": 9,
+        "attackersCaptured": 1,
+        "peopleKilled": 166,
+        "peopleInjured": 238,
+        "securityPersonnelKilled": 18,
+        "foreignNationalsKilled": 26
+      },
+      "sourceRef": "https://indiankanoon.org/doc/193792759/",
+      "timePrecision": "WINDOW",
+      "confidence": "VERIFIED",
+      "map": {
+        "center": [
+          72.8296,
+          18.9362
+        ],
+        "zoom": 12.2,
+        "boundsLabel": "MUMBAI / SOUTH MUMBAI",
+        "filterGroups": [
+          "PRIMARY ATTACK SITES",
+          "LANDING / MOVEMENT",
+          "POLICE RESPONSE",
+          "SECONDARY INCIDENTS",
+          "CLEARANCE EVENTS"
+        ],
+        "locations": [
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "loc-nariman-point-arrival",
+            "title": "NARIMAN POINT WATERFRONT",
+            "type": "LANDING / MOVEMENT",
+            "filterGroups": [
+              "LANDING / MOVEMENT"
+            ],
+            "date": "2008-11-26",
+            "timeLabel": "LATE EVENING",
+            "importance": "HIGH",
+            "coordinates": [
+              72.8195,
+              18.9269
+            ],
+            "coordinateStatus": "NEEDS_VERIFICATION",
+            "intensity": 1,
+            "description": "General Nariman Point waterfront movement marker for Team 05. It is not presented as an exact landing coordinate.",
+            "assignedTeam": "FAHADULLAH + ABDUL RAHMAN ‘CHHOTA’ @ SAQIB",
+            "linkedEntityIds": [
+              "attacker-fahadullah",
+              "attacker-chhota"
+            ],
+            "linkedTimelineEventIds": []
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "loc-badhwar",
+            "title": "BADHWAR PARK",
+            "expandedName": "Badhwar Park / Machhimar Nagar, Cuffe Parade",
+            "type": "LANDING",
+            "filterGroups": [
+              "LANDING / MOVEMENT"
+            ],
+            "date": "2008-11-26",
+            "timeLabel": "≈ 21:15–21:30 IST",
+            "importance": "CRITICAL",
+            "coordinates": [
+              72.825489,
+              18.918783
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "https://portal.mcgm.gov.in/irj/go/km/docs/documents/Tenders/ETH/ETH_7000008779_311221.pdf",
+            "intensity": 1,
+            "description": "Documented landing area used by the attack group on the evening of 26 November 2008.",
+            "assignedTeam": "ALL FIVE TEAMS",
+            "killed": 0,
+            "injured": 0,
+            "graphNodeId": "loc-badhwar",
+            "linkedEntityIds": [
+              "attacker-kasab",
+              "attacker-ismail",
+              "attacker-imran",
+              "attacker-nasir",
+              "attacker-nazir",
+              "attacker-bada",
+              "attacker-chhota",
+              "attacker-fahadullah",
+              "attacker-javed",
+              "attacker-shoaib"
+            ],
+            "linkedTimelineEventIds": [
+              "MUM-TL-001"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "loc-cst",
+            "title": "CST",
+            "expandedName": "Chhatrapati Shivaji Terminus",
+            "type": "PRIMARY ATTACK SITE",
+            "filterGroups": [
+              "PRIMARY ATTACK SITES"
+            ],
+            "date": "2008-11-26",
+            "timeLabel": "≈ 21:55 IST",
+            "importance": "CRITICAL",
+            "coordinates": [
+              72.8355191,
+              18.939856
+            ],
+            "coordinateStatus": "VERIFIED_VENUE",
+            "coordinateSourceRef": "https://www.openstreetmap.org/way/107441516",
+            "intensity": 161,
+            "description": "The Supreme Court judgment records 52 people killed and 109 injured at CST.",
+            "assignedTeam": "AJMAL AMIR KASAB + ABU ISMAIL",
+            "killed": 52,
+            "injured": 109,
+            "graphNodeId": "loc-cst",
+            "linkedEntityIds": [
+              "attacker-kasab",
+              "attacker-ismail"
+            ],
+            "linkedTimelineEventIds": [
+              "MUM-TL-006"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "loc-cama",
+            "title": "CAMA HOSPITAL",
+            "expandedName": "Cama & Albless Hospital / surrounding area",
+            "type": "ATTACK / POLICE RESPONSE SITE",
+            "filterGroups": [
+              "POLICE RESPONSE"
+            ],
+            "date": "2008-11-26",
+            "timeLabel": "≈ 22:30–23:45 IST",
+            "importance": "CRITICAL",
+            "coordinates": [
+              72.8318285,
+              18.9424375
+            ],
+            "coordinateStatus": "VERIFIED_VENUE",
+            "coordinateSourceRef": "https://www.openstreetmap.org/way/207376648",
+            "intensity": 33,
+            "description": "The court record separates the incident into CAMA_IN and CAMA_OUT phases.",
+            "assignedTeam": "AJMAL AMIR KASAB + ABU ISMAIL",
+            "killed": 16,
+            "injured": 17,
+            "casualtyBreakdown": [
+              {
+                "id": "CAMA_IN",
+                "label": "CAMA_IN",
+                "killed": 7,
+                "injured": 10
+              },
+              {
+                "id": "CAMA_OUT",
+                "label": "CAMA_OUT",
+                "killed": 9,
+                "injured": 7
+              }
+            ],
+            "graphNodeId": "loc-cama",
+            "linkedEntityIds": [
+              "attacker-kasab",
+              "attacker-ismail"
+            ],
+            "linkedTimelineEventIds": [
+              "MUM-TL-007",
+              "MUM-TL-010"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "loc-leopold",
+            "title": "LEOPOLD CAFÉ",
+            "type": "PRIMARY ATTACK SITE",
+            "filterGroups": [
+              "PRIMARY ATTACK SITES"
+            ],
+            "date": "2008-11-26",
+            "timeLabel": "LATE EVENING",
+            "importance": "CRITICAL",
+            "coordinates": [
+              72.831763,
+              18.9227115
+            ],
+            "coordinateStatus": "VERIFIED_VENUE",
+            "coordinateSourceRef": "https://www.openstreetmap.org/way/40387597",
+            "intensity": 39,
+            "description": "The Supreme Court judgment records 11 people killed and 28 injured at Leopold Café.",
+            "assignedTeam": "NAZIR AHMAD @ ABU OMAIR + SHOAIB @ ABU SOHEB",
+            "killed": 11,
+            "injured": 28,
+            "graphNodeId": "loc-leopold",
+            "linkedEntityIds": [
+              "attacker-nazir",
+              "attacker-shoaib"
+            ],
+            "linkedTimelineEventIds": [
+              "MUM-TL-003"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "loc-taj",
+            "title": "TAJ MAHAL PALACE",
+            "type": "PRIMARY ATTACK SITE",
+            "filterGroups": [
+              "PRIMARY ATTACK SITES",
+              "CLEARANCE EVENTS"
+            ],
+            "date": "2008-11-26",
+            "timeLabel": "LATE EVENING // CLEARANCE ≈ 29 NOV 09:00",
+            "importance": "CRITICAL",
+            "coordinates": [
+              72.8332848,
+              18.921778
+            ],
+            "coordinateStatus": "VERIFIED_VENUE",
+            "coordinateSourceRef": "https://www.openstreetmap.org/way/28846517",
+            "intensity": 66,
+            "description": "The Supreme Court judgment records 36 people killed and 30 injured at the Taj.",
+            "assignedTeam": "ABDUL RAHMAN ‘BADA’ @ HAJAZI + JAVED @ ABU ALI; NAZIR AHMAD @ ABU OMAIR + SHOAIB @ ABU SOHEB AFTER LEOPOLD",
+            "killed": 36,
+            "injured": 30,
+            "clearance": "29 NOV 2008 ≈ 09:00 IST",
+            "graphNodeId": "loc-taj",
+            "linkedEntityIds": [
+              "attacker-bada",
+              "attacker-javed",
+              "attacker-nazir",
+              "attacker-shoaib"
+            ],
+            "linkedTimelineEventIds": [
+              "MUM-TL-004",
+              "MUM-TL-015"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "loc-nariman",
+            "title": "NARIMAN HOUSE",
+            "alternativeLabel": "CHABAD HOUSE",
+            "type": "PRIMARY ATTACK SITE",
+            "filterGroups": [
+              "PRIMARY ATTACK SITES",
+              "CLEARANCE EVENTS"
+            ],
+            "date": "2008-11-26",
+            "timeLabel": "≈ 21:45 ONWARD // CLEARANCE NIGHT OF 28 NOV",
+            "importance": "CRITICAL",
+            "coordinates": [
+              72.8276113,
+              18.9164614
+            ],
+            "coordinateStatus": "VERIFIED_VENUE",
+            "coordinateSourceRef": "https://www.openstreetmap.org/way/353758579",
+            "intensity": 16,
+            "description": "The Supreme Court judgment records 9 people killed and 7 injured at Nariman House.",
+            "assignedTeam": "IMRAN BABAR @ ABU AQSA + NASIR @ ABU UMAR",
+            "killed": 9,
+            "injured": 7,
+            "clearance": "NIGHT OF 28 NOV 2008",
+            "graphNodeId": "loc-nariman",
+            "linkedEntityIds": [
+              "attacker-imran",
+              "attacker-nasir"
+            ],
+            "linkedTimelineEventIds": [
+              "MUM-TL-002",
+              "MUM-TL-014"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "loc-oberoi",
+            "title": "OBEROI / TRIDENT",
+            "expandedName": "Oberoi / Trident, Nariman Point",
+            "type": "PRIMARY ATTACK SITE",
+            "filterGroups": [
+              "PRIMARY ATTACK SITES",
+              "CLEARANCE EVENTS"
+            ],
+            "date": "2008-11-26",
+            "timeLabel": "≈ 21:55 IST // CLEARANCE ≈ 28 NOV 07:00",
+            "importance": "CRITICAL",
+            "coordinates": [
+              72.8211257,
+              18.9278382
+            ],
+            "coordinateStatus": "VERIFIED_VENUE",
+            "coordinateSourceRef": "https://www.openstreetmap.org/way/753875938",
+            "intensity": 59,
+            "description": "The Supreme Court judgment records 35 people killed and 24 injured at the Oberoi / Trident.",
+            "assignedTeam": "FAHADULLAH + ABDUL RAHMAN ‘CHHOTA’ @ SAQIB",
+            "killed": 35,
+            "injured": 24,
+            "clearance": "28 NOV 2008 ≈ 07:00 IST",
+            "graphNodeId": "loc-oberoi",
+            "linkedEntityIds": [
+              "attacker-fahadullah",
+              "attacker-chhota"
+            ],
+            "linkedTimelineEventIds": [
+              "MUM-TL-005",
+              "MUM-TL-013"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "loc-girgaum",
+            "title": "GIRGAUM CHOWPATTY",
+            "alternativeLabel": "VINOLI CHOWPATTY",
+            "type": "POLICE INTERCEPTION",
+            "filterGroups": [
+              "POLICE RESPONSE"
+            ],
+            "date": "2008-11-27",
+            "timeLabel": "≈ 00:30 IST",
+            "importance": "CRITICAL",
+            "coordinates": [
+              72.81142,
+              18.95439
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "https://www.openstreetmap.org/way/38718382",
+            "intensity": 2,
+            "description": "Police intercepted the vehicle; Ajmal Amir Kasab was captured and Abu Ismail was killed. ASI Tukaram Ombale was killed in the incident.",
+            "assignedTeam": "AJMAL AMIR KASAB + ABU ISMAIL",
+            "killed": 1,
+            "injured": 1,
+            "graphNodeId": "loc-girgaum",
+            "linkedEntityIds": [
+              "attacker-kasab",
+              "attacker-ismail",
+              "response-mumbai-police"
+            ],
+            "linkedTimelineEventIds": [
+              "MUM-TL-012"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "loc-mazgaon",
+            "title": "WADI BUNDER / MAZGAON",
+            "type": "SECONDARY INCIDENT",
+            "filterGroups": [
+              "SECONDARY INCIDENTS"
+            ],
+            "date": "2008-11-26",
+            "timeLabel": "≈ 22:30 IST",
+            "importance": "HIGH",
+            "coordinates": [
+              72.8454387,
+              18.9657144
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "https://www.openstreetmap.org/node/13522505114",
+            "intensity": 22,
+            "description": "Secondary incident recorded in the Wadi Bunder Road / Mazgaon area. Marker is at the verified Wadi Bunder locality.",
+            "killed": 3,
+            "injured": 19,
+            "graphNodeId": "loc-mazgaon",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": [
+              "MUM-TL-008"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "loc-vile-parle",
+            "title": "VILE PARLE EAST",
+            "type": "SECONDARY INCIDENT",
+            "filterGroups": [
+              "SECONDARY INCIDENTS"
+            ],
+            "date": "2008-11-26",
+            "timeLabel": "> 22:45 IST",
+            "importance": "HIGH",
+            "coordinates": [
+              72.8445616,
+              19.1007285
+            ],
+            "coordinateStatus": "VERIFIED_LOCALITY",
+            "coordinateSourceRef": "https://www.openstreetmap.org/node/10267208087",
+            "intensity": 5,
+            "description": "Secondary incident shortly after 22:45. Marker is the verified Vile Parle East locality, not a claimed exact incident point.",
+            "killed": 2,
+            "injured": 3,
+            "graphNodeId": "loc-vile-parle",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": [
+              "MUM-TL-009"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "loc-kuber",
+            "title": "KUBER / PRE-ATTACK MARITIME CASE",
+            "type": "EVIDENCE",
+            "filterGroups": [
+              "LANDING / MOVEMENT"
+            ],
+            "date": "2008-11-26",
+            "timeLabel": "PRE-ATTACK",
+            "importance": "HIGH",
+            "coordinateStatus": "NEEDS_VERIFICATION",
+            "intensity": 1,
+            "description": "Included in the verified casualty ledger. No map coordinate is asserted for this record.",
+            "killed": 1,
+            "injured": 0,
+            "graphNodeId": "evidence-kuber",
+            "linkedEntityIds": [],
+            "linkedTimelineEventIds": []
+          }
+        ],
+        "routes": [
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "route-team-01",
+            "label": "TEAM 01",
+            "teamLabel": "AJMAL AMIR KASAB + ABU ISMAIL",
+            "memberEntityIds": [
+              "attacker-kasab",
+              "attacker-ismail"
+            ],
+            "locationIds": [
+              "loc-badhwar",
+              "loc-cst",
+              "loc-cama",
+              "loc-girgaum"
+            ],
+            "description": "Badhwar Park → CST → Cama Hospital area → South Mumbai movement → Girgaum Chowpatty"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "route-team-02",
+            "label": "TEAM 02",
+            "teamLabel": "NAZIR AHMAD @ ABU OMAIR + SHOAIB @ ABU SOHEB",
+            "memberEntityIds": [
+              "attacker-nazir",
+              "attacker-shoaib"
+            ],
+            "locationIds": [
+              "loc-badhwar",
+              "loc-leopold",
+              "loc-taj"
+            ],
+            "description": "Badhwar Park → Leopold Café → Taj Mahal Palace"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "route-team-03",
+            "label": "TEAM 03",
+            "teamLabel": "ABDUL RAHMAN ‘BADA’ @ HAJAZI + JAVED @ ABU ALI",
+            "memberEntityIds": [
+              "attacker-bada",
+              "attacker-javed"
+            ],
+            "locationIds": [
+              "loc-badhwar",
+              "loc-taj"
+            ],
+            "description": "Badhwar Park → Taj Mahal Palace"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "route-team-04",
+            "label": "TEAM 04",
+            "teamLabel": "IMRAN BABAR @ ABU AQSA + NASIR @ ABU UMAR",
+            "memberEntityIds": [
+              "attacker-imran",
+              "attacker-nasir"
+            ],
+            "locationIds": [
+              "loc-badhwar",
+              "loc-nariman"
+            ],
+            "description": "Badhwar Park → Nariman House"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "route-team-05",
+            "label": "TEAM 05",
+            "teamLabel": "FAHADULLAH + ABDUL RAHMAN ‘CHHOTA’ @ SAQIB",
+            "memberEntityIds": [
+              "attacker-fahadullah",
+              "attacker-chhota"
+            ],
+            "locationIds": [
+              "loc-nariman-point-arrival",
+              "loc-oberoi"
+            ],
+            "description": "Mumbai waterfront arrival → Nariman Point → Oberoi / Trident"
+          }
+        ],
+        "densityNotice": "LIMITED HISTORICAL SAMPLE"
+      },
+      "graph": {
+        "nodes": [
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-01",
+            "label": "TEAM 01",
+            "kind": "team",
+            "subtitle": "KASAB + ABU ISMAIL",
+            "status": "2 MEMBERS",
+            "position": {
+              "x": 420,
+              "y": 120
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-02",
+            "label": "TEAM 02",
+            "kind": "team",
+            "subtitle": "NAZIR AHMAD + SHOAIB",
+            "status": "2 MEMBERS",
+            "position": {
+              "x": 420,
+              "y": 290
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-03",
+            "label": "TEAM 03",
+            "kind": "team",
+            "subtitle": "A.R. ‘BADA’ + JAVED",
+            "status": "2 MEMBERS",
+            "position": {
+              "x": 420,
+              "y": 460
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-04",
+            "label": "TEAM 04",
+            "kind": "team",
+            "subtitle": "IMRAN BABAR + NASIR",
+            "status": "2 MEMBERS",
+            "position": {
+              "x": 420,
+              "y": 630
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-05",
+            "label": "TEAM 05",
+            "kind": "team",
+            "subtitle": "FAHADULLAH + A.R. ‘CHHOTA’",
+            "status": "2 MEMBERS",
+            "position": {
+              "x": 420,
+              "y": 800
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "attacker-kasab",
+            "label": "AJMAL AMIR KASAB",
+            "kind": "attacker",
+            "subtitle": "Team 01",
+            "status": "CAPTURED",
+            "position": {
+              "x": 80,
+              "y": 130
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "attacker-ismail",
+            "label": "ABU ISMAIL",
+            "kind": "attacker",
+            "subtitle": "Team 01",
+            "status": "DECEASED",
+            "position": {
+              "x": 80,
+              "y": 310
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "attacker-nazir",
+            "label": "NAZIR AHMAD @ ABU OMAIR",
+            "kind": "attacker",
+            "subtitle": "Team 02",
+            "status": "DECEASED",
+            "position": {
+              "x": 80,
+              "y": 500
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "attacker-shoaib",
+            "label": "SHOAIB @ ABU SOHEB",
+            "kind": "attacker",
+            "subtitle": "Team 02",
+            "status": "DECEASED",
+            "position": {
+              "x": 80,
+              "y": 680
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "attacker-bada",
+            "label": "ABDUL RAHMAN ‘BADA’ @ HAJAZI",
+            "kind": "attacker",
+            "subtitle": "Team 03",
+            "status": "DECEASED",
+            "position": {
+              "x": 360,
+              "y": 70
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "attacker-javed",
+            "label": "JAVED @ ABU ALI",
+            "kind": "attacker",
+            "subtitle": "Team 03",
+            "status": "DECEASED",
+            "position": {
+              "x": 360,
+              "y": 250
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "attacker-imran",
+            "label": "IMRAN BABAR @ ABU AQSA",
+            "kind": "attacker",
+            "subtitle": "Team 04",
+            "status": "DECEASED",
+            "position": {
+              "x": 360,
+              "y": 430
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "attacker-nasir",
+            "label": "NASIR @ ABU UMAR",
+            "kind": "attacker",
+            "subtitle": "Team 04",
+            "status": "DECEASED",
+            "position": {
+              "x": 360,
+              "y": 610
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "attacker-fahadullah",
+            "label": "FAHADULLAH",
+            "kind": "attacker",
+            "subtitle": "Team 05",
+            "status": "DECEASED",
+            "position": {
+              "x": 360,
+              "y": 790
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "attacker-chhota",
+            "label": "ABDUL RAHMAN ‘CHHOTA’ @ SAQIB",
+            "kind": "attacker",
+            "subtitle": "Team 05",
+            "status": "DECEASED",
+            "position": {
+              "x": 80,
+              "y": 860
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "org-let",
+            "label": "LASHKAR-E-TAIBA",
+            "kind": "organization",
+            "subtitle": "Organization responsible / training & planning connection",
+            "status": "ORGANIZATION",
+            "position": {
+              "x": 650,
+              "y": 20
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "planner-headley",
+            "label": "DAVID COLEMAN HEADLEY",
+            "kind": "planner",
+            "subtitle": "Pre-attack surveillance / planning",
+            "status": "PLEADED GUILTY IN U.S.",
+            "position": {
+              "x": 930,
+              "y": 20
+            },
+            "dateRange": [
+              "2006-09-01",
+              "2008-11-26"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "loc-badhwar",
+            "label": "BADHWAR PARK",
+            "kind": "location",
+            "subtitle": "Landing area",
+            "position": {
+              "x": 650,
+              "y": 200
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "loc-cst",
+            "label": "CST",
+            "kind": "location",
+            "subtitle": "52 killed / 109 injured",
+            "position": {
+              "x": 930,
+              "y": 170
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "loc-cama",
+            "label": "CAMA HOSPITAL",
+            "kind": "location",
+            "subtitle": "CAMA_IN + CAMA_OUT",
+            "position": {
+              "x": 1200,
+              "y": 170
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "loc-girgaum",
+            "label": "GIRGAUM CHOWPATTY",
+            "kind": "location",
+            "subtitle": "Police interception",
+            "position": {
+              "x": 1470,
+              "y": 170
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "loc-leopold",
+            "label": "LEOPOLD CAFÉ",
+            "kind": "location",
+            "subtitle": "11 killed / 28 injured",
+            "position": {
+              "x": 650,
+              "y": 400
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "loc-taj",
+            "label": "TAJ MAHAL PALACE",
+            "kind": "location",
+            "subtitle": "36 killed / 30 injured",
+            "position": {
+              "x": 930,
+              "y": 400
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "loc-nariman",
+            "label": "NARIMAN HOUSE",
+            "kind": "location",
+            "subtitle": "9 killed / 7 injured",
+            "position": {
+              "x": 1200,
+              "y": 400
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "loc-oberoi",
+            "label": "OBEROI / TRIDENT",
+            "kind": "location",
+            "subtitle": "35 killed / 24 injured",
+            "position": {
+              "x": 1470,
+              "y": 400
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "response-mumbai-police",
+            "label": "MUMBAI POLICE RESPONSE",
+            "kind": "response",
+            "subtitle": "Girgaum Chowpatty interception",
+            "status": "DOCUMENTED RESPONSE",
+            "position": {
+              "x": 1200,
+              "y": 650
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "evidence-judgment",
+            "label": "SUPREME COURT JUDGMENT",
+            "kind": "evidence",
+            "subtitle": "Kasab v. State of Maharashtra / 29 Aug 2012",
+            "status": "SOURCE RECORD",
+            "position": {
+              "x": 1470,
+              "y": 650
+            },
+            "dateRange": [
+              "2008-11-26",
+              "2008-11-29"
+            ]
+          }
+        ],
+        "links": [
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "org-team-01",
+            "source": "org-let",
+            "target": "team-01",
+            "linkKind": "team",
+            "label": "TEAM STRUCTURE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-01-member-1",
+            "source": "team-01",
+            "target": "attacker-kasab",
+            "linkKind": "team",
+            "label": "TEAM MEMBER"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-01-member-2",
+            "source": "team-01",
+            "target": "attacker-ismail",
+            "linkKind": "team",
+            "label": "TEAM MEMBER"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-01-primary-location",
+            "source": "team-01",
+            "target": "loc-cst",
+            "linkKind": "target",
+            "label": "ASSIGNED LOCATION"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "org-team-02",
+            "source": "org-let",
+            "target": "team-02",
+            "linkKind": "team",
+            "label": "TEAM STRUCTURE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-02-member-1",
+            "source": "team-02",
+            "target": "attacker-nazir",
+            "linkKind": "team",
+            "label": "TEAM MEMBER"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-02-member-2",
+            "source": "team-02",
+            "target": "attacker-shoaib",
+            "linkKind": "team",
+            "label": "TEAM MEMBER"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-02-primary-location",
+            "source": "team-02",
+            "target": "loc-leopold",
+            "linkKind": "target",
+            "label": "ASSIGNED LOCATION"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "org-team-03",
+            "source": "org-let",
+            "target": "team-03",
+            "linkKind": "team",
+            "label": "TEAM STRUCTURE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-03-member-1",
+            "source": "team-03",
+            "target": "attacker-bada",
+            "linkKind": "team",
+            "label": "TEAM MEMBER"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-03-member-2",
+            "source": "team-03",
+            "target": "attacker-javed",
+            "linkKind": "team",
+            "label": "TEAM MEMBER"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-03-primary-location",
+            "source": "team-03",
+            "target": "loc-taj",
+            "linkKind": "target",
+            "label": "ASSIGNED LOCATION"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "org-team-04",
+            "source": "org-let",
+            "target": "team-04",
+            "linkKind": "team",
+            "label": "TEAM STRUCTURE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-04-member-1",
+            "source": "team-04",
+            "target": "attacker-imran",
+            "linkKind": "team",
+            "label": "TEAM MEMBER"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-04-member-2",
+            "source": "team-04",
+            "target": "attacker-nasir",
+            "linkKind": "team",
+            "label": "TEAM MEMBER"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-04-primary-location",
+            "source": "team-04",
+            "target": "loc-nariman",
+            "linkKind": "target",
+            "label": "ASSIGNED LOCATION"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "org-team-05",
+            "source": "org-let",
+            "target": "team-05",
+            "linkKind": "team",
+            "label": "TEAM STRUCTURE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-05-member-1",
+            "source": "team-05",
+            "target": "attacker-fahadullah",
+            "linkKind": "team",
+            "label": "TEAM MEMBER"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-05-member-2",
+            "source": "team-05",
+            "target": "attacker-chhota",
+            "linkKind": "team",
+            "label": "TEAM MEMBER"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "team-05-primary-location",
+            "source": "team-05",
+            "target": "loc-oberoi",
+            "linkKind": "target",
+            "label": "ASSIGNED LOCATION"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-1",
+            "source": "attacker-kasab",
+            "target": "loc-cst",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-2",
+            "source": "attacker-ismail",
+            "target": "loc-cst",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-3",
+            "source": "attacker-kasab",
+            "target": "loc-cama",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-4",
+            "source": "attacker-ismail",
+            "target": "loc-cama",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-5",
+            "source": "attacker-kasab",
+            "target": "loc-girgaum",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-6",
+            "source": "attacker-ismail",
+            "target": "loc-girgaum",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-7",
+            "source": "attacker-nazir",
+            "target": "loc-leopold",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-8",
+            "source": "attacker-shoaib",
+            "target": "loc-leopold",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-9",
+            "source": "attacker-nazir",
+            "target": "loc-taj",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-10",
+            "source": "attacker-shoaib",
+            "target": "loc-taj",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-11",
+            "source": "attacker-bada",
+            "target": "loc-taj",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-12",
+            "source": "attacker-javed",
+            "target": "loc-taj",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-13",
+            "source": "attacker-imran",
+            "target": "loc-nariman",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-14",
+            "source": "attacker-nasir",
+            "target": "loc-nariman",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-15",
+            "source": "attacker-fahadullah",
+            "target": "loc-oberoi",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "target-16",
+            "source": "attacker-chhota",
+            "target": "loc-oberoi",
+            "linkKind": "target",
+            "label": "LOCATION LINK"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "headley-let",
+            "source": "planner-headley",
+            "target": "org-let",
+            "linkKind": "planning",
+            "label": "ASSOCIATED WITH"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "headley-target-1",
+            "source": "planner-headley",
+            "target": "loc-cst",
+            "linkKind": "planning",
+            "label": "PRE-ATTACK SURVEILLANCE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "headley-target-2",
+            "source": "planner-headley",
+            "target": "loc-leopold",
+            "linkKind": "planning",
+            "label": "PRE-ATTACK SURVEILLANCE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "headley-target-3",
+            "source": "planner-headley",
+            "target": "loc-taj",
+            "linkKind": "planning",
+            "label": "PRE-ATTACK SURVEILLANCE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "headley-target-4",
+            "source": "planner-headley",
+            "target": "loc-nariman",
+            "linkKind": "planning",
+            "label": "PRE-ATTACK SURVEILLANCE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "headley-target-5",
+            "source": "planner-headley",
+            "target": "loc-oberoi",
+            "linkKind": "planning",
+            "label": "PRE-ATTACK SURVEILLANCE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "response-girgaum",
+            "source": "response-mumbai-police",
+            "target": "loc-girgaum",
+            "linkKind": "response",
+            "label": "POLICE RESPONSE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "judgment-response",
+            "source": "evidence-judgment",
+            "target": "response-mumbai-police",
+            "linkKind": "response",
+            "label": "LEGAL RECORD"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "judgment-location-1",
+            "source": "evidence-judgment",
+            "target": "loc-cst",
+            "linkKind": "evidence",
+            "label": "VERIFIED LEGAL SOURCE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "judgment-location-2",
+            "source": "evidence-judgment",
+            "target": "loc-cama",
+            "linkKind": "evidence",
+            "label": "VERIFIED LEGAL SOURCE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "judgment-location-3",
+            "source": "evidence-judgment",
+            "target": "loc-girgaum",
+            "linkKind": "evidence",
+            "label": "VERIFIED LEGAL SOURCE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "judgment-location-4",
+            "source": "evidence-judgment",
+            "target": "loc-leopold",
+            "linkKind": "evidence",
+            "label": "VERIFIED LEGAL SOURCE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "judgment-location-5",
+            "source": "evidence-judgment",
+            "target": "loc-taj",
+            "linkKind": "evidence",
+            "label": "VERIFIED LEGAL SOURCE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "judgment-location-6",
+            "source": "evidence-judgment",
+            "target": "loc-nariman",
+            "linkKind": "evidence",
+            "label": "VERIFIED LEGAL SOURCE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "judgment-location-7",
+            "source": "evidence-judgment",
+            "target": "loc-oberoi",
+            "linkKind": "evidence",
+            "label": "VERIFIED LEGAL SOURCE"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "move-01-a",
+            "source": "loc-badhwar",
+            "target": "loc-cst",
+            "linkKind": "movement",
+            "label": "TEAM 01"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "move-01-b",
+            "source": "loc-cst",
+            "target": "loc-cama",
+            "linkKind": "movement",
+            "label": "TEAM 01"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "move-01-c",
+            "source": "loc-cama",
+            "target": "loc-girgaum",
+            "linkKind": "movement",
+            "label": "TEAM 01"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "move-02-a",
+            "source": "loc-badhwar",
+            "target": "loc-leopold",
+            "linkKind": "movement",
+            "label": "TEAM 02"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "move-02-b",
+            "source": "loc-leopold",
+            "target": "loc-taj",
+            "linkKind": "movement",
+            "label": "TEAM 02"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "move-03",
+            "source": "loc-badhwar",
+            "target": "loc-taj",
+            "linkKind": "movement",
+            "label": "TEAM 03"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "move-04",
+            "source": "loc-badhwar",
+            "target": "loc-nariman",
+            "linkKind": "movement",
+            "label": "TEAM 04"
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "NOT_APPLICABLE",
+            "confidence": "VERIFIED",
+            "id": "move-05",
+            "source": "loc-badhwar",
+            "target": "loc-oberoi",
+            "linkKind": "movement",
+            "label": "TEAM 05"
+          }
+        ],
+        "filters": [
+          {
+            "id": "team",
+            "label": "Team Connections",
+            "tone": "#D22B2B",
+            "darkTone": "#AEC3B0"
+          },
+          {
+            "id": "target",
+            "label": "Target / Location Links",
+            "tone": "#111111",
+            "darkTone": "#EFF6E0"
+          },
+          {
+            "id": "movement",
+            "label": "Movement",
+            "tone": "#FCD34D",
+            "darkTone": "#598392"
+          },
+          {
+            "id": "planning",
+            "label": "Pre-Attack Planning",
+            "tone": "#6366F1",
+            "darkTone": "#AEC3B0"
+          },
+          {
+            "id": "response",
+            "label": "Police / Response",
+            "tone": "#D97706",
+            "darkTone": "#EFF6E0"
+          },
+          {
+            "id": "evidence",
+            "label": "Evidence / Legal Source",
+            "tone": "#D22B2B",
+            "darkTone": "#AEC3B0"
+          }
+        ]
+      },
+      "timeline": {
+        "startDate": "2008-11-26",
+        "endDate": "2008-11-29",
+        "events": [
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-001",
+            "date": "2008-11-26",
+            "time": "≈ 21:15–21:30",
+            "sortOrder": 1,
+            "timezone": "Asia/Kolkata",
+            "category": "LANDING",
+            "title": "Attack group reaches the Mumbai shore",
+            "description": "The group reaches the documented landing area at Badhwar Park.",
+            "severity": 9,
+            "linkedEntityIds": [
+              "attacker-kasab",
+              "attacker-ismail",
+              "attacker-nazir",
+              "attacker-shoaib",
+              "attacker-bada",
+              "attacker-javed",
+              "attacker-imran",
+              "attacker-nasir",
+              "attacker-fahadullah",
+              "attacker-chhota"
+            ],
+            "linkedLocationIds": [
+              "loc-badhwar"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-002",
+            "date": "2008-11-26",
+            "time": "≈ 21:45 ONWARD",
+            "sortOrder": 2,
+            "timezone": "Asia/Kolkata",
+            "category": "ATTACK",
+            "title": "Nariman House incident underway",
+            "description": "A witness in the Supreme Court record encountered an attacker inside Nariman House at about 21:45.",
+            "severity": 9,
+            "linkedEntityIds": [
+              "attacker-imran",
+              "attacker-nasir"
+            ],
+            "linkedLocationIds": [
+              "loc-nariman"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-003",
+            "date": "2008-11-26",
+            "time": "LATE EVENING",
+            "sortOrder": 3,
+            "timezone": "Asia/Kolkata",
+            "category": "ATTACK",
+            "title": "Leopold Café incident",
+            "description": "The two attackers subsequently moved to the Taj Mahal Palace.",
+            "severity": 9,
+            "linkedEntityIds": [
+              "attacker-nazir",
+              "attacker-shoaib"
+            ],
+            "linkedLocationIds": [
+              "loc-leopold",
+              "loc-taj"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-004",
+            "date": "2008-11-26",
+            "time": "LATE EVENING",
+            "sortOrder": 4,
+            "timezone": "Asia/Kolkata",
+            "category": "ATTACK",
+            "title": "Taj Mahal Palace incident underway",
+            "description": "The incident at the Taj was underway during the late evening of 26 November.",
+            "severity": 10,
+            "linkedEntityIds": [
+              "attacker-bada",
+              "attacker-javed",
+              "attacker-nazir",
+              "attacker-shoaib"
+            ],
+            "linkedLocationIds": [
+              "loc-taj"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-005",
+            "date": "2008-11-26",
+            "time": "≈ 21:55",
+            "sortOrder": 5,
+            "timezone": "Asia/Kolkata",
+            "category": "ATTACK",
+            "title": "Oberoi / Trident incident begins",
+            "description": "The Supreme Court judgment records entry at about 21:55.",
+            "severity": 10,
+            "linkedEntityIds": [
+              "attacker-fahadullah",
+              "attacker-chhota"
+            ],
+            "linkedLocationIds": [
+              "loc-oberoi"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-006",
+            "date": "2008-11-26",
+            "time": "≈ 21:55",
+            "sortOrder": 6,
+            "timezone": "Asia/Kolkata",
+            "category": "ATTACK",
+            "title": "CST incident underway",
+            "description": "A witness in the court record heard the first major explosion at approximately 21:55.",
+            "severity": 10,
+            "linkedEntityIds": [
+              "attacker-kasab",
+              "attacker-ismail"
+            ],
+            "linkedLocationIds": [
+              "loc-cst"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-007",
+            "date": "2008-11-26",
+            "time": "≈ 22:30",
+            "sortOrder": 7,
+            "timezone": "Asia/Kolkata",
+            "category": "MOVEMENT",
+            "title": "Kasab and Abu Ismail reach the Cama Hospital area",
+            "description": "Documented movement after leaving CST.",
+            "severity": 8,
+            "linkedEntityIds": [
+              "attacker-kasab",
+              "attacker-ismail"
+            ],
+            "linkedLocationIds": [
+              "loc-cst",
+              "loc-cama"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-008",
+            "date": "2008-11-26",
+            "time": "≈ 22:30",
+            "sortOrder": 8,
+            "timezone": "Asia/Kolkata",
+            "category": "SECONDARY",
+            "title": "Mazgaon / Wadi Bunder secondary incident",
+            "description": "Secondary incident recorded in the Wadi Bunder Road / Mazgaon area.",
+            "severity": 8,
+            "linkedEntityIds": [],
+            "linkedLocationIds": [
+              "loc-mazgaon"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-009",
+            "date": "2008-11-26",
+            "time": "> 22:45",
+            "sortOrder": 9,
+            "timezone": "Asia/Kolkata",
+            "category": "SECONDARY",
+            "title": "Vile Parle East secondary incident",
+            "description": "The court record places this incident shortly after 22:45.",
+            "severity": 7,
+            "linkedEntityIds": [],
+            "linkedLocationIds": [
+              "loc-vile-parle"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-010",
+            "date": "2008-11-26",
+            "time": "≈ 23:45",
+            "sortOrder": 10,
+            "timezone": "Asia/Kolkata",
+            "category": "MOVEMENT",
+            "title": "Kasab and Abu Ismail emerge from the Cama Hospital area",
+            "description": "Documented movement from the Cama Hospital area.",
+            "severity": 8,
+            "linkedEntityIds": [
+              "attacker-kasab",
+              "attacker-ismail"
+            ],
+            "linkedLocationIds": [
+              "loc-cama"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-011",
+            "date": "2008-11-27",
+            "time": "≈ 00:15",
+            "sortOrder": 11,
+            "timezone": "Asia/Kolkata",
+            "category": "MOVEMENT",
+            "title": "Vehicle taken near Nariman Point / Vidhan Sabha area",
+            "description": "The Supreme Court judgment records the sequence at approximately 00:15.",
+            "severity": 8,
+            "linkedEntityIds": [
+              "attacker-kasab",
+              "attacker-ismail"
+            ],
+            "linkedLocationIds": []
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-012",
+            "date": "2008-11-27",
+            "time": "≈ 00:30",
+            "sortOrder": 12,
+            "timezone": "Asia/Kolkata",
+            "category": "POLICE",
+            "title": "Police interception at Girgaum Chowpatty",
+            "description": "Ajmal Amir Kasab was captured alive and Abu Ismail was killed during the documented police interception.",
+            "severity": 10,
+            "linkedEntityIds": [
+              "attacker-kasab",
+              "attacker-ismail",
+              "response-mumbai-police"
+            ],
+            "linkedLocationIds": [
+              "loc-girgaum"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-013",
+            "date": "2008-11-28",
+            "time": "≈ 07:00",
+            "sortOrder": 13,
+            "timezone": "Asia/Kolkata",
+            "category": "CLEARANCE",
+            "title": "Oberoi / Trident operation concludes",
+            "description": "The Supreme Court judgment records the final clearance at about 07:00 on 28 November.",
+            "severity": 9,
+            "linkedEntityIds": [
+              "attacker-fahadullah",
+              "attacker-chhota"
+            ],
+            "linkedLocationIds": [
+              "loc-oberoi"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "WINDOW",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-014",
+            "date": "2008-11-28",
+            "time": "NIGHT",
+            "sortOrder": 14,
+            "timezone": "Asia/Kolkata",
+            "category": "CLEARANCE",
+            "title": "Nariman House operation concludes",
+            "description": "The operation concluded during the night of 28 November.",
+            "severity": 9,
+            "linkedEntityIds": [
+              "attacker-imran",
+              "attacker-nasir"
+            ],
+            "linkedLocationIds": [
+              "loc-nariman"
+            ]
+          },
+          {
+            "investigationId": "mumbai-2611",
+            "sourceRef": "https://indiankanoon.org/doc/193792759/",
+            "timePrecision": "APPROX",
+            "confidence": "VERIFIED",
+            "id": "MUM-TL-015",
+            "date": "2008-11-29",
+            "time": "≈ 09:00",
+            "sortOrder": 15,
+            "timezone": "Asia/Kolkata",
+            "category": "CLEARANCE",
+            "title": "Taj Mahal Palace operation concludes",
+            "description": "The final clearance at the Taj marks the end of the attack period in this case reconstruction.",
+            "severity": 10,
+            "linkedEntityIds": [
+              "attacker-bada",
+              "attacker-javed",
+              "attacker-nazir",
+              "attacker-shoaib"
+            ],
+            "linkedLocationIds": [
+              "loc-taj"
+            ]
+          }
+        ]
+      },
+      "casualtyLedger": [
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "cas-kuber",
+          "locationId": "loc-kuber",
+          "label": "KUBER / PRE-ATTACK MARITIME CASE",
+          "killed": 1,
+          "injured": 0
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "cas-cst",
+          "locationId": "loc-cst",
+          "label": "CST",
+          "killed": 52,
+          "injured": 109
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "cas-cama-in",
+          "locationId": "loc-cama",
+          "label": "CAMA_IN",
+          "killed": 7,
+          "injured": 10
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "cas-cama-out",
+          "locationId": "loc-cama",
+          "label": "CAMA_OUT",
+          "killed": 9,
+          "injured": 7
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "cas-girgaum",
+          "locationId": "loc-girgaum",
+          "label": "GIRGAUM / VINOLI CHOWPATTY",
+          "killed": 1,
+          "injured": 1
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "cas-vile-parle",
+          "locationId": "loc-vile-parle",
+          "label": "VILE PARLE",
+          "killed": 2,
+          "injured": 3
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "cas-leopold",
+          "locationId": "loc-leopold",
+          "label": "LEOPOLD",
+          "killed": 11,
+          "injured": 28
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "cas-mazgaon",
+          "locationId": "loc-mazgaon",
+          "label": "MAZGAON",
+          "killed": 3,
+          "injured": 19
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "cas-taj",
+          "locationId": "loc-taj",
+          "label": "TAJ",
+          "killed": 36,
+          "injured": 30
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "cas-nariman",
+          "locationId": "loc-nariman",
+          "label": "NARIMAN HOUSE",
+          "killed": 9,
+          "injured": 7
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "cas-oberoi",
+          "locationId": "loc-oberoi",
+          "label": "OBEROI",
+          "killed": 35,
+          "injured": 24
+        }
+      ],
+      "facts": [
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "WINDOW",
+          "confidence": "VERIFIED",
+          "id": "mum-fact-landing",
+          "type": "forensic",
+          "text": "The attack group reached the Mumbai shoreline at Badhwar Park between approximately 21:15 and 21:30 on 26 November 2008.",
+          "status": "verified",
+          "sourceTitle": "Supreme Court of India judgment / 29 Aug 2012",
+          "linkedEntityIds": [
+            "attacker-kasab",
+            "attacker-ismail",
+            "attacker-nazir",
+            "attacker-shoaib",
+            "attacker-bada",
+            "attacker-javed",
+            "attacker-imran",
+            "attacker-nasir",
+            "attacker-fahadullah",
+            "attacker-chhota"
+          ],
+          "linkedTimelineEventIds": [
+            "MUM-TL-001"
+          ],
+          "linkedLocationIds": [
+            "loc-badhwar"
+          ]
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "APPROX",
+          "confidence": "VERIFIED",
+          "id": "mum-fact-cst",
+          "type": "documentary",
+          "text": "CCTV and witness evidence documented the CST incident; the judgment records 52 people killed and 109 injured there.",
+          "status": "verified",
+          "sourceTitle": "Supreme Court of India judgment / 29 Aug 2012",
+          "linkedEntityIds": [
+            "attacker-kasab",
+            "attacker-ismail"
+          ],
+          "linkedTimelineEventIds": [
+            "MUM-TL-006"
+          ],
+          "linkedLocationIds": [
+            "loc-cst"
+          ]
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "APPROX",
+          "confidence": "VERIFIED",
+          "id": "mum-fact-oberoi",
+          "type": "timeline",
+          "text": "The Oberoi / Trident incident began at approximately 21:55 on 26 November 2008.",
+          "status": "verified",
+          "sourceTitle": "Supreme Court of India judgment / 29 Aug 2012",
+          "linkedEntityIds": [
+            "attacker-fahadullah",
+            "attacker-chhota"
+          ],
+          "linkedTimelineEventIds": [
+            "MUM-TL-005",
+            "MUM-TL-013"
+          ],
+          "linkedLocationIds": [
+            "loc-oberoi"
+          ]
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "mum-fact-totals",
+          "type": "legal-record",
+          "text": "The Supreme Court judgment records 166 people killed and 238 injured across the attack.",
+          "status": "verified",
+          "sourceTitle": "Supreme Court of India judgment / 29 Aug 2012",
+          "linkedEntityIds": [
+            "evidence-judgment"
+          ],
+          "linkedTimelineEventIds": [],
+          "linkedLocationIds": [
+            "loc-nariman-point-arrival",
+            "loc-badhwar",
+            "loc-cst",
+            "loc-cama",
+            "loc-leopold",
+            "loc-taj",
+            "loc-nariman",
+            "loc-oberoi",
+            "loc-girgaum",
+            "loc-mazgaon",
+            "loc-vile-parle",
+            "loc-kuber"
+          ]
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://www.justice.gov/usao-ndil/pr/david-coleman-headley-sentenced-35-years-prison-role-india-and-denmark-terror-plots",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "mum-fact-headley",
+          "type": "investigative",
+          "text": "David Coleman Headley pleaded guilty in the United States to charges connected with planning the Mumbai attacks and conducted pre-attack surveillance of potential targets during multiple visits.",
+          "status": "verified",
+          "sourceTitle": "U.S. Department of Justice / Headley sentencing record",
+          "linkedEntityIds": [
+            "planner-headley",
+            "org-let"
+          ],
+          "linkedTimelineEventIds": [],
+          "linkedLocationIds": [
+            "loc-cst",
+            "loc-leopold",
+            "loc-taj",
+            "loc-nariman",
+            "loc-oberoi"
+          ]
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "mum-fact-taj",
+          "type": "legal-record",
+          "text": "The Supreme Court judgment records 36 people killed and 30 injured at the Taj Mahal Palace.",
+          "status": "verified",
+          "sourceTitle": "Supreme Court of India judgment / 29 Aug 2012",
+          "linkedEntityIds": [
+            "attacker-bada",
+            "attacker-javed",
+            "attacker-nazir",
+            "attacker-shoaib"
+          ],
+          "linkedTimelineEventIds": [
+            "MUM-TL-004",
+            "MUM-TL-015"
+          ],
+          "linkedLocationIds": [
+            "loc-taj"
+          ]
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "NOT_APPLICABLE",
+          "confidence": "VERIFIED",
+          "id": "mum-fact-cama",
+          "type": "legal-record",
+          "text": "The Cama record is separated into CAMA_IN (7 killed, 10 injured) and CAMA_OUT (9 killed, 7 injured).",
+          "status": "verified",
+          "sourceTitle": "Supreme Court of India judgment / 29 Aug 2012",
+          "linkedEntityIds": [
+            "attacker-kasab",
+            "attacker-ismail"
+          ],
+          "linkedTimelineEventIds": [
+            "MUM-TL-007",
+            "MUM-TL-010"
+          ],
+          "linkedLocationIds": [
+            "loc-cama"
+          ]
+        },
+        {
+          "investigationId": "mumbai-2611",
+          "sourceRef": "https://indiankanoon.org/doc/193792759/",
+          "timePrecision": "WINDOW",
+          "confidence": "VERIFIED",
+          "id": "mum-fact-clearance",
+          "type": "timeline",
+          "text": "The documented clearance sequence concludes at the Oberoi / Trident on 28 November, Nariman House during the night of 28 November, and the Taj at approximately 09:00 on 29 November.",
+          "status": "verified",
+          "sourceTitle": "Supreme Court of India judgment / 29 Aug 2012",
+          "linkedEntityIds": [],
+          "linkedTimelineEventIds": [
+            "MUM-TL-013",
+            "MUM-TL-014",
+            "MUM-TL-015"
+          ],
+          "linkedLocationIds": [
+            "loc-oberoi",
+            "loc-nariman",
+            "loc-taj"
+          ]
+        }
+      ]
+    }
+  ]
+}

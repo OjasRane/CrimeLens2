@@ -1,12 +1,19 @@
 export type InvestigationId = "demo" | "mumbai-2611";
 
-export type TimePrecision = "EXACT" | "APPROX" | "WINDOW" | "NOT_APPLICABLE";
+export type TimePrecision =
+  | "EXACT"
+  | "APPROX"
+  | "WINDOW"
+  | "DATE"
+  | "NOT_APPLICABLE";
 export type Confidence = "VERIFIED" | "HIGH" | "MEDIUM" | "DEMO";
 
 export type SourceMetadata = {
   sourceRef: string;
   timePrecision: TimePrecision;
   confidence: Confidence;
+  sourceEvidenceId?: string;
+  sourceLocator?: Record<string, string | number>;
 };
 
 export type CoordinateStatus =

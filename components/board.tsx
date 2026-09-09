@@ -96,6 +96,7 @@ function EvidenceBox({
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
+  useInvestigationStore((state) => state.investigationRevision);
   const openLedger = useInvestigationStore((state) => state.openLedger);
   const activeInvestigation = getInvestigation(activeInvestigationId);
 
@@ -229,7 +230,8 @@ function EvidenceBox({
                 onClick={() => {
                   // Touch browsers may synthesize a delayed click after the
                   // pointer-up placement. Ignore it so one gesture adds one node.
-                  if (Date.now() - lastTouchPlacementAtRef.current < 500) return;
+                  if (Date.now() - lastTouchPlacementAtRef.current < 500)
+                    return;
                   onMobilePlace(item.nodeType);
                   triggerHaptic("light");
                 }}
@@ -283,6 +285,7 @@ function BoardSurface({
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
+  useInvestigationStore((state) => state.investigationRevision);
   const activeInvestigation = getInvestigation(activeInvestigationId);
 
   const renderedNodes = useMemo(
@@ -353,10 +356,7 @@ function BoardSurface({
   }
 
   return (
-    <div
-      ref={boardRef}
-      className="relative h-full w-full bg-[var(--paper)]"
-    >
+    <div ref={boardRef} className="relative h-full w-full bg-[var(--paper)]">
       <EvidenceBox onMobilePlace={handleMobilePlace} />
       <div className="pointer-events-none absolute right-2 top-2 z-10 max-w-[calc(100%-13rem)] border-2 border-[var(--ink)] bg-[var(--paper)] px-2 py-2 text-right font-mono text-[9px] font-black uppercase shadow-[3px_3px_0_var(--ink)] max-[390px]:hidden md:right-4 md:top-4 md:text-[10px]">
         <div>[ {activeInvestigation.shortName} ]</div>
@@ -367,6 +367,7 @@ function BoardSurface({
       <ReactFlow
         nodes={renderedNodes}
         edges={edges}
+        onlyRenderVisibleElements
         nodeTypes={isLive ? liveNodeTypes : localNodeTypes}
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}

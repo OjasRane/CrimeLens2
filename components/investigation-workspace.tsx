@@ -21,6 +21,7 @@ export function InvestigationWorkspace() {
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
+  useInvestigationStore((state) => state.investigationRevision);
   const activeWorkspace = useInvestigationStore(
     (state) => state.activeWorkspace,
   );
@@ -46,7 +47,7 @@ export function InvestigationWorkspace() {
 
   const displayedLedgerOpen = isMobileViewport
     ? isMobileLedgerOpen
-    : isLedgerOpen;
+    : isLedgerOpen && activeWorkspace !== "evidence";
 
   function handleLedgerToggle() {
     if (isMobileViewport) {
@@ -88,7 +89,7 @@ export function InvestigationWorkspace() {
             ) : (
               <div className="flex-1 md:hidden" />
             )}
-            <button
+            {activeWorkspace !== "evidence" ? <button
               type="button"
               onClick={() => {
                 triggerHaptic("light");
@@ -98,7 +99,7 @@ export function InvestigationWorkspace() {
               aria-label="Open global intelligence search"
             >
               <Search aria-hidden="true" size={18} strokeWidth={3} />
-            </button>
+            </button> : null}
             <ThemeToggle />
             <button
               type="button"
@@ -140,10 +141,12 @@ export function InvestigationWorkspace() {
           <aside
             id="fact-ledger"
             className={`hidden h-full shrink-0 overflow-hidden bg-[var(--paper)] transition-[width] duration-300 ease-in-out md:block ${
-              isLedgerOpen ? "md:w-[clamp(280px,30vw,360px)]" : "md:w-0"
+              isLedgerOpen && activeWorkspace !== "evidence"
+                ? "md:w-[clamp(280px,30vw,360px)]"
+                : "md:w-0"
             }`}
           >
-            {isLedgerOpen ? <FactLedger /> : null}
+            {isLedgerOpen && activeWorkspace !== "evidence" ? <FactLedger /> : null}
           </aside>
         </main>
 

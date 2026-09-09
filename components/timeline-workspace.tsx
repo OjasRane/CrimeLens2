@@ -10,7 +10,6 @@ import {
   Files,
   MapPinned,
   Network,
-  Play,
   Radar,
   X,
   ZoomIn,
@@ -18,7 +17,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { BlindSpotTimelineWorkspace } from "@/components/blind-spot-timeline-workspace";
-import { PlayCaseReplayButton } from "@/features/case-replay/integration/PlayCaseReplayButton";
+import { AddToNetworkWorkspaceButton } from "@/components/add-to-network-workspace-button";
 import { getInvestigation } from "@/data/investigations/registry";
 import type {
   Investigation,
@@ -565,7 +564,9 @@ function AnnotationPanel({
   const eventAnnotations = annotations.filter((a) => a.eventId === event.id);
 
   return (
-    <div className={`fatal-timeline-annotation absolute inset-0 z-50 h-full w-full overflow-y-auto border-l-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[-6px_0_0_black] sm:left-auto sm:w-[380px] dark:border-[#D8D3C7] dark:bg-[#081318] dark:text-[#F2EFE7] dark:shadow-[-7px_0_0_#010506] ${className}`}>
+    <div
+      className={`fatal-timeline-annotation absolute inset-0 z-50 h-full w-full overflow-y-auto border-l-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[-6px_0_0_black] sm:left-auto sm:w-[380px] dark:border-[#D8D3C7] dark:bg-[#081318] dark:text-[#F2EFE7] dark:shadow-[-7px_0_0_#010506] ${className}`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b-4 border-black bg-black px-4 py-3 text-white dark:border-[#426D79] dark:bg-[#08242D] dark:text-[#F4F1DC]">
         <span>Annotate Event</span>
@@ -896,8 +897,9 @@ function EventInspector({
             <div className="min-w-0 border-l border-[#34515A] pl-2">
               <dt className="text-[#70878D]">Location</dt>
               <dd className="mt-0.5 truncate font-black text-[#F2EFE7]">
-                {linkedLocations.map((location) => location.title).join(" / ") ||
-                  "—"}
+                {linkedLocations
+                  .map((location) => location.title)
+                  .join(" / ") || "—"}
               </dd>
             </div>
             <div className="min-w-0 border-l border-[#34515A] pl-2">
@@ -909,9 +911,9 @@ function EventInspector({
             <div className="min-w-0 border-l border-[#34515A] pl-2">
               <dt className="text-[#70878D]">Related Team</dt>
               <dd className="mt-0.5 truncate font-black text-[#F2EFE7]">
-                {Array.from(new Set(linkedRoutes.map((route) => route.label))).join(
-                  " / ",
-                ) || "—"}
+                {Array.from(
+                  new Set(linkedRoutes.map((route) => route.label)),
+                ).join(" / ") || "—"}
               </dd>
             </div>
             <div className="min-w-0 border-l border-[#34515A] pl-2">
@@ -929,7 +931,10 @@ function EventInspector({
                 onClick={() => {
                   setSelectedLocationId(primaryLocation.id);
                   if (primaryLocation.coordinates) {
-                    requestMapPan(primaryLocation.coordinates, primaryLocation.id);
+                    requestMapPan(
+                      primaryLocation.coordinates,
+                      primaryLocation.id,
+                    );
                   }
                   setActiveWorkspace("map");
                 }}
@@ -970,6 +975,18 @@ function EventInspector({
               <FileText aria-hidden="true" className="size-3" />
               Add Note
             </button>
+            <AddToNetworkWorkspaceButton
+              source={{
+                sourceKind: "event",
+                sourceId: event.id,
+                label: event.title,
+                type: "event",
+                description: `${event.date} ${event.time} // ${event.description}`,
+                sourceVerificationStatus:
+                  investigation.type === "DEMO" ? "demo" : "verified",
+              }}
+              className="fatal-inspector-action"
+            />
           </div>
         </div>
       </div>
@@ -985,6 +1002,7 @@ export function TimelineWorkspace() {
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
+  useInvestigationStore((state) => state.investigationRevision);
   const activeInvestigation = getInvestigation(activeInvestigationId);
   const timeRange = useInvestigationStore((state) => state.timeRange);
   const setTimeRange = useInvestigationStore((state) => state.setTimeRange);
@@ -994,12 +1012,14 @@ export function TimelineWorkspace() {
   const selectedTimelineEventId = useInvestigationStore(
     (state) => state.selectedTimelineEventId,
   );
+  const workspaceComparisonSelection = useInvestigationStore(
+    (state) => state.workspaceComparisonSelection,
+  );
   const setSelectedTimelineEventId = useInvestigationStore(
     (state) => state.setSelectedTimelineEventId,
   );
 
   const [zoomLevel, setZoomLevel] = useState(1); // 0 = heatmap, 1–3 = detail zoom
-  const [scrollX, setScrollX] = useState(0);
   const [selectedEvent, setSelectedEvent] = useState<TimelineEvent | null>(
     null,
   );
@@ -1008,13 +1028,25 @@ export function TimelineWorkspace() {
   const [brushStart, setBrushStart] = useState<number | null>(null);
   const [brushEnd, setBrushEnd] = useState<number | null>(null);
   const [hoveredEvent, setHoveredEvent] = useState<string | null>(null);
-  const [hoveredCategory, setHoveredCategory] =
-    useState<EventCategory | null>(null);
+  const [hoveredCategory, setHoveredCategory] = useState<EventCategory | null>(
+    null,
+  );
   const [showDarkAnnotationPanel, setShowDarkAnnotationPanel] = useState(false);
   const [showBlindSpotDetector, setShowBlindSpotDetector] = useState(false);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isDraggingBrush = useRef(false);
+  const brushMoveFrame = useRef<number | null>(null);
+  const pendingBrushEnd = useRef<number | null>(null);
+
+  useEffect(
+    () => () => {
+      if (brushMoveFrame.current !== null) {
+        window.cancelAnimationFrame(brushMoveFrame.current);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     setZoomLevel(1);
@@ -1066,23 +1098,35 @@ export function TimelineWorkspace() {
   }, [selectedTimelineEventId, timelineEvents]);
 
   // Entity-linked timeline event IDs for highlighting
-  const suspectLinkedEvents = useMemo(
-    () => {
-      if (!selectedEntityId) return null;
-      if (activeInvestigationId === "demo") {
-        return new Set(suspectTimelineLinks[selectedEntityId] ?? []);
-      }
-      return new Set(
-        investigationEvents
-          .filter(
-            (event) =>
-              event.linkedEntityIds?.includes(selectedEntityId) ||
-              event.linkedLocationIds?.includes(selectedEntityId),
-          )
-          .map((event) => event.id),
+  const suspectLinkedEvents = useMemo(() => {
+    const entityIds = new Set(workspaceComparisonSelection?.entityIds ?? []);
+    const locationIds = new Set(
+      workspaceComparisonSelection?.locationIds ?? [],
+    );
+    const linked = new Set(workspaceComparisonSelection?.eventIds ?? []);
+    if (selectedEntityId) entityIds.add(selectedEntityId);
+    if (!entityIds.size && !locationIds.size && !linked.size) return null;
+    if (activeInvestigationId === "demo") {
+      entityIds.forEach((entityId) =>
+        (suspectTimelineLinks[entityId] ?? []).forEach((eventId) =>
+          linked.add(eventId),
+        ),
       );
-    }, [activeInvestigationId, investigationEvents, selectedEntityId],
-  );
+    }
+    timelineEvents.forEach((event) => {
+      if (
+        event.linkedEntityIds?.some((id) => entityIds.has(id)) ||
+        event.linkedLocationIds?.some((id) => locationIds.has(id))
+      )
+        linked.add(event.id);
+    });
+    return linked;
+  }, [
+    activeInvestigationId,
+    selectedEntityId,
+    timelineEvents,
+    workspaceComparisonSelection,
+  ]);
 
   // Filter events by current time range
   const filteredEvents = useMemo(
@@ -1114,7 +1158,7 @@ export function TimelineWorkspace() {
   );
   const focusedDate = selectedEvent?.date ?? null;
   const hoveredDate = hoveredEvent
-    ? filteredEvents.find((event) => event.id === hoveredEvent)?.date ?? null
+    ? (filteredEvents.find((event) => event.id === hoveredEvent)?.date ?? null)
     : null;
 
   const scaledWidth = layout.totalWidth * zoomLevel;
@@ -1131,6 +1175,7 @@ export function TimelineWorkspace() {
       const x = e.clientX - rect.left + container.scrollLeft;
       setBrushStart(x);
       setBrushEnd(x);
+      pendingBrushEnd.current = null;
       isDraggingBrush.current = true;
     },
     [brushActive, zoomLevel],
@@ -1144,20 +1189,38 @@ export function TimelineWorkspace() {
 
       const rect = container.getBoundingClientRect();
       const x = e.clientX - rect.left + container.scrollLeft;
-      setBrushEnd(x);
+      pendingBrushEnd.current = x;
+      if (brushMoveFrame.current === null) {
+        brushMoveFrame.current = window.requestAnimationFrame(() => {
+          brushMoveFrame.current = null;
+          if (pendingBrushEnd.current !== null) {
+            setBrushEnd(pendingBrushEnd.current);
+          }
+        });
+      }
     },
     [],
   );
 
   const handleTimelineMouseUp = useCallback(() => {
-    if (!isDraggingBrush.current || brushStart === null || brushEnd === null) {
+    const finalBrushEnd = pendingBrushEnd.current ?? brushEnd;
+    if (brushMoveFrame.current !== null) {
+      window.cancelAnimationFrame(brushMoveFrame.current);
+      brushMoveFrame.current = null;
+    }
+    pendingBrushEnd.current = null;
+    if (
+      !isDraggingBrush.current ||
+      brushStart === null ||
+      finalBrushEnd === null
+    ) {
       isDraggingBrush.current = false;
       return;
     }
     isDraggingBrush.current = false;
 
-    const startX = Math.min(brushStart, brushEnd) / zoomLevel;
-    const endX = Math.max(brushStart, brushEnd) / zoomLevel;
+    const startX = Math.min(brushStart, finalBrushEnd) / zoomLevel;
+    const endX = Math.max(brushStart, finalBrushEnd) / zoomLevel;
 
     // Find events within brush range
     const brushedEvents = filteredEvents.filter((event) => {
@@ -1186,13 +1249,6 @@ export function TimelineWorkspace() {
     },
     [selectedEvent],
   );
-
-  // Scroll sync
-  const handleScroll = useCallback(() => {
-    if (scrollContainerRef.current) {
-      setScrollX(scrollContainerRef.current.scrollLeft);
-    }
-  }, []);
 
   // Keyboard zoom
   useEffect(() => {
@@ -1239,26 +1295,17 @@ export function TimelineWorkspace() {
             Timeline Analysis
           </h2>
           <div className="flex items-center gap-2 font-mono text-[10px] font-black uppercase text-white dark:text-[#F2EFE7]">
-            {activeInvestigationId === "mumbai-2611" ? (
-              <PlayCaseReplayButton
-                initialEventId={selectedTimelineEventId?.replace(
-                  "MUM-TL-",
-                  "TL-",
-                )}
-                className="flex h-8 shrink-0 items-center gap-1.5 border-2 border-[#FCD34D] bg-[#FCD34D] px-2.5 text-[9px] font-black uppercase tracking-[0.08em] text-black shadow-[3px_3px_0_#D22B2B] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[#FFD45A] dark:bg-[#FFD45A] dark:text-[#050B0E] dark:shadow-[3px_3px_0_#FF4D55]"
-              >
-                <Play aria-hidden="true" className="size-3.5" fill="currentColor" />
-                <span className="hidden sm:inline">Play Replay</span>
-                <span className="sm:hidden">Replay</span>
-              </PlayCaseReplayButton>
-            ) : null}
             {activeInvestigationId !== "mumbai-2611" ? (
               <button
                 type="button"
                 onClick={() => setShowBlindSpotDetector(true)}
                 className="fatal-historical-badge mr-1 flex h-8 items-center gap-1.5 border-2 border-[#EF4444] bg-[#EF4444] px-2.5 text-[9px] font-black uppercase tracking-[0.08em] text-white transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 dark:border-[#D8D3C7] dark:bg-[#0D1A20] dark:text-[#F2EFE7]"
               >
-                <Radar aria-hidden="true" className="size-3.5" strokeWidth={3} />
+                <Radar
+                  aria-hidden="true"
+                  className="size-3.5"
+                  strokeWidth={3}
+                />
                 <span className="hidden sm:inline">Blind-Spot Detector</span>
                 <span className="sm:hidden">Blind Spots</span>
               </button>
@@ -1390,19 +1437,19 @@ export function TimelineWorkspace() {
           {(Object.entries(CATEGORY_COLORS) as [EventCategory, string][]).map(
             ([category, color]) =>
               visibleCategories.has(category) ? (
-              <span
-                key={category}
-                className="fatal-timeline-legend-item flex items-center gap-1"
-                data-active={hoveredCategory === category}
-                onMouseEnter={() => setHoveredCategory(category)}
-                onMouseLeave={() => setHoveredCategory(null)}
-              >
                 <span
-                  className={`inline-block h-3 w-3 border-2 border-black dark:border-[1px] dark:border-[#426D79] ${CATEGORY_DARK_STYLES[category].strip}`}
-                  style={{ backgroundColor: color }}
-                />
-                {category}
-              </span>
+                  key={category}
+                  className="fatal-timeline-legend-item flex items-center gap-1"
+                  data-active={hoveredCategory === category}
+                  onMouseEnter={() => setHoveredCategory(category)}
+                  onMouseLeave={() => setHoveredCategory(null)}
+                >
+                  <span
+                    className={`inline-block h-3 w-3 border-2 border-black dark:border-[1px] dark:border-[#426D79] ${CATEGORY_DARK_STYLES[category].strip}`}
+                    style={{ backgroundColor: color }}
+                  />
+                  {category}
+                </span>
               ) : null,
           )}
         </div>
@@ -1431,7 +1478,6 @@ export function TimelineWorkspace() {
             className={`fatal-timeline-scroll h-full overflow-x-auto overflow-y-hidden ${
               brushActive ? "touch-none cursor-crosshair" : "touch-pan-x"
             }`}
-            onScroll={handleScroll}
             onPointerDown={handleTimelineMouseDown}
             onPointerMove={handleTimelineMouseMove}
             onPointerUp={handleTimelineMouseUp}
@@ -1460,7 +1506,9 @@ export function TimelineWorkspace() {
                 <div
                   key={seg.date}
                   className="fatal-timeline-date absolute font-mono text-[10px] font-black uppercase"
-                  data-active={focusedDate === seg.date || hoveredDate === seg.date}
+                  data-active={
+                    focusedDate === seg.date || hoveredDate === seg.date
+                  }
                   style={{
                     left: `${seg.x * zoomLevel}px`,
                     top: "calc(var(--fatal-axis-y) + 12px)",
@@ -1539,9 +1587,7 @@ export function TimelineWorkspace() {
                   suspectLinkedEvents !== null &&
                   !suspectLinkedEvents.has(event.id);
                 const isFocusDimmed =
-                  isDarkMode &&
-                  selectedTimelineEventId !== null &&
-                  !isSelected;
+                  isDarkMode && selectedTimelineEventId !== null && !isSelected;
                 const isHoverDimmed =
                   isDarkMode &&
                   !selectedTimelineEventId &&
@@ -1573,12 +1619,14 @@ export function TimelineWorkspace() {
                     className="fatal-timeline-node absolute"
                     data-selected={isSelected}
                     data-hovered={isHovered}
-                    style={{
-                      left: `${x * zoomLevel}px`,
-                      top: 0,
-                      height: "100%",
-                      "--event-color": CATEGORY_COLORS[event.category],
-                    } as React.CSSProperties}
+                    style={
+                      {
+                        left: `${x * zoomLevel}px`,
+                        top: 0,
+                        height: "100%",
+                        "--event-color": CATEGORY_COLORS[event.category],
+                      } as React.CSSProperties
+                    }
                   >
                     {/* Annotation callouts (pinned above node) */}
                     {eventAnnotations.map((ann, annIdx) => (
@@ -1620,9 +1668,7 @@ export function TimelineWorkspace() {
                       transition={{ duration: 0.2 }}
                       style={{
                         left: isDarkMode ? "-72px" : "-46px",
-                        top: isDarkMode
-                          ? "calc(11% - 4px)"
-                          : "calc(14% - 4px)",
+                        top: isDarkMode ? "calc(11% - 4px)" : "calc(14% - 4px)",
                         filter: isEntityDimmed ? "grayscale(1)" : "none",
                       }}
                       onClick={() => {
@@ -1730,17 +1776,19 @@ export function TimelineWorkspace() {
                       }`}
                       data-selected={isSelected}
                       data-hovered={isHovered}
-                      style={{
-                        left: "3px",
-                        top: "calc(var(--fatal-axis-y) - 10px)",
-                        backgroundColor: isSelected
-                          ? "#FCD34D"
-                          : isSuspectLinked
-                            ? "#D22B2B"
-                            : CATEGORY_COLORS[event.category],
-                        opacity: isDimmed ? prominence : 1,
-                        "--event-color": CATEGORY_COLORS[event.category],
-                      } as React.CSSProperties}
+                      style={
+                        {
+                          left: "3px",
+                          top: "calc(var(--fatal-axis-y) - 10px)",
+                          backgroundColor: isSelected
+                            ? "#FCD34D"
+                            : isSuspectLinked
+                              ? "#D22B2B"
+                              : CATEGORY_COLORS[event.category],
+                          opacity: isDimmed ? prominence : 1,
+                          "--event-color": CATEGORY_COLORS[event.category],
+                        } as React.CSSProperties
+                      }
                     />
                   </div>
                 );

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Callable, Literal
+from typing import Literal
 from uuid import UUID
 
 import psycopg
@@ -9,6 +9,14 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from .api.dependencies import (
+    get_runtime_settings,
+    require_active_profile,
+    require_investigation_access,
+)
+from .core.config import Settings
+from .schemas.auth import AuthorizedProfile
 
 
 PinCategory = Literal[
@@ -21,15 +29,6 @@ PinCategory = Literal[
     "lead",
     "custom",
 ]
-
-
-class PinAuthorizedProfile(BaseModel):
-    user_id: str
-    agent_id: str
-    display_name: str
-    role: str
-    clearance: str
-    active: bool
 
 
 class PinCreate(BaseModel):
@@ -132,7 +131,7 @@ class InvestigationPin(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
     id: UUID
-    case_id: str = Field(alias="caseId")
+    investigation_id: str = Field(alias="investigationId")
     latitude: float
     longitude: float
     title: str
@@ -186,7 +185,7 @@ ADMIN_ROLES = {"admin", "case-admin", "case_admin", "supervisor"}
 PIN_SELECT = """
     SELECT
         pin.id,
-        pin.case_id,
+        pin.investigation_id,
         pin.latitude,
         pin.longitude,
         pin.title,
@@ -206,10 +205,8 @@ PIN_SELECT = """
 """
 
 
-def _database_url() -> str:
-    import os
-
-    database_url = os.getenv("DATABASE_URL")
+def _database_url(settings: Settings) -> str:
+    database_url = settings.database_url
     if not database_url:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -218,41 +215,36 @@ def _database_url() -> str:
     return database_url
 
 
-def _normalized_role(profile: PinAuthorizedProfile) -> str:
+def _normalized_role(profile: AuthorizedProfile) -> str:
     return profile.role.strip().lower()
 
 
-def _can_write(profile: PinAuthorizedProfile) -> bool:
+def _can_write(profile: AuthorizedProfile) -> bool:
     return profile.active and _normalized_role(profile) not in READ_ONLY_ROLES
 
 
-def _is_case_admin(profile: PinAuthorizedProfile) -> bool:
+def _is_case_admin(profile: AuthorizedProfile) -> bool:
     return _normalized_role(profile) in ADMIN_ROLES
 
 
-def _require_case_access(case_id: str, profile: PinAuthorizedProfile) -> None:
-    # The current CrimeLens permission model grants every active profile access
-    # to each investigation in the bundled registry. Keep that boundary explicit
-    # so a future case-membership table can replace it without changing routes.
-    if not profile.active or case_id not in CASE_LINK_CATALOG:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
-
-
-def _require_write_access(profile: PinAuthorizedProfile) -> None:
+def _require_write_access(profile: AuthorizedProfile) -> None:
     if not _can_write(profile):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Investigator write access required",
+            detail={
+                "code": "INVESTIGATOR_WRITE_ACCESS_REQUIRED",
+                "message": "Investigator write access is required.",
+            },
         )
 
 
 def _validate_links(
-    case_id: str,
+    investigation_id: str,
     linked_evidence_id: str | None,
     linked_suspect_id: str | None,
     linked_timeline_event_id: str | None,
 ) -> None:
-    catalog = CASE_LINK_CATALOG[case_id]
+    catalog = CASE_LINK_CATALOG[investigation_id]
     candidates = (
         ("Linked evidence", linked_evidence_id, "evidence"),
         ("Linked suspect", linked_suspect_id, "suspect"),
@@ -262,15 +254,18 @@ def _validate_links(
         if entity_id and entity_id not in catalog[entity_type]:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=f"{label} does not belong to this case",
+                detail={
+                    "code": "CROSS_INVESTIGATION_LINK",
+                    "message": f"{label} does not belong to this investigation.",
+                },
             )
 
 
 def _pin_from_row(
     row: dict[str, object],
-    profile: PinAuthorizedProfile,
+    profile: AuthorizedProfile,
 ) -> InvestigationPin:
-    is_owner = str(row["created_by"]) == profile.user_id
+    is_owner = str(row["created_by"]) == str(profile.user_id)
     return InvestigationPin.model_validate(
         {
             **row,
@@ -282,13 +277,13 @@ def _pin_from_row(
 
 def _fetch_pin(
     cursor: psycopg.Cursor,
-    case_id: str,
+    investigation_id: str,
     pin_id: UUID,
-    profile: PinAuthorizedProfile,
+    profile: AuthorizedProfile,
 ) -> InvestigationPin | None:
     cursor.execute(
-        f"{PIN_SELECT} WHERE pin.case_id = %s AND pin.id = %s",
-        (case_id, pin_id),
+        f"{PIN_SELECT} WHERE pin.investigation_id = %s AND pin.id = %s",
+        (investigation_id, pin_id),
     )
     row = cursor.fetchone()
     return _pin_from_row(row, profile) if row else None
@@ -303,12 +298,13 @@ def _record_event(
     cursor.execute(
         """
         INSERT INTO public.investigation_pin_events (
-            pin_id, case_id, actor_id, action, snapshot
-        ) VALUES (%s, %s, %s, %s, %s)
+            pin_id, case_id, investigation_id, actor_id, action, snapshot
+        ) VALUES (%s, %s, %s, %s, %s, %s)
         """,
         (
             pin.id,
-            pin.case_id,
+            pin.investigation_id,
+            pin.investigation_id,
             actor_id,
             action,
             Jsonb(pin.model_dump(mode="json", by_alias=True)),
@@ -316,32 +312,31 @@ def _record_event(
     )
 
 
-def build_pins_router(
-    require_active_profile: Callable[..., PinAuthorizedProfile],
-) -> APIRouter:
+def build_pins_router() -> APIRouter:
     router = APIRouter(
-        prefix="/api/v1/cases/{case_id}/pins",
+        prefix="/api/v1/investigations/{investigation_id}/pins",
         tags=["investigation-pins"],
     )
 
     @router.get("", response_model=list[InvestigationPin])
-    def list_case_pins(
-        case_id: str,
-        profile: PinAuthorizedProfile = Depends(require_active_profile),
+    def list_investigation_pins(
+        investigation_id: str,
+        _investigation: dict = Depends(require_investigation_access),
+        profile: AuthorizedProfile = Depends(require_active_profile),
+        settings: Settings = Depends(get_runtime_settings),
     ) -> list[InvestigationPin]:
-        _require_case_access(case_id, profile)
         try:
-            with psycopg.connect(_database_url(), row_factory=dict_row) as connection:
+            with psycopg.connect(_database_url(settings), row_factory=dict_row) as connection:
                 with connection.cursor() as cursor:
                     cursor.execute(
-                        f"{PIN_SELECT} WHERE pin.case_id = %s ORDER BY pin.created_at ASC",
-                        (case_id,),
+                        f"{PIN_SELECT} WHERE pin.investigation_id = %s ORDER BY pin.created_at ASC",
+                        (investigation_id,),
                     )
                     return [_pin_from_row(row, profile) for row in cursor.fetchall()]
         except psycopg.Error as error:
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Investigation pins could not be loaded",
+                detail={"code": "PINS_UNAVAILABLE", "message": "Investigation pins could not be loaded."},
             ) from error
 
     @router.post(
@@ -349,27 +344,29 @@ def build_pins_router(
         response_model=InvestigationPin,
         status_code=status.HTTP_201_CREATED,
     )
-    def create_case_pin(
-        case_id: str,
+    def create_investigation_pin(
+        investigation_id: str,
         payload: PinCreate,
-        profile: PinAuthorizedProfile = Depends(require_active_profile),
+        _investigation: dict = Depends(require_investigation_access),
+        profile: AuthorizedProfile = Depends(require_active_profile),
+        settings: Settings = Depends(get_runtime_settings),
     ) -> InvestigationPin:
-        _require_case_access(case_id, profile)
         _require_write_access(profile)
         _validate_links(
-            case_id,
+            investigation_id,
             payload.linked_evidence_id,
             payload.linked_suspect_id,
             payload.linked_timeline_event_id,
         )
 
         try:
-            with psycopg.connect(_database_url(), row_factory=dict_row) as connection:
+            with psycopg.connect(_database_url(settings), row_factory=dict_row) as connection:
                 with connection.cursor() as cursor:
                     cursor.execute(
                         """
                         INSERT INTO public.investigation_pins (
                             case_id,
+                            investigation_id,
                             latitude,
                             longitude,
                             title,
@@ -380,11 +377,12 @@ def build_pins_router(
                             linked_suspect_id,
                             linked_timeline_event_id,
                             created_by
-                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                         RETURNING id
                         """,
                         (
-                            case_id,
+                            investigation_id,
+                            investigation_id,
                             payload.latitude,
                             payload.longitude,
                             payload.title,
@@ -403,7 +401,7 @@ def build_pins_router(
                             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                             detail="Investigation pin could not be created",
                         )
-                    pin = _fetch_pin(cursor, case_id, created["id"], profile)
+                    pin = _fetch_pin(cursor, investigation_id, created["id"], profile)
                     if pin is None:
                         raise HTTPException(
                             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -418,19 +416,20 @@ def build_pins_router(
             ) from error
 
     @router.patch("/{pin_id}", response_model=InvestigationPin)
-    def update_case_pin(
-        case_id: str,
+    def update_investigation_pin(
+        investigation_id: str,
         pin_id: UUID,
         payload: PinUpdate,
-        profile: PinAuthorizedProfile = Depends(require_active_profile),
+        _investigation: dict = Depends(require_investigation_access),
+        profile: AuthorizedProfile = Depends(require_active_profile),
+        settings: Settings = Depends(get_runtime_settings),
     ) -> InvestigationPin:
-        _require_case_access(case_id, profile)
         _require_write_access(profile)
 
         try:
-            with psycopg.connect(_database_url(), row_factory=dict_row) as connection:
+            with psycopg.connect(_database_url(settings), row_factory=dict_row) as connection:
                 with connection.cursor() as cursor:
-                    existing = _fetch_pin(cursor, case_id, pin_id, profile)
+                    existing = _fetch_pin(cursor, investigation_id, pin_id, profile)
                     if existing is None:
                         raise HTTPException(
                             status_code=status.HTTP_404_NOT_FOUND,
@@ -444,7 +443,7 @@ def build_pins_router(
 
                     updates = payload.model_dump(exclude_unset=True)
                     _validate_links(
-                        case_id,
+                        investigation_id,
                         updates.get("linked_evidence_id", existing.linked_evidence_id),
                         updates.get("linked_suspect_id", existing.linked_suspect_id),
                         updates.get(
@@ -468,11 +467,11 @@ def build_pins_router(
                         f"""
                         UPDATE public.investigation_pins
                         SET {", ".join(assignments)}
-                        WHERE case_id = %s AND id = %s
+                        WHERE investigation_id = %s AND id = %s
                         """,
-                        (*values, case_id, pin_id),
+                        (*values, investigation_id, pin_id),
                     )
-                    pin = _fetch_pin(cursor, case_id, pin_id, profile)
+                    pin = _fetch_pin(cursor, investigation_id, pin_id, profile)
                     if pin is None:
                         raise HTTPException(
                             status_code=status.HTTP_404_NOT_FOUND,
@@ -487,18 +486,19 @@ def build_pins_router(
             ) from error
 
     @router.delete("/{pin_id}", status_code=status.HTTP_204_NO_CONTENT)
-    def delete_case_pin(
-        case_id: str,
+    def delete_investigation_pin(
+        investigation_id: str,
         pin_id: UUID,
-        profile: PinAuthorizedProfile = Depends(require_active_profile),
+        _investigation: dict = Depends(require_investigation_access),
+        profile: AuthorizedProfile = Depends(require_active_profile),
+        settings: Settings = Depends(get_runtime_settings),
     ) -> Response:
-        _require_case_access(case_id, profile)
         _require_write_access(profile)
 
         try:
-            with psycopg.connect(_database_url(), row_factory=dict_row) as connection:
+            with psycopg.connect(_database_url(settings), row_factory=dict_row) as connection:
                 with connection.cursor() as cursor:
-                    existing = _fetch_pin(cursor, case_id, pin_id, profile)
+                    existing = _fetch_pin(cursor, investigation_id, pin_id, profile)
                     if existing is None:
                         raise HTTPException(
                             status_code=status.HTTP_404_NOT_FOUND,
@@ -511,8 +511,8 @@ def build_pins_router(
                         )
                     _record_event(cursor, existing, profile.user_id, "PIN_DELETED")
                     cursor.execute(
-                        "DELETE FROM public.investigation_pins WHERE case_id = %s AND id = %s",
-                        (case_id, pin_id),
+                        "DELETE FROM public.investigation_pins WHERE investigation_id = %s AND id = %s",
+                        (investigation_id, pin_id),
                     )
                     return Response(status_code=status.HTTP_204_NO_CONTENT)
         except psycopg.Error as error:

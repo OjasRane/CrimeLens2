@@ -3,6 +3,7 @@
 import type { Node } from "@xyflow/react";
 import { useEffect, useMemo, useState } from "react";
 import { useCollaborationIdentity } from "@/components/collaboration-context";
+import { AddToNetworkWorkspaceButton } from "@/components/add-to-network-workspace-button";
 import type { InvestigationFact } from "@/data/investigations/types";
 import { serializeFlowNode } from "@/lib/evidence-board-storage";
 import { useMutation } from "@/lib/liveblocks";
@@ -68,7 +69,8 @@ function FactLedgerView({
     <div className="h-full w-full overflow-y-auto p-3 font-mono md:w-[360px] md:p-4">
       <div className="mb-4 border-4 border-[var(--ink)] bg-[var(--panel)] p-3 shadow-[4px_4px_0_var(--ink)] rounded-none">
         <p className="text-xs font-bold uppercase tracking-normal">
-          Indexed Evidence / {activeInvestigationId === "demo" ? "Demo Data" : "Historical Record"}
+          Indexed Evidence /{" "}
+          {activeInvestigationId === "demo" ? "Demo Data" : "Historical Record"}
         </p>
         <h2 className="text-2xl font-black uppercase leading-none tracking-normal">
           Fact Ledger
@@ -131,6 +133,21 @@ function FactLedgerView({
                 >
                   [ PIN TO BOARD ]
                 </button>
+                <AddToNetworkWorkspaceButton
+                  source={{
+                    sourceKind: "fact",
+                    sourceId: fact.id,
+                    label:
+                      fact.text.length > 54
+                        ? `${fact.text.slice(0, 51)}…`
+                        : fact.text,
+                    type: "evidence",
+                    description: `${fact.sourceTitle} // ${fact.status}`,
+                    sourceVerificationStatus: fact.status,
+                  }}
+                  label="Network"
+                  className="mt-2 min-h-11 w-full border-2 border-[var(--ink)] bg-[var(--panel)] px-1 py-2 text-[9px] font-black uppercase leading-tight text-[var(--ink)] shadow-[3px_3px_0_var(--ink)] active:translate-x-1 active:translate-y-1 active:shadow-none"
+                />
               </td>
             </tr>
           ))}

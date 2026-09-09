@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { MapPin, QrCode, Radio, Search, UserRound, X } from "lucide-react";
+import { Clock3, FileUp, MapPin, Network, QrCode, Radio, Search, UserRound, X } from "lucide-react";
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   useEffect,
@@ -17,8 +17,9 @@ import {
 import { triggerHaptic } from "@/lib/haptics";
 import { useBroadcastEvent } from "@/lib/liveblocks";
 import { useInvestigationStore } from "@/store/use-investigation-store";
+import type { NetworkWorkspaceCommand } from "@/lib/network-workspace-types";
 
-type TargetCategory = "SYSTEM ACTIONS" | "PERSONNEL" | "SECTORS" | "VEHICLES";
+type TargetCategory = "SYSTEM ACTIONS" | "INVESTIGATION ACTIONS" | "WORKSPACE ACTIONS" | "PERSONNEL" | "SECTORS" | "VEHICLES";
 
 type IntelligenceTarget = {
   id: string;
@@ -39,7 +40,53 @@ type SystemAction = {
   searchTerms: string[];
 };
 
-type CommandResult = IntelligenceTarget | SystemAction;
+type WorkspaceAction = {
+  id:
+    | "workspace-open"
+    | "workspace-add-person"
+    | "workspace-add-evidence"
+    | "workspace-add-location"
+    | "workspace-add-note"
+    | "workspace-auto-layout"
+    | "workspace-search"
+    | "workspace-fit";
+  category: "WORKSPACE ACTIONS";
+  type: "workspace_action";
+  label: string;
+  detail: string;
+  searchTerms: string[];
+  command: NetworkWorkspaceCommand;
+};
+
+type InvestigationAction = {
+  id: "investigation-evidence" | "investigation-map" | "investigation-timeline" | "investigation-graph";
+  category: "INVESTIGATION ACTIONS";
+  type: "investigation_action";
+  label: string;
+  detail: string;
+  searchTerms: string[];
+  workspace: "evidence" | "map" | "timeline" | "network";
+};
+
+type CommandResult = IntelligenceTarget | SystemAction | WorkspaceAction | InvestigationAction;
+
+const INVESTIGATION_ACTIONS: InvestigationAction[] = [
+  { id: "investigation-evidence", category: "INVESTIGATION ACTIONS", type: "investigation_action", label: "OPEN EVIDENCE INTAKE", detail: "UPLOAD / REVIEW / COMMIT", searchTerms: ["evidence", "intake", "upload", "review", "open"], workspace: "evidence" },
+  { id: "investigation-map", category: "INVESTIGATION ACTIONS", type: "investigation_action", label: "OPEN GEOSPATIAL MAP", detail: "ACTIVE INVESTIGATION", searchTerms: ["map", "location", "open", "view"], workspace: "map" },
+  { id: "investigation-timeline", category: "INVESTIGATION ACTIONS", type: "investigation_action", label: "OPEN TIMELINE", detail: "ACTIVE INVESTIGATION", searchTerms: ["timeline", "time", "event", "open"], workspace: "timeline" },
+  { id: "investigation-graph", category: "INVESTIGATION ACTIONS", type: "investigation_action", label: "OPEN CASE GRAPH", detail: "REVIEWED CASE DATA", searchTerms: ["graph", "network", "case", "open"], workspace: "network" },
+];
+
+const WORKSPACE_ACTIONS: WorkspaceAction[] = [
+  { id: "workspace-open", category: "WORKSPACE ACTIONS", type: "workspace_action", label: "OPEN CUSTOM NETWORK WORKSPACE", detail: "INVESTIGATOR-CONTROLLED GRAPH", searchTerms: ["network", "workspace", "graph", "open"], command: { action: "open" } },
+  { id: "workspace-add-person", category: "WORKSPACE ACTIONS", type: "workspace_action", label: "ADD PERSON", detail: "CREATE MANUAL PERSON NODE", searchTerms: ["add", "create", "person", "node"], command: { action: "add-node", nodeType: "person" } },
+  { id: "workspace-add-evidence", category: "WORKSPACE ACTIONS", type: "workspace_action", label: "ADD EVIDENCE", detail: "CREATE MANUAL EVIDENCE NODE", searchTerms: ["add", "create", "evidence", "node"], command: { action: "add-node", nodeType: "evidence" } },
+  { id: "workspace-add-location", category: "WORKSPACE ACTIONS", type: "workspace_action", label: "ADD LOCATION", detail: "CREATE MANUAL LOCATION NODE", searchTerms: ["add", "create", "location", "node"], command: { action: "add-node", nodeType: "location" } },
+  { id: "workspace-add-note", category: "WORKSPACE ACTIONS", type: "workspace_action", label: "ADD INVESTIGATOR NOTE", detail: "CREATE ANALYST-GENERATED NOTE", searchTerms: ["add", "create", "note", "analyst"], command: { action: "add-note" } },
+  { id: "workspace-auto-layout", category: "WORKSPACE ACTIONS", type: "workspace_action", label: "AUTO LAYOUT WORKSPACE", detail: "ARRANGE LEFT TO RIGHT", searchTerms: ["auto", "layout", "arrange", "dagre"], command: { action: "auto-layout" } },
+  { id: "workspace-search", category: "WORKSPACE ACTIONS", type: "workspace_action", label: "SEARCH WORKSPACE", detail: "FOCUS GRAPH SEARCH", searchTerms: ["search", "find", "workspace", "node"], command: { action: "search" } },
+  { id: "workspace-fit", category: "WORKSPACE ACTIONS", type: "workspace_action", label: "FIT WORKSPACE VIEW", detail: "CENTER ALL WORKSPACE ENTITIES", searchTerms: ["fit", "view", "center", "zoom"], command: { action: "fit-view" } },
+];
 
 const TARGETS: CommandResult[] = [
   {
@@ -144,6 +191,8 @@ const TARGETS: CommandResult[] = [
 
 const CATEGORIES: TargetCategory[] = [
   "SYSTEM ACTIONS",
+  "INVESTIGATION ACTIONS",
+  "WORKSPACE ACTIONS",
   "PERSONNEL",
   "SECTORS",
   "VEHICLES",
@@ -157,6 +206,7 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
+  useInvestigationStore((state) => state.investigationRevision);
   const activeInvestigation = getInvestigation(activeInvestigationId);
   const isOpen = useInvestigationStore((state) => state.isCommandPaletteOpen);
   const close = useInvestigationStore((state) => state.closeCommandPalette);
@@ -175,13 +225,17 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
     (state) => state.setSelectedLocationId,
   );
   const requestMapPan = useInvestigationStore((state) => state.requestMapPan);
+  const setNetworkMode = useInvestigationStore((state) => state.setNetworkMode);
+  const requestNetworkWorkspace = useInvestigationStore(
+    (state) => state.requestNetworkWorkspace,
+  );
   const inputRef = useRef<HTMLInputElement>(null);
   const resultRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [query, setQuery] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
 
   const investigationTargets = useMemo<CommandResult[]>(() => {
-    if (activeInvestigationId === "demo") return TARGETS;
+    if (activeInvestigationId === "demo") return [...INVESTIGATION_ACTIONS, ...WORKSPACE_ACTIONS, ...TARGETS];
 
     const systemAction = TARGETS[0];
     const locationTargets: IntelligenceTarget[] = activeInvestigation.map.locations
@@ -224,7 +278,7 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
         ];
       });
 
-    return [systemAction, ...entityTargets, ...locationTargets];
+    return [systemAction, ...INVESTIGATION_ACTIONS, ...WORKSPACE_ACTIONS, ...entityTargets, ...locationTargets];
   }, [activeInvestigation, activeInvestigationId]);
 
   const results = useMemo(() => {
@@ -277,6 +331,22 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
   const execute = (target: CommandResult, shouldBroadcast: boolean) => {
     if (target.type === "system_action" && target.id === "sys-action-uplink") {
       setQrModalOpen(true);
+      close();
+      return;
+    }
+
+    if (target.type === "workspace_action") {
+      setNetworkMode("workspace");
+      setActiveWorkspace("network");
+      requestNetworkWorkspace(target.command);
+      triggerHaptic("light");
+      close();
+      return;
+    }
+
+    if (target.type === "investigation_action") {
+      setActiveWorkspace(target.workspace);
+      triggerHaptic("light");
       close();
       return;
     }
@@ -399,7 +469,7 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   onKeyDown={onInputKeyDown}
-                  placeholder="QUERY TARGETS..."
+                  placeholder="QUERY TARGETS OR COMMANDS..."
                   className="min-w-0 flex-1 border-0 bg-transparent p-0 text-base font-black uppercase caret-black outline-none placeholder:text-black/35 focus:outline-none sm:text-4xl dark:caret-transparent dark:text-[#EFF6E0] dark:placeholder:text-[#598392]"
                 />
                 <span
@@ -440,9 +510,18 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
                       {categoryResults.map((target) => {
                         const resultIndex = results.indexOf(target);
                         const isHighlighted = resultIndex === highlightedIndex;
-                        const Icon =
-                          target.type === "system_action"
-                            ? QrCode
+                        const Icon = target.type === "system_action"
+                          ? QrCode
+                          : target.type === "investigation_action"
+                            ? target.workspace === "evidence"
+                              ? FileUp
+                              : target.workspace === "timeline"
+                                ? Clock3
+                                : target.workspace === "network"
+                                  ? Network
+                                  : MapPin
+                          : target.type === "workspace_action"
+                            ? Network
                             : target.category === "PERSONNEL"
                               ? UserRound
                               : MapPin;

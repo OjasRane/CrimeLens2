@@ -7,6 +7,7 @@ export function GlobalStatusBar() {
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
+  useInvestigationStore((state) => state.investigationRevision);
   const activeInvestigation = getInvestigation(activeInvestigationId);
   const timeRange = useInvestigationStore((state) => state.timeRange);
   const selectedCrimeTypes = useInvestigationStore(

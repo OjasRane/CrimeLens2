@@ -31,6 +31,11 @@ export function getInvestigation(id: InvestigationId): Investigation {
   return investigationRegistry[id] ?? investigationRegistry.demo;
 }
 
+export function replaceInvestigation(investigation: Investigation) {
+  validateInvestigation(investigation);
+  investigationRegistry[investigation.id] = investigation;
+}
+
 export function getCaseTotals(investigation: Investigation) {
   return investigation.casualtyLedger.reduce(
     (totals, record) => ({

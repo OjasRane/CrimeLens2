@@ -1,12 +1,12 @@
 # The Fatal Ledger — System Architecture
 
-Last reviewed: 13 August 2026
+Last reviewed: 17 August 2026
 
 ## 1. System overview
 
 The Fatal Ledger is a browser-first investigation platform with two application runtimes:
 
-- A Next.js/React frontend containing the main workspace, investigation data, maps, graphs, timeline, collaboration UI, and 3D replay.
+- A Next.js/React frontend containing the main workspace, investigation data, maps, graphs, timeline, and collaboration UI.
 - A small authenticated FastAPI service used by the demo Blind-Spot Detector.
 
 Supabase provides identity and investigator profiles. Liveblocks provides real-time collaboration and shared evidence-board storage.
@@ -28,10 +28,9 @@ flowchart TB
             Timeline["Investigation timeline"]
         end
 
-        Replay["Lazy-loaded 3D case replay"]
         Uplink["Mobile field uplink"]
         StaticData["Typed demo and Mumbai case data"]
-        Assets["GLB models, textures and map workers"]
+        Assets["Static map workers"]
     end
 
     subgraph Services["External services"]
@@ -49,10 +48,8 @@ flowchart TB
     Shell --> Workspaces
     StaticData --> Workspaces
     Store <--> Workspaces
-    Timeline --> Replay
-    Assets --> Replay
+    Assets --> Map
     Map --> Tiles
-    Replay --> Tiles
     Board <--> Liveblocks
     Uplink --> Liveblocks
     Liveblocks --> Board
@@ -74,7 +71,6 @@ flowchart TB
 | Collaboration | Liveblocks | Room storage, cursors, presence and broadcast events |
 | Authentication | Supabase Auth | Passkey authentication, sessions and enrollment emails |
 | Authorization data | Supabase Postgres | Investigator profile, role, clearance and active status |
-| 3D replay | Three.js, React Three Fiber, Drei and GSAP | Mumbai case reconstruction and cinematic playback |
 | Intelligence API | FastAPI and Pydantic | Authenticated demo timeline analysis |
 | Backend database access | Psycopg | Loading authorization profiles from Postgres |
 | Theme and animation | next-themes and Framer Motion | Dark/light theme and UI transitions |
@@ -92,12 +88,11 @@ fatal/
 │   └── uplink/page.tsx          Mobile field uplink
 ├── components/                  Workspace and interface components
 ├── data/investigations/         Typed investigation source data
-├── features/case-replay/        Integrated Mumbai 3D replay module
 ├── lib/                         Auth, Liveblocks and board-storage utilities
 ├── store/                       Zustand investigation store
 ├── backend/                     FastAPI intelligence service
 ├── supabase/                    Local config and database migrations
-├── public/                      Static workers and replay assets
+├── public/                      Static MapLibre workers
 ├── liveblocks.config.ts         Liveblocks event type declarations
 ├── next.config.ts               Next.js and Deck.gl configuration
 └── package.json                 Frontend dependencies and scripts
@@ -122,7 +117,7 @@ The main shell is `components/investigation-workspace.tsx`. It owns:
 | Map | `GeospatialMapWorkspace` | Locations, movement routes, heatmaps, density and playback |
 | Canvas | `Board` | Evidence notes, photographs and red-string connections |
 | Network | `NetworkGraphWorkspace` | Entities, locations, teams, evidence and relationships |
-| Timeline | `TimelineWorkspace` | Chronological events, filters, annotations and replay launcher |
+| Timeline | `TimelineWorkspace` | Chronological events, filters and annotations |
 
 The desktop layout uses a workspace bar and collapsible Fact Ledger. Mobile uses a bottom navigation bar and a full-height ledger drawer.
 
@@ -339,8 +334,6 @@ Supported visualization layers include:
 
 The map reads time ranges, selected entities, selected locations, case routes, crime filters and pan requests from Zustand.
 
-The 3D replay has a separate map implementation that uses OpenStreetMap raster tiles.
-
 ## 13. Network graph architecture
 
 The network workspace presents investigation entities and links using React Flow.
@@ -379,39 +372,10 @@ The Timeline workspace provides:
 - Event annotations.
 - Cross-links to entities and locations.
 - Demo Blind-Spot Detector access.
-- Mumbai 3D Replay access.
 
-The Blind-Spot button appears only for the demo investigation. The Replay button appears only for Mumbai.
+The Blind-Spot button appears only for the demo investigation.
 
-When a Mumbai timeline event is selected, the replay launcher translates IDs from the main format, such as `MUM-TL-001`, to the replay format, such as `TL-001`.
-
-## 15. Mumbai 3D replay
-
-The replay is launched inside the same page as a full-screen dialog.
-
-The replay bundle is dynamically imported with server-side rendering disabled. Three.js and the replay engine are downloaded only after the user presses Replay, keeping them out of the initial workspace load.
-
-The replay includes:
-
-- A React Three Fiber canvas.
-- Three.js scene families.
-- GLB boat and response-vehicle models.
-- Concrete textures and an HDR environment.
-- A replay state machine.
-- Chapters, events and cinematic beats.
-- Camera direction and GSAP transitions.
-- Evidence, network, map and environment views.
-- Replay timeline and HUD controls.
-- Reduced-motion behavior.
-- A summary state and exit flow.
-
-Static replay assets occupy approximately 4.5 MB under `public/assets/replay`.
-
-### Replay data boundary
-
-The replay currently carries its own Mumbai representation instead of directly consuming the main investigation registry. This creates duplicated data and requires timeline ID translation. A shared adapter should eventually generate replay data from the canonical investigation model.
-
-## 16. FastAPI intelligence service
+## 15. FastAPI intelligence service
 
 The Python service exposes:
 
@@ -439,9 +403,9 @@ The demo algorithm:
 
 If the API is unavailable, the frontend logs a warning and uses bundled demonstration data.
 
-This service currently supports the demo Blind-Spot Detector only. The core workspace, Mumbai case and replay do not depend on it.
+This service currently supports the demo Blind-Spot Detector only. The core workspace and Mumbai case do not depend on it.
 
-## 17. Persistence matrix
+## 16. Persistence matrix
 
 | Information | Owner | Persistence |
 |---|---|---|
@@ -453,10 +417,9 @@ This service currently supports the demo Blind-Spot Detector only. The core work
 | Collaborative evidence board | Liveblocks storage | Durable per room |
 | Cursors and broadcasts | Liveblocks presence/events | Ephemeral |
 | Timeline annotations | React component state | Browser memory only |
-| Replay progress | Replay state machine | Browser memory only |
 | Blind-spot source data | FastAPI mock data | Bundled with backend code |
 
-## 18. Environment configuration
+## 17. Environment configuration
 
 ### Browser-exposed frontend variables
 
@@ -481,7 +444,7 @@ CORS_ORIGINS
 
 These values must remain on the FastAPI server.
 
-## 19. Deployment topology
+## 18. Deployment topology
 
 A full production deployment requires:
 
@@ -489,7 +452,7 @@ A full production deployment requires:
 - A Python/container host for FastAPI.
 - A Supabase project with passkeys, redirect URLs and the profile migration configured.
 - A Liveblocks project.
-- Static delivery of replay assets and MapLibre worker files.
+- Static delivery of MapLibre worker files.
 - Network access to CARTO and OpenStreetMap tile services.
 - HTTPS for production passkey authentication.
 
@@ -506,7 +469,7 @@ flowchart LR
 
 The repository currently has no Firebase, Vercel, Docker or Sites hosting manifest. The exact frontend and FastAPI hosting configuration therefore lives outside source control.
 
-## 20. Mobile architecture
+## 19. Mobile architecture
 
 Mobile behavior is handled inside the same components rather than through a separate application.
 
@@ -519,11 +482,10 @@ The responsive system includes:
 - Touch-compatible evidence dragging.
 - Responsive map controls.
 - Scrollable graph and timeline toolbars.
-- Compact Mumbai Replay controls.
 - Mobile-first field uplink.
 - User-scalable viewport support.
 
-## 21. Security boundaries and current risks
+## 20. Security boundaries and current risks
 
 ### Existing protections
 
@@ -543,13 +505,12 @@ The responsive system includes:
 3. **Liveblocks uses public-key rooms.** There is no server-issued Liveblocks authorization token or per-user room permission check.
 4. **Room discovery controls access.** Anyone who knows a case-room name may be able to join it.
 5. **The uplink is unauthenticated.** A person with the room URL can submit evidence-board notes.
-6. **Main and replay Mumbai data are duplicated.** Content and IDs can drift.
-7. **Most workspace state is not durable.** Filters, selections and timeline annotations disappear after refresh.
-8. **The FastAPI intelligence dataset is mock data.** It is not a general investigation-data backend.
-9. **A development Liveblocks public key has a source-code fallback.** Production should use explicit environment configuration and authenticated rooms.
-10. **Deployment configuration is not versioned.** Infrastructure behavior cannot be reproduced from this repository alone.
+6. **Most workspace state is not durable.** Filters, selections and timeline annotations disappear after refresh.
+7. **The FastAPI intelligence dataset is mock data.** It is not a general investigation-data backend.
+8. **A development Liveblocks public key has a source-code fallback.** Production should use explicit environment configuration and authenticated rooms.
+9. **Deployment configuration is not versioned.** Infrastructure behavior cannot be reproduced from this repository alone.
 
-## 22. Recommended target architecture
+## 21. Recommended target architecture
 
 The strongest next version would make Supabase Postgres the canonical investigation repository and put authorization in front of every sensitive data path.
 
@@ -562,7 +523,7 @@ flowchart TB
     LBAuth["Authenticated Liveblocks endpoint"]
     Liveblocks["Authorized Liveblocks rooms"]
     Intel["FastAPI analysis workers"]
-    Storage["Evidence and model object storage"]
+    Storage["Evidence object storage"]
 
     Client --> Server
     Server <--> Auth
@@ -581,13 +542,12 @@ Recommended changes, in order:
 3. Load sensitive case data through authenticated server endpoints.
 4. Add a Liveblocks authentication endpoint with per-room permissions.
 5. Require authentication or signed, expiring access tokens for the field uplink.
-6. Generate the normal timeline and 3D replay from one shared case-data adapter.
-7. Persist annotations, saved filters and workspace layouts.
-8. Replace mock intelligence data with database queries and job-based analysis.
-9. Add audit events for logins, case access, evidence changes and uplink submissions.
-10. Add version-controlled deployment manifests, monitoring and backup policies.
+6. Persist annotations, saved filters and workspace layouts.
+7. Replace mock intelligence data with database queries and job-based analysis.
+8. Add audit events for logins, case access, evidence changes and uplink submissions.
+9. Add version-controlled deployment manifests, monitoring and backup policies.
 
-## 23. Key source files
+## 22. Key source files
 
 | Area | File |
 |---|---|
@@ -604,9 +564,25 @@ Recommended changes, in order:
 | Evidence storage helpers | `lib/evidence-board-storage.ts` |
 | Main map | `components/geospatial-map-workspace.tsx` |
 | Timeline | `components/timeline-workspace.tsx` |
-| Replay launcher | `features/case-replay/integration/PlayCaseReplayButton.tsx` |
-| Replay application | `features/case-replay/src/CaseReplay.tsx` |
 | FastAPI service | `backend/app/main.py` |
 | Blind-spot API | `backend/app/timeline_router.py` |
+| Evidence intake workspace | `components/evidence-intake-workspace.tsx` |
+| Evidence API routes | `backend/app/api/routes/evidence.py` |
+| Evidence extraction provider | `backend/app/services/evidence_extraction.py` |
+| Evidence ingestion migration | `supabase/migrations/20260909000000_create_evidence_ingestion.sql` |
 | Profile migration | `supabase/migrations/20260813000000_create_authorized_profiles.sql` |
 
+## 23. Evidence ingestion pilot
+
+The additive ingestion path is `raw upload → hash/metadata → bounded content
+extraction → structured candidate extraction → per-candidate human review →
+explicit idempotent commit`. Until commit, Map, Timeline, Case Graph, Ledger,
+and custom-workspace case inventory remain unchanged. Promoted records retain
+the evidence ID and format-aware source locator in canonical metadata.
+
+The OpenAI Responses provider uses strict JSON-schema structured output and
+treats uploaded content as untrusted data. With no API key, a deterministic
+fixture-oriented parser supports safe demos without inventing absent entities.
+Original files are stored in the configured pilot storage directory; production
+deployment requires managed encrypted object storage, malware scanning, durable
+workers, retention controls, and operational review.

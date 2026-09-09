@@ -32,6 +32,7 @@ import {
   TemporaryInvestigationPinMarker,
   type PinLinkOption,
 } from "@/components/investigation-pin-panel";
+import { AddToNetworkWorkspaceButton } from "@/components/add-to-network-workspace-button";
 import {
   createInvestigationPin,
   deleteInvestigationPin,
@@ -54,6 +55,7 @@ import {
   DirectionalLight,
   FlyToInterpolator,
   LightingEffect,
+  type MapViewState,
 } from "@deck.gl/core";
 
 type ActiveLayerType = "PINS" | "HEAT" | "DENSITY" | "ROUTES";
@@ -302,6 +304,16 @@ const lightingEffect = new LightingEffect({
   ambientLight,
   directionalLight,
 });
+const MAP_EFFECTS = [lightingEffect];
+const MAP_DIMENSIONS = { width: "100%", height: "100%" } as const;
+const MARKER_COLORS = ["#124559", "#598392", "#AEC3B0", "#EFF6E0"] as const;
+
+function getMarkerColor(id: string) {
+  let hash = 0;
+  for (let index = 0; index < id.length; index += 1)
+    hash += id.charCodeAt(index);
+  return MARKER_COLORS[hash % MARKER_COLORS.length];
+}
 
 /* ─── Map style configs ───────────────────────── */
 
@@ -457,17 +469,27 @@ export function GeospatialMapWorkspace() {
   const activeInvestigationId = useInvestigationStore(
     (s) => s.activeInvestigationId,
   );
+  useInvestigationStore((state) => state.investigationRevision);
   const activeInvestigation = getInvestigation(activeInvestigationId);
   const crimeTypes = activeInvestigation.map.filterGroups;
-  const activeLocations = activeInvestigation.map.locations.filter(
-    (
-      location,
-    ): location is InvestigationLocation & { coordinates: [number, number] } =>
-      Boolean(location.coordinates),
+  const activeLocations = useMemo(
+    () =>
+      activeInvestigation.map.locations.filter(
+        (
+          location,
+        ): location is InvestigationLocation & {
+          coordinates: [number, number];
+        } => Boolean(location.coordinates),
+      ),
+    [activeInvestigation],
   );
-  const playbackDates = Array.from(
-    new Set(activeInvestigation.timeline.events.map((event) => event.date)),
-  ).sort();
+  const playbackDates = useMemo(
+    () =>
+      Array.from(
+        new Set(activeInvestigation.timeline.events.map((event) => event.date)),
+      ).sort(),
+    [activeInvestigation],
+  );
 
   const pinLinkOptions = useMemo(
     () => ({
@@ -487,8 +509,7 @@ export function GeospatialMapWorkspace() {
   );
 
   const selectedPin = pins.find((pin) => pin.id === selectedPinId) ?? null;
-  const pinPendingDelete =
-    pins.find((pin) => pin.id === deletePinId) ?? null;
+  const pinPendingDelete = pins.find((pin) => pin.id === deletePinId) ?? null;
   const pinOperationActive = isAddPinMode || pinEditorMode === "create";
   const isAwaitingPinPlacement = isAddPinMode && !temporaryPin;
 
@@ -514,7 +535,8 @@ export function GeospatialMapWorkspace() {
         );
         setPins(casePins);
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
         setPins([]);
         setPinsLoadError(
           error instanceof Error
@@ -569,8 +591,9 @@ export function GeospatialMapWorkspace() {
   const movementData = useInvestigationStore((s) => s.movementData);
   const mapPanRequest = useInvestigationStore((s) => s.mapPanRequest);
   const selectedEntityId = useInvestigationStore((s) => s.selectedEntityId);
-  const selectedLocationId = useInvestigationStore(
-    (s) => s.selectedLocationId,
+  const selectedLocationId = useInvestigationStore((s) => s.selectedLocationId);
+  const workspaceComparisonSelection = useInvestigationStore(
+    (s) => s.workspaceComparisonSelection,
   );
   const setSelectedLocationId = useInvestigationStore(
     (s) => s.setSelectedLocationId,
@@ -630,19 +653,22 @@ export function GeospatialMapWorkspace() {
   const savePin = useCallback(
     async (values: InvestigationPinFormValues) => {
       if (pinMutationInFlightRef.current) return;
-      const caseId = activeInvestigationId;
+      const investigationId = activeInvestigationId;
       pinMutationInFlightRef.current = true;
       setIsSavingPin(true);
       setPinMutationError(null);
 
       try {
         if (pinEditorMode === "create" && temporaryPin) {
-          const created = await createInvestigationPin(caseId, {
+          const created = await createInvestigationPin(investigationId, {
             ...values,
             latitude: temporaryPin.latitude,
             longitude: temporaryPin.longitude,
           });
-          if (useInvestigationStore.getState().activeInvestigationId !== caseId) {
+          if (
+            useInvestigationStore.getState().activeInvestigationId !==
+            investigationId
+          ) {
             return;
           }
           setPins((current) => [...current, created]);
@@ -655,11 +681,14 @@ export function GeospatialMapWorkspace() {
 
         if (pinEditorMode === "edit" && selectedPin) {
           const updated = await updateInvestigationPin(
-            caseId,
+            investigationId,
             selectedPin.id,
             values,
           );
-          if (useInvestigationStore.getState().activeInvestigationId !== caseId) {
+          if (
+            useInvestigationStore.getState().activeInvestigationId !==
+            investigationId
+          ) {
             return;
           }
           setPins((current) =>
@@ -688,14 +717,17 @@ export function GeospatialMapWorkspace() {
 
   const confirmDeletePin = useCallback(async () => {
     if (!pinPendingDelete || pinMutationInFlightRef.current) return;
-    const caseId = activeInvestigationId;
+    const investigationId = activeInvestigationId;
     pinMutationInFlightRef.current = true;
     setIsDeletingPin(true);
     setPinMutationError(null);
 
     try {
-      await deleteInvestigationPin(caseId, pinPendingDelete.id);
-      if (useInvestigationStore.getState().activeInvestigationId !== caseId) {
+      await deleteInvestigationPin(investigationId, pinPendingDelete.id);
+      if (
+        useInvestigationStore.getState().activeInvestigationId !==
+        investigationId
+      ) {
         return;
       }
       setPins((current) =>
@@ -736,24 +768,27 @@ export function GeospatialMapWorkspace() {
   const selectedLocation = activeInvestigation.map.locations.find(
     (location) => location.id === selectedLocationId,
   );
-  const relatedLocationIds = useMemo(
-    () =>
-      new Set(
-        selectedEntityId
-          ? getLocationsForEntity(activeInvestigation, selectedEntityId).map(
-              (location) => location.id,
-            )
-          : [],
+  const relatedLocationIds = useMemo(() => {
+    const ids = new Set(workspaceComparisonSelection?.locationIds ?? []);
+    const entityIds = new Set(workspaceComparisonSelection?.entityIds ?? []);
+    if (selectedEntityId) entityIds.add(selectedEntityId);
+    entityIds.forEach((entityId) =>
+      getLocationsForEntity(activeInvestigation, entityId).forEach((location) =>
+        ids.add(location.id),
       ),
-    [activeInvestigation, selectedEntityId],
-  );
+    );
+    return ids;
+  }, [activeInvestigation, selectedEntityId, workspaceComparisonSelection]);
 
   const activeIncidentData = useMemo<IncidentPoint[]>(
     () =>
       activeInvestigationId === "demo"
         ? incidentData
         : activeLocations
-            .filter((location) => (location.killed ?? 0) + (location.injured ?? 0) > 0)
+            .filter(
+              (location) =>
+                (location.killed ?? 0) + (location.injured ?? 0) > 0,
+            )
             .map((location) => ({
               coordinates: location.coordinates,
               weight: (location.killed ?? 0) + (location.injured ?? 0),
@@ -788,29 +823,37 @@ export function GeospatialMapWorkspace() {
         ];
       }),
     );
-  }, [activeInvestigation, activeInvestigationId, activeLocations, movementData]);
+  }, [
+    activeInvestigation,
+    activeInvestigationId,
+    activeLocations,
+    movementData,
+  ]);
 
   const playbackIndex = Math.max(0, playbackDates.indexOf(playbackDate));
 
   /* ── Deck.gl view state ────────────────────── */
 
-  const [viewState, setViewState] = useState({
+  const [viewState, setViewState] = useState<MapViewState>({
     longitude: -87.6298,
     latitude: 41.8818,
     zoom: 12.7,
     pitch: 0,
     bearing: 0,
   });
+  const liveViewStateRef = useRef<MapViewState>(viewState);
 
   useEffect(() => {
     setActiveLayer("PINS");
-    setViewState({
+    const nextViewState: MapViewState = {
       longitude: activeInvestigation.map.center[0],
       latitude: activeInvestigation.map.center[1],
       zoom: activeInvestigation.map.zoom,
       pitch: 0,
       bearing: 0,
-    });
+    };
+    liveViewStateRef.current = nextViewState;
+    setViewState(nextViewState);
   }, [activeInvestigation]);
 
   const changeViewMode = useCallback((mode: ViewMode) => {
@@ -820,25 +863,29 @@ export function GeospatialMapWorkspace() {
     setViewMode(mode);
     // Deck.gl is the single camera owner. Running this on every click also lets
     // the active button restore its intended camera after manual interaction.
-    setViewState((current) => ({
-      ...current,
+    const nextViewState = {
+      ...liveViewStateRef.current,
       ...camera,
       transitionDuration: 1500,
       transitionInterpolator: new FlyToInterpolator(),
-    }));
+    };
+    liveViewStateRef.current = nextViewState;
+    setViewState(nextViewState);
   }, []);
 
   useEffect(() => {
     if (!mapPanRequest) return;
 
-    setViewState((current) => ({
-      ...current,
+    const nextViewState = {
+      ...liveViewStateRef.current,
       longitude: mapPanRequest.coordinates[0],
       latitude: mapPanRequest.coordinates[1],
-      zoom: Math.max(current.zoom, 15),
+      zoom: Math.max(liveViewStateRef.current.zoom, 15),
       transitionDuration: 900,
       transitionInterpolator: new FlyToInterpolator(),
-    }));
+    };
+    liveViewStateRef.current = nextViewState;
+    setViewState(nextViewState);
   }, [mapPanRequest]);
 
   /* ── Memoized filtered data for Deck.gl ──── */
@@ -879,7 +926,13 @@ export function GeospatialMapWorkspace() {
           incident.date <= timeRange[1] &&
           isWithinBounds(incident.coordinates, spatialBounds),
       ),
-    [activeLocations, playbackDate, selectedCrimeTypes, spatialBounds, timeRange],
+    [
+      activeLocations,
+      playbackDate,
+      selectedCrimeTypes,
+      spatialBounds,
+      timeRange,
+    ],
   );
   const visibleSystemLocations = useMemo(
     () =>
@@ -901,20 +954,17 @@ export function GeospatialMapWorkspace() {
 
   const filterCounts = useMemo(
     () =>
-      crimeTypes.reduce<Record<string, number>>(
-        (counts, crimeType) => {
-          counts[crimeType] = activeLocations.filter(
-            (incident) =>
-              incident.filterGroups.includes(crimeType) &&
-              incident.date <= playbackDate &&
-              incident.date >= timeRange[0] &&
-              incident.date <= timeRange[1] &&
-              isWithinBounds(incident.coordinates, spatialBounds),
-          ).length;
-          return counts;
-        },
-        {},
-      ),
+      crimeTypes.reduce<Record<string, number>>((counts, crimeType) => {
+        counts[crimeType] = activeLocations.filter(
+          (incident) =>
+            incident.filterGroups.includes(crimeType) &&
+            incident.date <= playbackDate &&
+            incident.date >= timeRange[0] &&
+            incident.date <= timeRange[1] &&
+            isWithinBounds(incident.coordinates, spatialBounds),
+        ).length;
+        return counts;
+      }, {}),
     [activeLocations, crimeTypes, playbackDate, spatialBounds, timeRange],
   );
 
@@ -1064,7 +1114,9 @@ export function GeospatialMapWorkspace() {
           jointRounded: false,
           pickable: true,
           onHover: ({ object }) =>
-            setHoveredRouteId((object as TelemetryPath | undefined)?.routeId ?? null),
+            setHoveredRouteId(
+              (object as TelemetryPath | undefined)?.routeId ?? null,
+            ),
         }),
         new ScatterplotLayer<TrackingTarget>({
           id: "tracking-target-layer",
@@ -1127,9 +1179,14 @@ export function GeospatialMapWorkspace() {
 
   /* ── Sync Deck.gl viewState to Mapbox ──────── */
 
-  const onViewStateChange = useCallback(({ viewState: newViewState }: any) => {
-    setViewState(newViewState);
-  }, []);
+  const onViewStateChange = useCallback(
+    (nextViewState: MapViewState) => {
+      // Deck.gl owns interactive camera frames. Keeping the live value in a ref
+      // avoids reconciling every marker, panel, and filter on every pointer move.
+      liveViewStateRef.current = nextViewState;
+    },
+    [],
+  );
 
   /* ── Render ─────────────────────────────────── */
 
@@ -1140,14 +1197,6 @@ export function GeospatialMapWorkspace() {
     );
   }
 
-  const MARKER_COLORS = ["#124559", "#598392", "#AEC3B0", "#EFF6E0"];
-  const getMarkerColor = (id: string) => {
-    let hash = 0;
-    for (let i = 0; i < id.length; i++) hash += id.charCodeAt(i);
-    return MARKER_COLORS[hash % MARKER_COLORS.length];
-  };
-
-  const mapDimensions = { width: "100%", height: "100%" };
   const currentMapStyle = isDark ? DARK_MAP_STYLE : LIGHT_MAP_STYLE;
   const hoveredRoute = activeInvestigation.map.routes.find(
     (route) => route.id === hoveredRouteId,
@@ -1215,7 +1264,11 @@ export function GeospatialMapWorkspace() {
           <span>Pin Source</span>
           <span className="text-[9px] opacity-60">{pins.length} USER</span>
         </div>
-        <div className="grid grid-cols-3 gap-1" role="group" aria-label="Pin source visibility">
+        <div
+          className="grid grid-cols-3 gap-1"
+          role="group"
+          aria-label="Pin source visibility"
+        >
           {(["all", "system", "user"] as PinVisibility[]).map((visibility) => (
             <button
               key={visibility}
@@ -1288,7 +1341,10 @@ export function GeospatialMapWorkspace() {
       </div>
 
       {pinsLoadError ? (
-        <div role="alert" className="border-2 border-[var(--danger)] bg-[var(--panel)] p-2 text-[var(--danger)]">
+        <div
+          role="alert"
+          className="border-2 border-[var(--danger)] bg-[var(--panel)] p-2 text-[var(--danger)]"
+        >
           <div>INVESTIGATION PINS COULD NOT BE LOADED</div>
           <div className="mt-1 normal-case opacity-75">{pinsLoadError}</div>
           <button
@@ -1335,27 +1391,33 @@ export function GeospatialMapWorkspace() {
     <div
       data-testid="geospatial-map"
       data-view-mode={viewMode}
-      data-camera-pitch={Math.round(viewState.pitch)}
-      data-camera-bearing={Math.round(viewState.bearing)}
+      data-camera-pitch={Math.round(viewState.pitch ?? 0)}
+      data-camera-bearing={Math.round(viewState.bearing ?? 0)}
       className={`relative h-full min-h-0 w-full overflow-hidden bg-gray-900 md:rounded-xl ${
         isFullscreenMap ? "fixed inset-0 z-50 h-dvh" : ""
       }`}
     >
       <DeckGL
-        viewState={viewState}
-        onViewStateChange={onViewStateChange}
+        initialViewState={viewState}
+        onViewStateChange={({ viewState: nextViewState }) =>
+          onViewStateChange(nextViewState as MapViewState)
+        }
         onClick={handleMapPinPlacement}
         getCursor={({ isDragging }) =>
-          isAwaitingPinPlacement ? "crosshair" : isDragging ? "grabbing" : "grab"
+          isAwaitingPinPlacement
+            ? "crosshair"
+            : isDragging
+              ? "grabbing"
+              : "grab"
         }
         controller={true}
         layers={layers}
-        effects={[lightingEffect]}
+        effects={MAP_EFFECTS}
         getTooltip={getTooltip as any}
-        style={mapDimensions}
+        style={MAP_DIMENSIONS}
       >
         <Map
-          style={mapDimensions}
+          style={MAP_DIMENSIONS}
           mapStyle={currentMapStyle}
           reuseMaps={true}
           attributionControl={false}
@@ -1430,7 +1492,9 @@ export function GeospatialMapWorkspace() {
 
       {hoveredRoute ? (
         <div className="pointer-events-none absolute right-4 top-28 z-20 max-w-sm border-4 border-[var(--ink)] bg-[var(--accent)] px-3 py-2 font-mono text-[10px] font-black uppercase text-[var(--ink)] shadow-[4px_4px_0_var(--ink)]">
-          <div>{hoveredRoute.label} // {hoveredRoute.teamLabel}</div>
+          <div>
+            {hoveredRoute.label} // {hoveredRoute.teamLabel}
+          </div>
           <div className="mt-1 normal-case opacity-70">
             {hoveredRoute.description}
           </div>
@@ -1487,7 +1551,9 @@ export function GeospatialMapWorkspace() {
           ) : null}
           {selectedLocation.assignedTeam ? (
             <div className="mt-2 border-2 border-[var(--ink)] p-2 normal-case">
-              <div className="text-[9px] uppercase opacity-60">ASSIGNED TEAM</div>
+              <div className="text-[9px] uppercase opacity-60">
+                ASSIGNED TEAM
+              </div>
               {selectedLocation.assignedTeam}
             </div>
           ) : null}
@@ -1495,8 +1561,21 @@ export function GeospatialMapWorkspace() {
             {selectedLocation.description}
           </p>
           <div className="mt-2 text-[9px] opacity-60">
-            SOURCE STATUS: {selectedLocation.confidence} / COORDINATE: {selectedLocation.coordinateStatus}
+            SOURCE STATUS: {selectedLocation.confidence} / COORDINATE:{" "}
+            {selectedLocation.coordinateStatus}
           </div>
+          <AddToNetworkWorkspaceButton
+            source={{
+              sourceKind: "location",
+              sourceId: selectedLocation.id,
+              label: selectedLocation.title,
+              type: "location",
+              description: selectedLocation.description,
+              sourceVerificationStatus:
+                activeInvestigation.type === "DEMO" ? "demo" : "verified",
+            }}
+            className="mt-3 min-h-11 w-full border-4 border-[var(--ink)] bg-[var(--accent)] px-3 py-2 text-left text-[10px] font-black uppercase text-[var(--ink)] shadow-[4px_4px_0_var(--ink)]"
+          />
         </aside>
       ) : null}
 
@@ -1558,7 +1637,11 @@ export function GeospatialMapWorkspace() {
       ) : null}
 
       {pinFeedback ? (
-        <div role="status" aria-live="polite" className="absolute left-1/2 top-3 z-[60] -translate-x-1/2 border-2 border-[var(--ink)] bg-[var(--accent)] px-3 py-2 font-mono text-[10px] font-black uppercase text-[var(--ink)] shadow-[3px_3px_0_var(--ink)] md:top-4">
+        <div
+          role="status"
+          aria-live="polite"
+          className="absolute left-1/2 top-3 z-[60] -translate-x-1/2 border-2 border-[var(--ink)] bg-[var(--accent)] px-3 py-2 font-mono text-[10px] font-black uppercase text-[var(--ink)] shadow-[3px_3px_0_var(--ink)] md:top-4"
+        >
           [ {pinFeedback} ]
         </div>
       ) : null}

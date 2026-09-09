@@ -11,8 +11,10 @@ import { create } from "zustand";
 import {
   getInvestigation,
   investigationRegistry,
+  replaceInvestigation,
 } from "@/data/investigations/registry";
 import type {
+  Investigation,
   InvestigationFact,
   InvestigationId,
 } from "@/data/investigations/types";
@@ -22,9 +24,19 @@ import {
   INITIAL_EVIDENCE_EDGES,
   INITIAL_EVIDENCE_NODES,
 } from "@/lib/evidence-board-storage";
+import type { NetworkWorkspaceCommand } from "@/lib/network-workspace-types";
 
 export type EvidenceNodeType = "stickyNote" | "polaroid";
-export type ActiveWorkspace = "canvas" | "map" | "network" | "timeline";
+export type ActiveWorkspace =
+  | "canvas"
+  | "map"
+  | "network"
+  | "timeline"
+  | "evidence";
+export type NetworkMode = "case" | "workspace";
+export type NetworkWorkspaceRequest = NetworkWorkspaceCommand & {
+  sequence: number;
+};
 export type TimeRange = [string, string];
 export type SpatialBounds = {
   north: number;
@@ -37,6 +49,12 @@ export type MapPanRequest = {
   coordinates: [number, number];
   targetId: string;
   sequence: number;
+};
+
+export type WorkspaceComparisonSelection = {
+  entityIds: string[];
+  locationIds: string[];
+  eventIds: string[];
 };
 
 export type { InvestigationFact, InvestigationId };
@@ -270,7 +288,12 @@ type InvestigationState = {
   isCommandPaletteOpen: boolean;
   isQrModalOpen: boolean;
   activeInvestigationId: InvestigationId;
+  investigationRevision: number;
   activeWorkspace: ActiveWorkspace;
+  networkMode: NetworkMode;
+  networkWorkspaceRequest: NetworkWorkspaceRequest | null;
+  networkWorkspaceOptions: Array<{ id: string; name: string }>;
+  activeNetworkWorkspaceId: string | null;
   timeRange: TimeRange;
   playbackDate: string;
   isMapPlaying: boolean;
@@ -278,6 +301,7 @@ type InvestigationState = {
   selectedEntityId: string | null;
   selectedLocationId: string | null;
   selectedTimelineEventId: string | null;
+  workspaceComparisonSelection: WorkspaceComparisonSelection | null;
   selectedCrimeTypes: string[];
   spatialBounds: SpatialBounds | null;
   nodes: Node[];
@@ -289,7 +313,14 @@ type InvestigationState = {
   closeCommandPalette: () => void;
   setQrModalOpen: (isOpen: boolean) => void;
   setActiveInvestigationId: (investigationId: InvestigationId) => void;
+  hydrateInvestigation: (investigation: Investigation) => void;
   setActiveWorkspace: (workspace: ActiveWorkspace) => void;
+  setNetworkMode: (mode: NetworkMode) => void;
+  requestNetworkWorkspace: (command: NetworkWorkspaceCommand) => void;
+  setNetworkWorkspaceCatalog: (
+    options: Array<{ id: string; name: string }>,
+    activeId: string | null,
+  ) => void;
   setTimeRange: (timeRange: TimeRange) => void;
   setPlaybackDate: (date: string) => void;
   setIsMapPlaying: (isPlaying: boolean) => void;
@@ -297,6 +328,7 @@ type InvestigationState = {
   setSelectedEntityId: (entityId: string | null) => void;
   setSelectedLocationId: (locationId: string | null) => void;
   setSelectedTimelineEventId: (eventId: string | null) => void;
+  setWorkspaceComparisonSelection: (selection: WorkspaceComparisonSelection | null) => void;
   toggleSelectedCrimeType: (crimeType: string) => void;
   setSelectedCrimeTypeEnabled: (crimeType: string, isEnabled: boolean) => void;
   setSpatialBounds: (bounds: SpatialBounds | null) => void;
@@ -321,7 +353,12 @@ export const useInvestigationStore = create<InvestigationState>()(
     isCommandPaletteOpen: false,
     isQrModalOpen: false,
     activeInvestigationId: "demo",
+    investigationRevision: 0,
     activeWorkspace: "map",
+    networkMode: "case",
+    networkWorkspaceRequest: null,
+    networkWorkspaceOptions: [],
+    activeNetworkWorkspaceId: null,
     timeRange: [
       investigationRegistry.demo.timeline.startDate,
       investigationRegistry.demo.timeline.endDate,
@@ -332,6 +369,7 @@ export const useInvestigationStore = create<InvestigationState>()(
     selectedEntityId: null,
     selectedLocationId: null,
     selectedTimelineEventId: null,
+    workspaceComparisonSelection: null,
     selectedCrimeTypes: [...investigationRegistry.demo.map.filterGroups],
     spatialBounds: null,
     incidentData: INCIDENT_DATA,
@@ -359,16 +397,46 @@ export const useInvestigationStore = create<InvestigationState>()(
         selectedEntityId: null,
         selectedLocationId: null,
         selectedTimelineEventId: null,
+        workspaceComparisonSelection: null,
         selectedCrimeTypes: [...investigation.map.filterGroups],
         spatialBounds: null,
         mapPanRequest: null,
         isMapPlaying: false,
         facts: investigation.facts,
+        networkWorkspaceOptions: [],
+        activeNetworkWorkspaceId: null,
       });
+    },
+    hydrateInvestigation: (investigation) => {
+      replaceInvestigation(investigation);
+      if (get().activeInvestigationId !== investigation.id) return;
+      set((state) => ({
+        investigationRevision: state.investigationRevision + 1,
+        timeRange: [
+          investigation.timeline.startDate,
+          investigation.timeline.endDate,
+        ],
+        playbackDate: investigation.timeline.endDate,
+        selectedCrimeTypes: [...investigation.map.filterGroups],
+        facts: investigation.facts,
+      }));
     },
     setActiveWorkspace: (workspace) => {
       set({ activeWorkspace: workspace });
     },
+    setNetworkMode: (mode) => set({ networkMode: mode }),
+    requestNetworkWorkspace: (command) =>
+      set((state) => ({
+        networkWorkspaceRequest: {
+          ...command,
+          sequence: (state.networkWorkspaceRequest?.sequence ?? 0) + 1,
+        },
+      })),
+    setNetworkWorkspaceCatalog: (options, activeId) =>
+      set({
+        networkWorkspaceOptions: options,
+        activeNetworkWorkspaceId: activeId,
+      }),
     setTimeRange: (timeRange) => {
       set({ timeRange });
     },
@@ -401,6 +469,9 @@ export const useInvestigationStore = create<InvestigationState>()(
     },
     setSelectedTimelineEventId: (eventId) => {
       set({ selectedTimelineEventId: eventId });
+    },
+    setWorkspaceComparisonSelection: (selection) => {
+      set({ workspaceComparisonSelection: selection });
     },
     toggleSelectedCrimeType: (crimeType) => {
       const selectedCrimeTypes = get().selectedCrimeTypes;
@@ -581,6 +652,7 @@ export const useInvestigationStore = create<InvestigationState>()(
         selectedEntityId: null,
         selectedLocationId: null,
         selectedTimelineEventId: null,
+        workspaceComparisonSelection: null,
         selectedCrimeTypes: [...investigation.map.filterGroups],
         spatialBounds: null,
         isMapPlaying: false,

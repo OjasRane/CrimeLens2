@@ -11,12 +11,14 @@ const workspaces: { id: ActiveWorkspace; label: string }[] = [
   { id: "map", label: "02 // GEOSPATIAL MAP" },
   { id: "network", label: "03 // NETWORK GRAPH" },
   { id: "timeline", label: "04 // TIMELINE ANALYSIS" },
+  { id: "evidence", label: "05 // EVIDENCE INTAKE" },
 ];
 
 export function WorkspaceBar() {
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
+  useInvestigationStore((state) => state.investigationRevision);
   const activeWorkspace = useInvestigationStore(
     (state) => state.activeWorkspace,
   );

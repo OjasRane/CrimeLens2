@@ -22,6 +22,7 @@ export function InvestigationSwitcher() {
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
+  useInvestigationStore((state) => state.investigationRevision);
   const setActiveInvestigationId = useInvestigationStore(
     (state) => state.setActiveInvestigationId,
   );
