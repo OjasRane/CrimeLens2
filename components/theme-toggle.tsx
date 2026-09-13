@@ -21,7 +21,7 @@ export function ThemeToggle() {
         triggerHaptic("light");
         setTheme(isDark ? "light" : "dark");
       }}
-      className="flex h-11 w-11 items-center justify-center border-2 border-[var(--ink)] bg-[var(--panel)] px-0 font-mono text-[10px] uppercase shadow-[3px_3px_0_var(--ink)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none rounded-none md:w-auto md:px-3 md:text-xs md:shadow-[4px_4px_0_var(--ink)]"
+      className="flex whitespace-nowrap h-11 w-11 items-center justify-center border-2 border-[var(--ink)] bg-[var(--panel)] px-0 font-mono text-[10px] uppercase shadow-[3px_3px_0_var(--ink)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none rounded-none md:w-auto md:px-3 md:text-xs md:shadow-[4px_4px_0_var(--ink)]"
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
     >
       <span className="md:hidden">

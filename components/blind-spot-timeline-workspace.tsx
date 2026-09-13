@@ -117,11 +117,11 @@ export function BlindSpotTimelineWorkspace() {
   }, [loadTimeline]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#F4F4F0] dark:bg-[#031820]">
-      <header className="shrink-0 border-b-4 border-black bg-black px-4 py-3 text-white dark:border-[#EAE5C9] dark:bg-[#06141B] dark:text-[#EAE5C9] sm:px-6">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-[#F4F4F0] dark:bg-[var(--paper)]">
+      <header className="shrink-0 border-b-4 border-black bg-black px-4 py-3 text-white dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)] sm:px-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="font-mono text-[10px] font-black uppercase tracking-[0.2em] text-[#EF4444] dark:text-[#EAE5C9]/70">
+            <p className="font-mono text-[10px] font-black uppercase tracking-[0.2em] text-[#EF4444] dark:text-[var(--ink)]/70">
               Investigation Blind-Spot Detector
             </p>
             <h2 className="mt-1 font-serif text-2xl font-black uppercase leading-none sm:text-3xl">
@@ -133,7 +133,7 @@ export function BlindSpotTimelineWorkspace() {
             type="button"
             onClick={() => void loadTimeline()}
             disabled={status === "loading"}
-            className="grid size-11 shrink-0 place-items-center border-2 border-white bg-black text-white shadow-[3px_3px_0_#EF4444] disabled:opacity-60 dark:border-[#EAE5C9] dark:bg-[#06141B] dark:text-[#EAE5C9]"
+            className="grid size-11 shrink-0 place-items-center border-2 border-white bg-black text-white shadow-[3px_3px_0_#EF4444] disabled:opacity-60 dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)]"
             aria-label="Refresh timeline intelligence"
           >
             <RefreshCw
@@ -151,7 +151,7 @@ export function BlindSpotTimelineWorkspace() {
                 ? "text-emerald-400"
                 : status === "demo"
                   ? "text-amber-300"
-                  : "text-white/60 dark:text-[#EAE5C9]/60"
+                  : "text-white/60 dark:text-[var(--ink)]/60"
             }
           >
             {status === "live"

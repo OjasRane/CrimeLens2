@@ -1,4 +1,5 @@
 "use client";
+import { getInvestigation } from "@/data/investigations/registry";
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, RadioTower, X } from "lucide-react";
@@ -16,12 +17,14 @@ export function QRUplinkModal() {
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const roomId = formatCaseName(searchParams.get("case") ?? "");
+  const investigationId = useInvestigationStore(state => state.activeInvestigationId);
+  const investigation = getInvestigation(investigationId);
+  const roomId = investigation.type === "PRIVATE" ? investigation.roomId ?? "" : formatCaseName(searchParams.get("case") ?? "");
   const uplinkUrl = useMemo(() => {
     if (!roomId) return "";
-    if (!origin) return `/uplink?case=${encodeURIComponent(roomId)}`;
-    return `${origin}/uplink?case=${encodeURIComponent(roomId)}`;
-  }, [origin, roomId]);
+    if (!origin) return `/uplink?case=${encodeURIComponent(roomId)}&investigation=${encodeURIComponent(investigationId)}`;
+    return `${origin}/uplink?case=${encodeURIComponent(roomId)}&investigation=${encodeURIComponent(investigationId)}`;
+  }, [origin, roomId, investigationId]);
 
   useEffect(() => setOrigin(window.location.origin), []);
 
@@ -66,15 +69,15 @@ export function QRUplinkModal() {
             role="dialog"
             aria-modal="true"
             aria-labelledby="qr-uplink-title"
-            className="max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto rounded-none border-4 border-black bg-[#F4F4F0] p-4 font-mono text-black shadow-[8px_8px_0_black] sm:p-5 dark:border dark:border-[#426D79] dark:bg-[#08242D] dark:text-[#F4F1DC] dark:shadow-[4px_4px_0_#011015]"
+            className="max-h-[calc(100dvh-1rem)] w-full max-w-md overflow-y-auto rounded-none border-4 border-black bg-[#F4F4F0] p-4 font-mono text-black shadow-[8px_8px_0_black] sm:p-5 dark:border dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[4px_4px_0_var(--ink)]"
             initial={{ opacity: 0, scale: 0.9, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 6 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
           >
-            <header className="flex items-start justify-between gap-4 border-b-4 border-black pb-4 dark:border-b dark:border-[#426D79]">
+            <header className="flex items-start justify-between gap-4 border-b-4 border-black pb-4 dark:border-b dark:border-[var(--line)]">
               <div>
-                <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#D22B2B] dark:text-[#32D6A0]">
+                <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#D22B2B] dark:text-[var(--accent)]">
                   <RadioTower aria-hidden="true" size={15} />
                   Mobile field channel
                 </p>
@@ -89,7 +92,7 @@ export function QRUplinkModal() {
                 type="button"
                 onClick={() => setQrModalOpen(false)}
                 aria-label="Close QR uplink"
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-none border-2 border-black bg-white shadow-[2px_2px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border dark:border-[#426D79] dark:bg-[#144453] dark:text-[#F4F1DC] dark:shadow-none"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-none border-2 border-black bg-white shadow-[2px_2px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-none"
               >
                 <X aria-hidden="true" size={20} strokeWidth={3} />
               </button>
@@ -98,7 +101,7 @@ export function QRUplinkModal() {
             <div className="py-5">
               {roomId ? (
                 <>
-                  <div className="mx-auto w-fit max-w-full border-4 border-black bg-[#F4F4F0] p-2 shadow-[4px_4px_0_black] sm:p-3 dark:border-[#426D79] dark:shadow-[4px_4px_0_#011015]">
+                  <div className="mx-auto w-fit max-w-full border-4 border-black bg-[#F4F4F0] p-2 shadow-[4px_4px_0_black] sm:p-3 dark:border-[var(--line)] dark:shadow-[4px_4px_0_var(--ink)]">
                     <QRCodeSVG
                       value={uplinkUrl}
                       size={232}
@@ -114,12 +117,12 @@ export function QRUplinkModal() {
                   <p className="mt-5 text-center text-xs font-black uppercase tracking-[0.14em]">
                     Scan to join case channel
                   </p>
-                  <p className="mt-2 break-all text-center text-[10px] uppercase leading-relaxed text-black/55 dark:text-[#6F8F96]">
+                  <p className="mt-2 break-all text-center text-[10px] uppercase leading-relaxed text-black/55 dark:text-[var(--dim)]">
                     {uplinkUrl}
                   </p>
                 </>
               ) : (
-                <div className="border-4 border-[#D22B2B] bg-white p-5 text-center text-xs font-black uppercase leading-relaxed tracking-[0.12em] text-[#D22B2B] shadow-[4px_4px_0_black] dark:border dark:border-[#FFD45A] dark:bg-[#031820] dark:text-[#FFD45A] dark:shadow-[4px_4px_0_#011015]">
+                <div className="border-4 border-[#D22B2B] bg-white p-5 text-center text-xs font-black uppercase leading-relaxed tracking-[0.12em] text-[#D22B2B] shadow-[4px_4px_0_black] dark:border dark:border-[#FFD45A] dark:bg-[var(--paper)] dark:text-[#FFD45A] dark:shadow-[4px_4px_0_var(--ink)]">
                   [ CREATE OR JOIN A CASE BEFORE DEPLOYING AN UPLINK ]
                 </div>
               )}
@@ -129,7 +132,7 @@ export function QRUplinkModal() {
               type="button"
               onClick={copyUplink}
               disabled={!roomId}
-              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-none border-4 border-black bg-black px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-white shadow-[4px_4px_0_#D22B2B] active:translate-x-1 active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45 dark:border dark:border-[#32D6A0] dark:bg-[#144453] dark:text-[#32D6A0] dark:shadow-[4px_4px_0_#011015]"
+              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-none border-4 border-black bg-black px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-white shadow-[4px_4px_0_#D22B2B] active:translate-x-1 active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:opacity-45 dark:border dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)] dark:shadow-[4px_4px_0_var(--ink)]"
             >
               {copied ? (
                 <Check aria-hidden="true" size={17} />

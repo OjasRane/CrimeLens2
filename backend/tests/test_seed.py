@@ -35,7 +35,8 @@ def test_liveblocks_room_contract_is_still_independent():
     runtime = (root / "components/liveblocks-runtime.tsx").read_text(encoding="utf-8")
     assert 'searchParams.get("case")' in runtime
     assert "roomId={requestedCase}" in runtime
-    assert "activeInvestigationId" not in runtime
+    assert "investigation.roomId" in runtime
+    assert "roomId={investigationId}" not in runtime
 
 
 def test_service_role_key_is_not_exposed_to_next_client():

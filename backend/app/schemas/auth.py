@@ -13,6 +13,7 @@ class AuthorizedProfile(ApiModel):
     display_name: str = Field(min_length=1, max_length=120)
     role: str = Field(min_length=1, max_length=50)
     clearance_level: str = Field(min_length=1, max_length=30)
+    public_account: bool = False
     active: bool
 
 

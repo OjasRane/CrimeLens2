@@ -175,6 +175,7 @@ class VerifiedTotals(ApiModel):
 
 
 class InvestigationSummary(ApiModel):
+    access_mode: str = "legacy"
     id: str
     slug: str
     name: str
@@ -191,6 +192,8 @@ class InvestigationSummary(ApiModel):
 
 
 class InvestigationDetail(ApiModel):
+    access_mode: str = "legacy"
+    room_id: str | None = None
     id: str
     case_id: str
     slug: str

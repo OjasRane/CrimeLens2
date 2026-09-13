@@ -80,6 +80,13 @@ describe("classifyPasskeyError", () => {
     );
   });
 
+  it("explains when the relying-party domain does not match", () => {
+    const result = classifyPasskeyError({ name: "SecurityError" });
+
+    expect(result.state).toBe("unsupported");
+    expect(result.message).toContain("domain mismatch");
+  });
+
   it("distinguishes verification failure from service failure", () => {
     expect(
       classifyPasskeyError({ code: "webauthn_verification_failed" }).state,

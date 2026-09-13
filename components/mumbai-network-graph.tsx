@@ -209,8 +209,8 @@ function sourceLabelFor(sourceRef: string) {
 
 function LaneNode({ data }: NodeProps<Node<LaneNodeData>>) {
   return (
-    <div className="relative h-full w-full border-x-2 border-dashed border-black/20 bg-white/35 font-mono text-black dark:border-[#598392]/35 dark:bg-[#124559]/10 dark:text-[#EFF6E0]">
-      <div className="relative z-10 flex h-[46px] items-center justify-between gap-3 border-y-4 border-black bg-black px-3 py-1 text-white dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0]">
+    <div className="relative h-full w-full border-x-2 border-dashed border-black/20 bg-white/35 font-mono text-black dark:border-[var(--line)]/35 dark:bg-[var(--panel)]/10 dark:text-[var(--ink)]">
+      <div className="relative z-10 flex h-[46px] items-center justify-between gap-3 border-y-4 border-black bg-black px-3 py-1 text-white dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)]">
         <div className="min-w-0">
           <span className="text-[9px] font-black opacity-55">
             COL {data.index}
@@ -229,8 +229,8 @@ function LaneNode({ data }: NodeProps<Node<LaneNodeData>>) {
 
 function PlanningLaneNode({ data }: NodeProps<Node<PlanningLaneNodeData>>) {
   return (
-    <div className="h-full w-full border-x-2 border-dashed border-black/20 bg-white/35 font-mono text-black dark:border-[#598392]/35 dark:bg-[#124559]/10 dark:text-[#EFF6E0]">
-      <div className="flex h-[46px] items-center justify-between gap-2 border-y-4 border-black bg-black px-3 text-white dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0]">
+    <div className="h-full w-full border-x-2 border-dashed border-black/20 bg-white/35 font-mono text-black dark:border-[var(--line)]/35 dark:bg-[var(--panel)]/10 dark:text-[var(--ink)]">
+      <div className="flex h-[46px] items-center justify-between gap-2 border-y-4 border-black bg-black px-3 text-white dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)]">
         <div className="min-w-0">
           <div className="text-[8px] font-black opacity-55">COL 01</div>
           <div className="truncate text-[11px] font-black uppercase">
@@ -245,8 +245,8 @@ function PlanningLaneNode({ data }: NodeProps<Node<PlanningLaneNodeData>>) {
           }}
           className={`nodrag nopan shrink-0 border-2 px-2 py-1 text-[8px] font-black uppercase ${
             data.enabled
-              ? "border-[#FCD34D] bg-[#FCD34D] text-black dark:border-[#AEC3B0] dark:bg-[#AEC3B0] dark:text-[#01161E]"
-              : "border-white bg-black text-white dark:border-[#AEC3B0] dark:bg-[#01161E] dark:text-[#EFF6E0]"
+              ? "border-[#FCD34D] bg-[#FCD34D] text-black dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]"
+              : "border-white bg-black text-white dark:border-[var(--accent)] dark:bg-[var(--paper)] dark:text-[var(--ink)]"
           }`}
         >
           [{data.enabled ? "−" : "+"} PLANNING]
@@ -258,8 +258,8 @@ function PlanningLaneNode({ data }: NodeProps<Node<PlanningLaneNodeData>>) {
 
 function TeamBandNode({ data }: NodeProps<Node<TeamBandNodeData>>) {
   return (
-    <div className="relative h-full w-full border-t border-dashed border-black/15 dark:border-[#598392]/25">
-      <span className="absolute -top-2.5 left-1 bg-[#F4F4F0] px-1 font-mono text-[8px] font-black uppercase text-black/40 dark:bg-[#01161E] dark:text-[#AEC3B0]/50">
+    <div className="relative h-full w-full border-t border-dashed border-black/15 dark:border-[var(--line)]/25">
+      <span className="absolute -top-2.5 left-1 bg-[#F4F4F0] px-1 font-mono text-[8px] font-black uppercase text-black/40 dark:bg-[var(--paper)] dark:text-[var(--accent)]/50">
         {data.label}
       </span>
     </div>
@@ -272,13 +272,13 @@ function TeamClusterNode() {
 
   return (
     <div
-      className="h-[46px] w-[240px] border-3 border-black bg-white px-3 py-1.5 font-mono uppercase text-black shadow-[3px_3px_0_black] dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0] dark:shadow-[3px_3px_0_#01161E]"
+      className="h-[46px] w-[240px] border-3 border-black bg-white px-3 py-1.5 font-mono uppercase text-black shadow-[3px_3px_0_black] dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)] dark:shadow-[3px_3px_0_var(--ink)]"
       style={{ opacity: active ? 1 : 0.18 }}
     >
       <Handle
         type="target"
         position={Position.Left}
-        className="!h-2.5 !w-2.5 !rounded-none !border-2 !border-black !bg-white dark:!border-[#598392] dark:!bg-[#AEC3B0]"
+        className="!h-2.5 !w-2.5 !rounded-none !border-2 !border-black !bg-white dark:!border-[var(--ink)] dark:!bg-[var(--accent)]"
       />
       <div className="text-[11px] font-black">ATTACK TEAMS / GROUP</div>
       <div className="text-[8px] font-bold opacity-55">5 operational pairs</div>
@@ -326,10 +326,10 @@ const StoryNode = memo(function StoryNode({
         ? "h-[88px]"
         : "min-h-[82px]";
   const palette = isSelected
-    ? "bg-[#FCD34D] text-black dark:bg-[#AEC3B0] dark:text-[#01161E]"
+    ? "bg-[#FCD34D] text-black dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]"
     : isActor
-      ? "bg-black text-white dark:bg-[#124559] dark:text-[#EFF6E0]"
-      : "bg-[#F4F4F0] text-black dark:bg-[#01161E] dark:text-[#EFF6E0]";
+      ? "bg-black text-white dark:bg-[var(--panel)] dark:text-[var(--ink)]"
+      : "bg-[#F4F4F0] text-black dark:bg-[var(--paper)] dark:text-[var(--ink)]";
 
   return (
     <button
@@ -345,7 +345,7 @@ const StoryNode = memo(function StoryNode({
       aria-label={`${data.typeLabel}: ${data.label}. ${data.subtitle}`}
       aria-expanded={data.expandable ? data.expanded : undefined}
       title={isLocation ? "Click to inspect location details" : undefined}
-      className={`nodrag nopan group relative ${heightClass} ${widthClass} max-w-[72vw] rounded-none border-4 border-black ${isTeam || data.compact ? "p-2" : "p-3"} text-left font-mono uppercase shadow-[5px_5px_0_black] dark:border-[#598392] dark:shadow-[5px_5px_0_#01161E] ${palette}`}
+      className={`nodrag nopan group relative ${heightClass} ${widthClass} max-w-[72vw] rounded-none border-4 border-black ${isTeam || data.compact ? "p-2" : "p-3"} text-left font-mono uppercase shadow-[5px_5px_0_black] dark:border-[var(--line)] dark:shadow-[5px_5px_0_var(--ink)] ${palette}`}
       style={{
         opacity: isActive
           ? 1
@@ -359,12 +359,12 @@ const StoryNode = memo(function StoryNode({
       <Handle
         type="target"
         position={Position.Left}
-        className="!h-2.5 !w-2.5 !rounded-none !border-2 !border-black !bg-[#F4F4F0] dark:!border-[#598392] dark:!bg-[#AEC3B0]"
+        className="!h-2.5 !w-2.5 !rounded-none !border-2 !border-black !bg-[#F4F4F0] dark:!border-[var(--ink)] dark:!bg-[var(--accent)]"
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="!h-2.5 !w-2.5 !rounded-none !border-2 !border-black !bg-[#F4F4F0] dark:!border-[#598392] dark:!bg-[#AEC3B0]"
+        className="!h-2.5 !w-2.5 !rounded-none !border-2 !border-black !bg-[#F4F4F0] dark:!border-[var(--ink)] dark:!bg-[var(--accent)]"
       />
 
       {isLocation ? (
@@ -373,7 +373,7 @@ const StoryNode = memo(function StoryNode({
             {data.label}
           </div>
           {data.badge ? (
-            <div className="mt-2 truncate text-[10px] font-black text-[#D22B2B] dark:text-[#AEC3B0]">
+            <div className="mt-2 truncate text-[10px] font-black text-[#D22B2B] dark:text-[var(--accent)]">
               {data.badge}
             </div>
           ) : null}
@@ -425,7 +425,7 @@ const StoryNode = memo(function StoryNode({
       {!isLocation && !isTeam ? (
         <div
           role="tooltip"
-          className={`pointer-events-none invisible absolute top-0 z-[100] w-60 border-4 border-black bg-white p-2.5 text-black opacity-0 shadow-[5px_5px_0_black] transition-opacity duration-100 group-hover:visible group-hover:opacity-100 group-focus-visible:visible group-focus-visible:opacity-100 dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0] dark:shadow-[5px_5px_0_#01161E] ${
+          className={`pointer-events-none invisible absolute top-0 z-[100] w-60 border-4 border-black bg-white p-2.5 text-black opacity-0 shadow-[5px_5px_0_black] transition-opacity duration-100 group-hover:visible group-hover:opacity-100 group-focus-visible:visible group-focus-visible:opacity-100 dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[5px_5px_0_var(--ink)] ${
             data.tooltipSide === "left"
               ? "right-[calc(100%+12px)]"
               : "left-[calc(100%+12px)]"
@@ -437,7 +437,7 @@ const StoryNode = memo(function StoryNode({
           <p className="line-clamp-4 text-[9px] font-bold leading-tight normal-case">
             {data.detail}
           </p>
-          <p className="mt-2 text-[8px] font-black text-[#D22B2B] dark:text-[#AEC3B0]">
+          <p className="mt-2 text-[8px] font-black text-[#D22B2B] dark:text-[var(--accent)]">
             {data.expandable ? "CLICK TO EXPAND + FOCUS" : "CLICK TO FOCUS"}
           </p>
         </div>
@@ -495,8 +495,8 @@ const StoryEdge = memo(function StoryEdge({
           ? 0.34
           : 0.62;
   const showLabel = hovered || highlighted;
-  const restingStroke = isDark ? "#598392" : "#4B5563";
-  const interactiveStroke = isDark ? "#EFF6E0" : "#000000";
+  const restingStroke = isDark ? "#EAE5C9" : "#4B5563";
+  const interactiveStroke = isDark ? "#FBBF24" : "#000000";
   const stroke = selectedPath
     ? "#D22B2B"
     : previewPath || hoverPath
@@ -543,7 +543,7 @@ const StoryEdge = memo(function StoryEdge({
         <path
           d={path}
           fill="none"
-          stroke={isDark ? "#01161E" : "#000000"}
+          stroke={isDark ? "#06141B" : "#000000"}
           strokeLinecap="square"
           strokeLinejoin="miter"
           strokeWidth={5}
@@ -569,7 +569,7 @@ const StoryEdge = memo(function StoryEdge({
           className="overflow-visible"
           style={{ pointerEvents: "none" }}
         >
-          <div className="border-2 border-black bg-[#FCD34D] px-1.5 py-1 text-center font-mono text-[8px] font-black uppercase leading-tight text-black shadow-[2px_2px_0_black] dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0] dark:shadow-[2px_2px_0_#01161E]">
+          <div className="border-2 border-black bg-[#FCD34D] px-1.5 py-1 text-center font-mono text-[8px] font-black uppercase leading-tight text-black shadow-[2px_2px_0_black] dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[2px_2px_0_var(--ink)]">
             {data?.label}
           </div>
         </foreignObject>
@@ -734,6 +734,15 @@ export function MumbaiNetworkGraph({
 
     return () => window.clearTimeout(timeout);
   }, [flowInstance, isLedgerOpen]);
+
+  useEffect(() => {
+    if (!isContextExpanded) return;
+    const closeContext = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsContextExpanded(false);
+    };
+    window.addEventListener("keydown", closeContext);
+    return () => window.removeEventListener("keydown", closeContext);
+  }, [isContextExpanded]);
 
   useEffect(
     () => () => {
@@ -1385,7 +1394,7 @@ export function MumbaiNetworkGraph({
   return (
     <div
       data-testid="mumbai-network-story-map"
-      className="relative h-full min-h-0 w-full flex-1 overflow-hidden bg-[#F4F4F0] dark:bg-[#01161E]"
+      className="relative h-full min-h-0 w-full flex-1 overflow-hidden bg-[#F4F4F0] dark:bg-[var(--paper)]"
     >
       <GraphFocusContext.Provider value={focusContextValue}>
         <ReactFlow
@@ -1408,11 +1417,11 @@ export function MumbaiNetworkGraph({
           zoomOnDoubleClick={false}
           onInit={setFlowInstance}
           onPaneClick={onPaneClick}
-          className="bg-[#F4F4F0] dark:bg-[#01161E]"
+          className="bg-[#F4F4F0] dark:bg-[var(--paper)]"
         >
           <Background
             variant={BackgroundVariant.Dots}
-            color={isDark ? "#598392" : "#000000"}
+            color={isDark ? "#EAE5C9" : "#000000"}
             gap={24}
             size={1.05}
           />
@@ -1425,13 +1434,16 @@ export function MumbaiNetworkGraph({
                   triggerHaptic("light");
                   setIsContextExpanded(true);
                 }}
-                className="border-4 border-black bg-black px-3 py-2 font-mono text-[10px] font-black uppercase text-white shadow-[4px_4px_0_black] dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0] dark:shadow-[4px_4px_0_#01161E]"
+                className="border-4 border-black bg-black px-3 py-2 font-mono text-[10px] font-black uppercase text-white shadow-[4px_4px_0_black] dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[4px_4px_0_var(--ink)]"
               >
                 [ + CONTEXT / EVIDENCE ]
               </button>
             ) : (
-              <div className="max-h-[min(45dvh,560px)] w-[min(370px,calc(100vw-1rem))] overflow-y-auto border-4 border-black bg-white font-mono text-black shadow-[7px_7px_0_black] sm:max-h-[min(72dvh,560px)] dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0] dark:shadow-[7px_7px_0_#01161E]">
-                <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b-4 border-black bg-black px-3 py-2.5 text-white dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0]">
+              <div
+                data-network-popover="true"
+                className="max-h-[min(45dvh,560px)] w-[min(370px,calc(100vw-1rem))] overflow-y-auto border-4 border-black bg-white font-mono text-black shadow-[7px_7px_0_black] sm:max-h-[min(72dvh,560px)] dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)] dark:shadow-[7px_7px_0_var(--ink)]"
+              >
+                <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b-4 border-black bg-black px-3 py-2.5 text-white dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)]">
                   <div>
                     <div className="text-[8px] font-black opacity-55">
                       COL 04
@@ -1443,15 +1455,15 @@ export function MumbaiNetworkGraph({
                   <button
                     type="button"
                     onClick={() => setIsContextExpanded(false)}
-                    className="border-2 border-white px-2 py-1 text-[8px] font-black uppercase dark:border-[#AEC3B0]"
+                    className="border-2 border-white px-2 py-1 text-[8px] font-black uppercase dark:border-[var(--accent)]"
                   >
                     [ × CLOSE ]
                   </button>
                 </div>
 
                 <div className="space-y-3 p-3">
-                  <section className="border-3 border-black p-3 dark:border-[#598392]">
-                    <div className="mb-2 flex items-center gap-2 border-b-2 border-black pb-2 text-[9px] font-black uppercase dark:border-[#598392]">
+                  <section className="border-3 border-black p-3 dark:border-[var(--line)]">
+                    <div className="mb-2 flex items-center gap-2 border-b-2 border-black pb-2 text-[9px] font-black uppercase dark:border-[var(--line)]">
                       <Shield aria-hidden="true" size={15} strokeWidth={3} />
                       Police response
                     </div>
@@ -1461,13 +1473,13 @@ export function MumbaiNetworkGraph({
                     <p className="mt-1 text-[9px] font-bold leading-snug normal-case opacity-75">
                       {responsePresentation?.detail}
                     </p>
-                    <span className="mt-2 inline-block border-2 border-black bg-[#FCD34D] px-1.5 py-1 text-[8px] font-black uppercase dark:border-[#AEC3B0] dark:bg-[#AEC3B0] dark:text-[#01161E]">
+                    <span className="mt-2 inline-block border-2 border-black bg-[#FCD34D] px-1.5 py-1 text-[8px] font-black uppercase dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]">
                       {responsePresentation?.badge}
                     </span>
                   </section>
 
-                  <section className="border-3 border-black p-3 dark:border-[#598392]">
-                    <div className="mb-2 flex items-center gap-2 border-b-2 border-black pb-2 text-[9px] font-black uppercase dark:border-[#598392]">
+                  <section className="border-3 border-black p-3 dark:border-[var(--line)]">
+                    <div className="mb-2 flex items-center gap-2 border-b-2 border-black pb-2 text-[9px] font-black uppercase dark:border-[var(--line)]">
                       <Gavel aria-hidden="true" size={15} strokeWidth={3} />
                       Legal sources
                     </div>
@@ -1477,13 +1489,13 @@ export function MumbaiNetworkGraph({
                     <p className="mt-1 text-[9px] font-bold leading-snug normal-case opacity-75">
                       {evidencePresentation?.detail}
                     </p>
-                    <div className="mt-2 border-t-2 border-black pt-2 text-[8px] font-black uppercase opacity-60 dark:border-[#598392]">
+                    <div className="mt-2 border-t-2 border-black pt-2 text-[8px] font-black uppercase opacity-60 dark:border-[var(--line)]">
                       {evidencePresentation?.sourceLabel}
                     </div>
                   </section>
 
-                  <section className="border-3 border-black p-3 dark:border-[#598392]">
-                    <div className="mb-2 flex items-center gap-2 border-b-2 border-black pb-2 text-[9px] font-black uppercase dark:border-[#598392]">
+                  <section className="border-3 border-black p-3 dark:border-[var(--line)]">
+                    <div className="mb-2 flex items-center gap-2 border-b-2 border-black pb-2 text-[9px] font-black uppercase dark:border-[var(--line)]">
                       <FileSearch
                         aria-hidden="true"
                         size={15}
@@ -1492,7 +1504,7 @@ export function MumbaiNetworkGraph({
                       Evidence
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <div className="border-2 border-black bg-black p-2 text-white dark:border-[#598392] dark:bg-[#124559]">
+                      <div className="border-2 border-black bg-black p-2 text-white dark:border-[var(--line)] dark:bg-[var(--panel)]">
                         <div className="text-[7px] font-black opacity-55">
                           PRIMARY-SITE KILLED
                         </div>
@@ -1500,7 +1512,7 @@ export function MumbaiNetworkGraph({
                           {coreCasualtyTotals.killed}
                         </div>
                       </div>
-                      <div className="border-2 border-black bg-[#FCD34D] p-2 text-black dark:border-[#AEC3B0] dark:bg-[#AEC3B0] dark:text-[#01161E]">
+                      <div className="border-2 border-black bg-[#FCD34D] p-2 text-black dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]">
                         <div className="text-[7px] font-black opacity-55">
                           PRIMARY-SITE INJURED
                         </div>
@@ -1511,17 +1523,17 @@ export function MumbaiNetworkGraph({
                     </div>
                   </section>
 
-                  <section className="border-3 border-black p-3 dark:border-[#598392]">
-                    <div className="mb-2 border-b-2 border-black pb-2 text-[9px] font-black uppercase dark:border-[#598392]">
+                  <section className="border-3 border-black p-3 dark:border-[var(--line)]">
+                    <div className="mb-2 border-b-2 border-black pb-2 text-[9px] font-black uppercase dark:border-[var(--line)]">
                       Related facts / {contextFacts.length}
                     </div>
                     <div className="space-y-2">
                       {contextFacts.map((fact) => (
                         <article
                           key={fact.id}
-                          className="border-l-4 border-[#D22B2B] bg-[#F4F4F0] p-2 dark:bg-[#124559]"
+                          className="border-l-4 border-[#D22B2B] bg-[#F4F4F0] p-2 dark:bg-[var(--panel)]"
                         >
-                          <div className="text-[7px] font-black uppercase text-[#D22B2B] dark:text-[#AEC3B0]">
+                          <div className="text-[7px] font-black uppercase text-[#D22B2B] dark:text-[var(--accent)]">
                             {fact.type}
                           </div>
                           <p className="mt-1 line-clamp-3 text-[9px] font-bold leading-snug normal-case">
@@ -1535,7 +1547,7 @@ export function MumbaiNetworkGraph({
                   <button
                     type="button"
                     onClick={openLedger}
-                    className="w-full border-4 border-black bg-[#D22B2B] px-3 py-2 text-left text-[10px] font-black uppercase text-white shadow-[4px_4px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none dark:border-[#598392] dark:shadow-[4px_4px_0_#01161E]"
+                    className="w-full border-4 border-black bg-[#D22B2B] px-3 py-2 text-left text-[10px] font-black uppercase text-white shadow-[4px_4px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none dark:border-[var(--line)] dark:shadow-[4px_4px_0_var(--ink)]"
                   >
                     [ Open source ledger ]
                   </button>
@@ -1551,29 +1563,29 @@ export function MumbaiNetworkGraph({
                   isLedgerOpen
                     ? "w-[min(220px,calc(100vw-1rem))]"
                     : "w-[min(320px,calc(100vw-1rem))]"
-                } overflow-y-auto border-4 border-black bg-white font-mono text-black shadow-[6px_6px_0_black] dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0] dark:shadow-[6px_6px_0_#01161E]`}
+                } overflow-y-auto border-4 border-black bg-white font-mono text-black shadow-[6px_6px_0_black] dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[6px_6px_0_var(--ink)]`}
               >
-                <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b-4 border-black bg-black px-3 py-2 text-white dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0]">
+                <div className="sticky top-0 z-10 flex items-center justify-between gap-2 border-b-4 border-black bg-black px-3 py-2 text-white dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)]">
                   <span className="text-[9px] font-black uppercase">
                     [ FOCUSED INSPECTOR ]
                   </span>
                   <button
                     type="button"
                     onClick={clearFocus}
-                    className="border-2 border-white px-1.5 py-0.5 text-[8px] font-black uppercase dark:border-[#598392]"
+                    className="border-2 border-white px-1.5 py-0.5 text-[8px] font-black uppercase dark:border-[var(--line)]"
                   >
                     Clear
                   </button>
                 </div>
                 <div className="p-3">
-                  <div className="text-[9px] font-black uppercase text-[#D22B2B] dark:text-[#AEC3B0]">
+                  <div className="text-[9px] font-black uppercase text-[#D22B2B] dark:text-[var(--accent)]">
                     {selectedPresentation.typeLabel}
                   </div>
                   <h3 className="mt-1 font-serif text-xl font-black uppercase leading-none">
                     {selectedPresentation.label}
                   </h3>
                   {selectedPresentation.badge ? (
-                    <div className="mt-2 inline-block border-2 border-black bg-[#FCD34D] px-1.5 py-1 text-[9px] font-black uppercase dark:border-[#AEC3B0] dark:bg-[#AEC3B0] dark:text-[#01161E]">
+                    <div className="mt-2 inline-block border-2 border-black bg-[#FCD34D] px-1.5 py-1 text-[9px] font-black uppercase dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]">
                       {selectedPresentation.badge}
                     </div>
                   ) : null}
@@ -1583,7 +1595,7 @@ export function MumbaiNetworkGraph({
                   </p>
 
                   {selectedRoutes.length > 0 ? (
-                    <div className="mt-3 border-t-2 border-black pt-2 dark:border-[#598392]">
+                    <div className="mt-3 border-t-2 border-black pt-2 dark:border-[var(--line)]">
                       <div className="mb-1 text-[8px] font-black uppercase opacity-55">
                         Related story path
                       </div>
@@ -1599,8 +1611,8 @@ export function MumbaiNetworkGraph({
                   ) : null}
 
                   {selectedLocation ? (
-                    <div className="mt-3 grid grid-cols-2 gap-2 border-t-2 border-black pt-2 dark:border-[#598392]">
-                      <div className="border-2 border-black bg-black p-2 text-white dark:border-[#598392] dark:bg-[#01161E]">
+                    <div className="mt-3 grid grid-cols-2 gap-2 border-t-2 border-black pt-2 dark:border-[var(--line)]">
+                      <div className="border-2 border-black bg-black p-2 text-white dark:border-[var(--line)] dark:bg-[var(--paper)]">
                         <div className="text-[8px] font-black opacity-60">
                           KILLED
                         </div>
@@ -1608,7 +1620,7 @@ export function MumbaiNetworkGraph({
                           {selectedLocation.killed ?? 0}
                         </div>
                       </div>
-                      <div className="border-2 border-black bg-[#FCD34D] p-2 text-black dark:border-[#AEC3B0] dark:bg-[#AEC3B0] dark:text-[#01161E]">
+                      <div className="border-2 border-black bg-[#FCD34D] p-2 text-black dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]">
                         <div className="text-[8px] font-black opacity-60">
                           INJURED
                         </div>
@@ -1619,7 +1631,7 @@ export function MumbaiNetworkGraph({
                     </div>
                   ) : null}
 
-                  <div className="mt-3 border-t-2 border-black pt-2 dark:border-[#598392]">
+                  <div className="mt-3 border-t-2 border-black pt-2 dark:border-[var(--line)]">
                     <div className="mb-1 text-[8px] font-black uppercase opacity-55">
                       Context links
                     </div>
@@ -1640,13 +1652,13 @@ export function MumbaiNetworkGraph({
                       ))}
                   </div>
 
-                  <div className="mt-3 border-t-2 border-black pt-2 text-[8px] font-black uppercase opacity-55 dark:border-[#598392]">
+                  <div className="mt-3 border-t-2 border-black pt-2 text-[8px] font-black uppercase opacity-55 dark:border-[var(--line)]">
                     Source: {selectedPresentation.sourceLabel}
                   </div>
                   <button
                     type="button"
                     onClick={openLedger}
-                    className="mt-3 w-full border-4 border-black bg-[#D22B2B] px-3 py-2 text-left text-[10px] font-black uppercase text-white shadow-[4px_4px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none dark:border-[#598392] dark:shadow-[4px_4px_0_#01161E]"
+                    className="mt-3 w-full border-4 border-black bg-[#D22B2B] px-3 py-2 text-left text-[10px] font-black uppercase text-white shadow-[4px_4px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none dark:border-[var(--line)] dark:shadow-[4px_4px_0_var(--ink)]"
                   >
                     [ Inspect source ledger ]
                   </button>
@@ -1663,7 +1675,7 @@ export function MumbaiNetworkGraph({
                         description: selectedNode.subtitle,
                         sourceVerificationStatus: "verified",
                       }}
-                      className="mt-2 w-full border-4 border-black bg-[#FCD34D] px-3 py-2 text-left text-[10px] font-black uppercase text-black shadow-[4px_4px_0_black] dark:border-[#AEC3B0] dark:bg-[#AEC3B0] dark:text-[#01161E] dark:shadow-none"
+                      className="mt-2 w-full border-4 border-black bg-[#FCD34D] px-3 py-2 text-left text-[10px] font-black uppercase text-black shadow-[4px_4px_0_black] dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)] dark:shadow-none"
                     />
                   ) : null}
                 </div>

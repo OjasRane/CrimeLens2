@@ -6,6 +6,8 @@ import { createPortal } from "react-dom";
 import type { WorkspaceSourceReference } from "@/lib/network-workspace-types";
 import { triggerHaptic } from "@/lib/haptics";
 import { useInvestigationStore } from "@/store/use-investigation-store";
+import { useInvestigationAccess } from "@/components/investigation-access";
+import Link from "next/link";
 
 export function AddToNetworkWorkspaceButton({
   source,
@@ -16,6 +18,7 @@ export function AddToNetworkWorkspaceButton({
   className?: string;
   label?: string;
 }) {
+  const { canWrite } = useInvestigationAccess();
   const [open, setOpen] = useState(false);
   const options = useInvestigationStore(
     (state) => state.networkWorkspaceOptions,
@@ -33,6 +36,7 @@ export function AddToNetworkWorkspaceButton({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canWrite) return;
     const workspaceId = String(
       new FormData(event.currentTarget).get("workspaceId") || "",
     );
@@ -69,7 +73,7 @@ export function AddToNetworkWorkspaceButton({
               >
                 <header className="flex items-center justify-between border-b-4 border-[var(--ink)] bg-[var(--ink)] px-4 py-3 text-[var(--paper)]">
                   <h3 className="font-serif text-xl font-black uppercase">
-                    Add to Workspace
+                    {canWrite ? "Add to Workspace" : "Private workspace"}
                   </h3>
                   <button
                     type="button"
@@ -81,6 +85,20 @@ export function AddToNetworkWorkspaceButton({
                   </button>
                 </header>
                 <div className="grid gap-4 p-4">
+                  {!canWrite ? (
+                    <>
+                      <p className="text-sm font-bold normal-case leading-relaxed">
+                        Custom network workspaces are saved to a private account. Start your own investigation to create, connect, and save nodes.
+                      </p>
+                      <Link
+                        href="/?next=%2Fcases%2Fnew#signup"
+                        className="min-h-11 border-4 border-[var(--ink)] bg-[var(--accent)] px-3 py-3 text-center text-[10px] font-black uppercase text-[var(--ink)] shadow-[4px_4px_0_var(--ink)]"
+                      >
+                        [ Start your own investigation ]
+                      </Link>
+                    </>
+                  ) : (
+                    <>
                   <div className="border-2 border-[var(--ink)] bg-[var(--panel)] p-3">
                     <p className="text-[9px] font-black uppercase opacity-60">
                       Case reference //{" "}
@@ -125,6 +143,8 @@ export function AddToNetworkWorkspaceButton({
                   >
                     [ Add Reference ]
                   </button>
+                    </>
+                  )}
                 </div>
               </form>
             </div>,

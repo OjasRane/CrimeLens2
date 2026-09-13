@@ -1,4 +1,5 @@
 from __future__ import annotations
+from .api.routes.collaboration import router as collaboration_router
 
 import json
 import logging
@@ -17,6 +18,8 @@ from .core.config import Settings, get_settings
 from .core.observability import LocalRateLimitMiddleware, RequestContextMiddleware
 from .core.security import SupabaseJwtVerifier
 from .pins_router import build_pins_router
+from .gap_reconstruction_router import router as gap_reconstruction_router
+from .services.gap_repository import MemoryGapRepository, PostgresGapRepository
 from .services.repository import (
     InvestigationRepository,
     MemoryInvestigationRepository,
@@ -74,6 +77,11 @@ def create_app(
     application.state.settings = active_settings
     application.state.repository = active_repository
     application.state.evidence_repository = build_evidence_repository(active_repository)
+    application.state.gap_repository = (
+        PostgresGapRepository(active_repository.database_url)
+        if isinstance(active_repository, PostgresInvestigationRepository)
+        else MemoryGapRepository()
+    )
     application.state.jwt_verifier = active_verifier
 
     application.add_middleware(GZipMiddleware, minimum_size=1_000)
@@ -143,6 +151,7 @@ def create_app(
             },
         )
 
+    application.include_router(collaboration_router)
     application.include_router(health.router)
     application.include_router(auth.router)
     application.include_router(investigations.router)
@@ -154,6 +163,7 @@ def create_app(
         dependencies=[Depends(require_active_profile)],
     )
     application.include_router(build_pins_router())
+    application.include_router(gap_reconstruction_router)
     return application
 
 

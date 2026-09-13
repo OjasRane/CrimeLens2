@@ -110,6 +110,7 @@ def require_investigation_access(
         user_clearance=profile.clearance_level,
         classification=investigation["classification"],
         is_demo=investigation["isDemo"],
+        membership_required=profile.public_account or investigation.get("accessMode") == "private",
         has_explicit_access=repository.has_explicit_access(
             investigation_id, profile.user_id
         ),

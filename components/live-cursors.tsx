@@ -47,7 +47,7 @@ export function LiveCursor({ x, y, agentId }: LiveCursorProps) {
       <span
         className={
           isDark
-            ? "ml-4 -mt-1 block w-max border border-[#00FF41] bg-black px-2 py-1 font-mono text-[10px] font-black uppercase tracking-[0.12em] text-[#00FF41] drop-shadow-[0_0_5px_#00FF41]"
+            ? "ml-4 -mt-1 block w-max border border-[#00FF41] bg-[var(--paper)] px-2 py-1 font-mono text-[10px] font-black uppercase tracking-[0.12em] text-[#00FF41] drop-shadow-[0_0_5px_#00FF41]"
             : "ml-4 -mt-1 block w-max border-2 border-black bg-white px-2 py-1 font-mono text-[10px] font-black uppercase tracking-[0.12em] text-black shadow-[2px_2px_0_black]"
         }
       >

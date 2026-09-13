@@ -31,6 +31,8 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     historical_cache_seconds: int = Field(default=300, ge=0, le=86_400)
     rate_limit_per_minute: int = Field(default=180, ge=10, le=10_000)
+    liveblocks_private_secret_key: str | None = None
+    liveblocks_private_project_isolated: bool = False
     openai_api_key: str | None = None
     openai_model: str = "gpt-5.6-luna"
     openai_timeout_seconds: float = Field(default=20, ge=1, le=120)

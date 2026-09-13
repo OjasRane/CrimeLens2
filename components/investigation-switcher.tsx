@@ -1,49 +1,54 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
   getInvestigation,
-  investigationOptions,
-  isInvestigationId,
 } from "@/data/investigations/registry";
 import type { InvestigationId } from "@/data/investigations/types";
+import { getInvestigations } from "@/lib/crimelens-api";
 import { triggerHaptic } from "@/lib/haptics";
 import { useInvestigationStore } from "@/store/use-investigation-store";
-
-function readInvestigationFromUrl(): InvestigationId {
-  if (typeof window === "undefined") return "demo";
-  const requested = new URL(window.location.href).searchParams.get(
-    "investigation",
-  );
-  return requested && isInvestigationId(requested) ? requested : "demo";
-}
+import { useInvestigationAccess } from "@/components/investigation-access";
+import { publicCases } from "@/lib/public-access";
 
 export function InvestigationSwitcher() {
+  const { isPublicDemo } = useInvestigationAccess();
+  const router = useRouter();
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
   useInvestigationStore((state) => state.investigationRevision);
-  const setActiveInvestigationId = useInvestigationStore(
-    (state) => state.setActiveInvestigationId,
-  );
+
   const [isOpen, setIsOpen] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [options, setOptions] = useState<
+    Array<{ id: InvestigationId; shortName: string; description: string }>
+  >([]);
   const rootRef = useRef<HTMLDivElement>(null);
   const activeInvestigation = getInvestigation(activeInvestigationId);
 
   useEffect(() => {
-    const requested = readInvestigationFromUrl();
-    if (requested !== activeInvestigationId) {
-      setActiveInvestigationId(requested);
+    if (isPublicDemo) {
+      setStatusMessage(null);
+      setOptions(
+        publicCases.map((item) => ({
+          id: item.id,
+          shortName: item.shortName,
+          description: item.name,
+        })),
+      );
+      return;
     }
-
-    const handlePopState = () => {
-      const nextInvestigation = readInvestigationFromUrl();
-      setActiveInvestigationId(nextInvestigation);
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
+    const controller = new AbortController();
+    void getInvestigations(controller.signal).then((available) => {
+      if (controller.signal.aborted) return;
+      setStatusMessage(null);
+      setOptions(available.map(item => ({id:item.id,shortName:item.shortName,description:item.name})));
+    }).catch(() => { if (!controller.signal.aborted) setStatusMessage("Case list unavailable. Reload to retry."); });
+    return () => controller.abort();
+  }, [isPublicDemo]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -63,31 +68,22 @@ export function InvestigationSwitcher() {
     };
   }, []);
 
-  function selectInvestigation(investigationId: InvestigationId) {
+  async function selectInvestigation(investigationId: InvestigationId) {
     if (investigationId === activeInvestigationId) {
       setIsOpen(false);
       return;
     }
 
-    const nextInvestigation = getInvestigation(investigationId);
-    triggerHaptic("heavy");
-    setStatusMessage(`[ ACCESSING CASE FILE ${nextInvestigation.caseId}... ]`);
-    setActiveInvestigationId(investigationId);
-    setIsOpen(false);
+    if (isPublicDemo) {
+      router.push(`/demo/${investigationId}`);
+      return;
+    }
 
     const nextUrl = new URL(window.location.href);
-    if (investigationId === "demo") {
-      nextUrl.searchParams.delete("investigation");
-    } else {
-      nextUrl.searchParams.set("investigation", investigationId);
-    }
-    window.history.replaceState(window.history.state, "", nextUrl);
-
-    window.setTimeout(
-      () => setStatusMessage(`[ CASE ${nextInvestigation.caseId} LOADED ]`),
-      280,
-    );
-    window.setTimeout(() => setStatusMessage(null), 1050);
+    nextUrl.searchParams.set("investigation", investigationId);
+    nextUrl.searchParams.delete("case");
+    // Reload clears case state and reruns the authenticated loader before rendering.
+    window.location.assign(nextUrl.toString());
   }
 
   return (
@@ -103,7 +99,7 @@ export function InvestigationSwitcher() {
         className="flex h-11 w-[68px] items-center justify-center border-4 border-[var(--ink)] bg-[var(--accent)] px-1 text-[10px] font-black text-[var(--ink)] shadow-[3px_3px_0_var(--ink)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none md:w-auto md:min-w-[190px] md:justify-start md:px-3 md:text-xs md:shadow-[4px_4px_0_var(--ink)]"
       >
         <span className="md:hidden">
-          {activeInvestigationId === "demo" ? "DEMO ▼" : "26/11 ▼"}
+          {activeInvestigation.shortName.slice(0, 10)} ▼
         </span>
         <span className="hidden md:inline">
           [ INVESTIGATION: {activeInvestigation.shortName} ▼ ]
@@ -119,7 +115,7 @@ export function InvestigationSwitcher() {
           <div className="mb-2 border-2 border-[var(--ink)] bg-[var(--ink)] px-3 py-2 text-xs font-black text-[var(--paper)]">
             [ SELECT INVESTIGATION ]
           </div>
-          {investigationOptions.map((option) => {
+          {options.map((option) => {
             const selected = option.id === activeInvestigationId;
             return (
               <button
@@ -127,7 +123,7 @@ export function InvestigationSwitcher() {
                 type="button"
                 role="option"
                 aria-selected={selected}
-                onClick={() => selectInvestigation(option.id)}
+                onClick={() => void selectInvestigation(option.id)}
                 className={`mb-2 grid min-h-16 w-full grid-cols-[24px_1fr] items-start border-2 border-[var(--ink)] px-3 py-2 text-left shadow-[3px_3px_0_var(--ink)] last:mb-0 ${
                   selected
                     ? "bg-[var(--ink)] text-[var(--paper)]"
@@ -149,7 +145,7 @@ export function InvestigationSwitcher() {
             );
           })}
           <div className="mt-2 border-2 border-dashed border-[var(--ink)] px-2 py-2 text-[9px] font-bold leading-tight opacity-70">
-            LIVEBLOCKS ROOM ID REMAINS INDEPENDENT
+            <Link href={isPublicDemo ? "/?next=%2Fcases%2Fnew#signup" : "/cases"} className="flex min-h-11 items-center underline">Your cases / Create a new investigation →</Link>
           </div>
         </div>
       ) : null}

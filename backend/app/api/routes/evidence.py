@@ -67,6 +67,7 @@ def _ensure_evidence_access(evidence_id: UUID, profile: AuthorizedProfile, repos
         user_clearance=profile.clearance_level,
         classification=investigation["classification"],
         is_demo=investigation["isDemo"],
+        membership_required=profile.public_account or investigation.get("accessMode") == "private",
         has_explicit_access=repository.has_explicit_access(evidence["investigation_id"], profile.user_id),
     ):
         raise HTTPException(status_code=403, detail={"code": "INVESTIGATION_ACCESS_DENIED", "message": "Your role or clearance does not permit this evidence."})

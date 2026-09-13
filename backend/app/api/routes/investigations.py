@@ -79,6 +79,7 @@ def list_investigations(
             user_clearance=profile.clearance_level,
             classification=summary["classification"],
             is_demo=summary["isDemo"],
+            membership_required=profile.public_account or summary.get("accessMode") == "private",
             has_explicit_access=repository.has_explicit_access(summary["id"], profile.user_id),
         ):
             available.append(InvestigationSummary.model_validate(summary))
@@ -259,3 +260,31 @@ def get_location_details(
             detail={"code": "LOCATION_NOT_FOUND", "message": "Location not found in this investigation."},
         )
     return LocationDetailsResponse.model_validate(details)
+
+
+from uuid import UUID
+from pydantic import Field, field_validator
+from ...schemas.common import ApiModel
+from ...services.private_cases import create_private_case
+
+
+class PrivateCaseCreate(ApiModel):
+    name: str = Field(min_length=1, max_length=120)
+    description: str = Field(default="", max_length=2000)
+    request_id: UUID
+
+    @field_validator("name", "description", mode="before")
+    @classmethod
+    def trim_text(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+
+@router.post("", response_model=InvestigationDetail, status_code=201)
+def create_investigation(
+    payload: PrivateCaseCreate,
+    response: Response,
+    profile: Annotated[AuthorizedProfile, Depends(require_active_profile)],
+    repository: Annotated[InvestigationRepository, Depends(get_repository)],
+):
+    response.headers["Cache-Control"] = "no-store"
+    return create_private_case(repository, profile, payload)

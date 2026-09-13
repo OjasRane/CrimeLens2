@@ -4,12 +4,13 @@ import type { ChangeEvent } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { useMutation } from "@/lib/liveblocks";
 import { useInvestigationStore } from "@/store/use-investigation-store";
+import { useInvestigationAccess } from "@/components/investigation-access";
 
 function NodeLockTag({ lockedBy }: { lockedBy: unknown }) {
   if (typeof lockedBy !== "string" || lockedBy.length === 0) return null;
 
   return (
-    <div className="pointer-events-none absolute -right-2 -top-8 z-20 w-max border-2 border-black bg-white px-2 py-1 font-mono text-[9px] font-black uppercase tracking-[0.08em] text-black shadow-[2px_2px_0_black] dark:border dark:border-[#FF3131] dark:bg-black dark:text-[#FF3131] dark:shadow-[0_0_7px_rgba(255,49,49,0.6)]">
+    <div className="pointer-events-none absolute -right-2 -top-8 z-20 w-max border-2 border-black bg-white px-2 py-1 font-mono text-[9px] font-black uppercase tracking-[0.08em] text-black shadow-[2px_2px_0_black] dark:border dark:border-[#FF3131] dark:bg-[var(--paper)] dark:text-[#FF3131] dark:shadow-[0_0_7px_rgba(255,49,49,0.6)]">
       [ LOCKED BY {lockedBy} ]
     </div>
   );
@@ -22,6 +23,7 @@ function StickyNoteCard({
   data: NodeProps["data"];
   onChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
 }) {
+  const { canWrite } = useInvestigationAccess();
   const text =
     typeof data.text === "string"
       ? data.text
@@ -33,20 +35,23 @@ function StickyNoteCard({
     <div className="relative h-40 w-40 border-2 border-[var(--ink)] bg-[var(--accent)] p-3 pt-5 shadow-[4px_4px_0_var(--ink)] rounded-none sm:h-48 sm:w-48 sm:p-4 sm:pt-6">
       <NodeLockTag lockedBy={data.lockedBy} />
       <Handle
-        className="w-3 h-3 bg-black border-2 border-black rounded-none dark:w-2 dark:h-2 dark:border-[#00FF41] dark:shadow-[0_0_5px_#00FF41] absolute -top-2"
+        className="w-3 h-3 bg-black border-2 border-black rounded-none dark:w-2 dark:h-2 dark:border-[var(--accent)] dark:shadow-[0_0_5px_var(--accent)] absolute -top-2"
         position={Position.Top}
         type="target"
       />
       <div className="absolute left-1/2 top-[-10px] h-5 w-16 -translate-x-1/2 border-2 border-[var(--ink)] bg-[var(--panel)] shadow-[2px_2px_0_var(--ink)] rounded-none" />
       <textarea
         value={text}
-        onChange={onChange}
+        onChange={(event) => {
+          if (canWrite) onChange(event);
+        }}
+        readOnly={!canWrite}
         className="nodrag nopan h-full w-full resize-none border-0 bg-transparent font-mono text-sm leading-tight text-[var(--ink)] outline-none placeholder:text-[var(--ink)]/50 rounded-none"
         placeholder="TYPE FACT..."
         aria-label="Sticky note text"
       />
       <Handle
-        className="w-3 h-3 bg-black border-2 border-black rounded-none dark:w-2 dark:h-2 dark:border-[#00FF41] dark:shadow-[0_0_5px_#00FF41] absolute -bottom-2"
+        className="w-3 h-3 bg-black border-2 border-black rounded-none dark:w-2 dark:h-2 dark:border-[var(--accent)] dark:shadow-[0_0_5px_var(--accent)] absolute -bottom-2"
         position={Position.Bottom}
         type="source"
       />
@@ -101,7 +106,7 @@ export function PolaroidNode({ data }: NodeProps) {
     <div className="relative w-44 border-2 border-[var(--ink)] bg-[var(--panel)] p-3 pb-4 shadow-[4px_4px_0_var(--ink)] rounded-none sm:w-56">
       <NodeLockTag lockedBy={data.lockedBy} />
       <Handle
-        className="w-3 h-3 bg-black border-2 border-black rounded-none dark:w-2 dark:h-2 dark:border-[#00FF41] dark:shadow-[0_0_5px_#00FF41] absolute -top-2"
+        className="w-3 h-3 bg-black border-2 border-black rounded-none dark:w-2 dark:h-2 dark:border-[var(--accent)] dark:shadow-[0_0_5px_var(--accent)] absolute -top-2"
         position={Position.Top}
         type="target"
       />
@@ -112,7 +117,7 @@ export function PolaroidNode({ data }: NodeProps) {
         {caption}
       </div>
       <Handle
-        className="w-3 h-3 bg-black border-2 border-black rounded-none dark:w-2 dark:h-2 dark:border-[#00FF41] dark:shadow-[0_0_5px_#00FF41] absolute -bottom-2"
+        className="w-3 h-3 bg-black border-2 border-black rounded-none dark:w-2 dark:h-2 dark:border-[var(--accent)] dark:shadow-[0_0_5px_var(--accent)] absolute -bottom-2"
         position={Position.Bottom}
         type="source"
       />

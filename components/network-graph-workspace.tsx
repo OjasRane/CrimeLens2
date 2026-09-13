@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Background,
   BackgroundVariant,
@@ -23,12 +23,18 @@ import {
   Phone,
   ReceiptText,
   Shield,
+  Maximize2,
+  Minimize2,
+  PanelTopClose,
+  PanelTopOpen,
   UserRound,
   UsersRound,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { MumbaiNetworkGraph } from "@/components/mumbai-network-graph";
 import { CustomNetworkWorkspace } from "@/components/custom-network-workspace";
+import { useInvestigationAccess } from "@/components/investigation-access";
+import Link from "next/link";
 import { AddToNetworkWorkspaceButton } from "@/components/add-to-network-workspace-button";
 import { getInvestigation } from "@/data/investigations/registry";
 import type { GraphLinkKind, GraphNodeKind } from "@/data/investigations/types";
@@ -366,24 +372,24 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
 
   // Build the node's class string based on kind + dark mode
   // Light mode uses the original brutalist colors
-  // Dark mode uses the intel palette — NO YELLOW anywhere
+  // Dark mode uses the shared Figma surfaces and preserves data colors.
   let kindClasses = "";
 
   if (data.selected) {
     // Selected node: red highlight in both modes
     kindClasses =
-      "bg-[#D22B2B] text-white dark:bg-[#D22B2B] dark:text-[#EFF6E0] dark:border-[#D22B2B]";
+      "bg-[#D22B2B] text-white dark:bg-[#D22B2B] dark:text-[var(--ink)] dark:border-[#D22B2B]";
   } else if (isSuspect || data.kind === "organization") {
     // Suspect: black in light → teal panel in dark
     kindClasses =
-      "bg-black text-white dark:bg-[#124559] dark:border dark:border-[#598392] dark:text-[#EFF6E0] dark:shadow-none";
+      "bg-black text-white dark:bg-[var(--panel)] dark:border dark:border-[var(--line)] dark:text-[var(--ink)] dark:shadow-none";
   } else if (isTransaction) {
-    // Transaction: yellow in light → translucent steel in dark (KILL YELLOW)
+    // Transaction: keep the light color and use a subdued accent tint in dark.
     kindClasses =
-      "bg-[#FCD34D] text-black dark:bg-[#598392]/20 dark:border dark:border-[#AEC3B0] dark:text-[#EFF6E0] dark:shadow-none";
+      "bg-[#FCD34D] text-black dark:bg-[var(--accent)]/15 dark:border dark:border-[var(--accent)] dark:text-[var(--ink)] dark:shadow-none";
   } else if (isEvidence || isLocation) {
     // Evidence/Location: white/parchment in light → deep void in dark
-    kindClasses = `${isEvidence ? "bg-white" : "bg-[#F4F4F0]"} text-black dark:bg-[#01161E] dark:border dark:border-[#598392] dark:text-[#EFF6E0] dark:shadow-none`;
+    kindClasses = `${isEvidence ? "bg-white" : "bg-[#F4F4F0]"} text-black dark:bg-[var(--paper)] dark:border dark:border-[var(--line)] dark:text-[var(--ink)] dark:shadow-none`;
   }
 
   return (
@@ -391,7 +397,7 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
       role="button"
       tabIndex={0}
       aria-label={`${data.kind}; ${data.label}; ${data.status ?? data.subtitle}`}
-      className={`group relative min-h-20 w-36 border-4 border-black p-2 font-mono uppercase shadow-[5px_5px_0_black] transition-all duration-300 rounded-none sm:min-h-24 sm:w-44 sm:p-3 dark:border-[#598392] ${kindClasses} ${
+      className={`group relative min-h-20 w-36 border-4 border-black p-2 font-mono uppercase shadow-[5px_5px_0_black] transition-all duration-300 rounded-none sm:min-h-24 sm:w-44 sm:p-3 dark:border-[var(--line)] ${kindClasses} ${
         data.selected ? "scale-105" : ""
       }`}
       onClick={() => {
@@ -423,12 +429,12 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
       <Handle
         type="target"
         position={Position.Left}
-        className="!h-3 !w-3 !border-2 !border-black !bg-[#F4F4F0] dark:!border-[#598392] dark:!bg-[#124559]"
+        className="!h-3 !w-3 !border-2 !border-black !bg-[#F4F4F0] dark:!border-[var(--ink)] dark:!bg-[var(--panel)]"
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="!h-3 !w-3 !border-2 !border-black !bg-[#D22B2B] dark:!border-[#AEC3B0] dark:!bg-[#AEC3B0]"
+        className="!h-3 !w-3 !border-2 !border-black !bg-[#D22B2B] dark:!border-[var(--accent)] dark:!bg-[var(--accent)]"
       />
       <div className="mb-2 flex items-center justify-between gap-2 border-b-2 border-current pb-2">
         <Icon aria-hidden="true" size={18} strokeWidth={3} />
@@ -439,7 +445,7 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
         {data.subtitle}
       </div>
       {data.risk ? (
-        <div className="mt-2 inline-block border-2 border-black bg-[#FCD34D] px-1 py-0.5 text-[10px] font-black text-black dark:border-[#AEC3B0] dark:bg-transparent dark:text-[#AEC3B0]">
+        <div className="mt-2 inline-block border-2 border-black bg-[#FCD34D] px-1 py-0.5 text-[10px] font-black text-black dark:border-[var(--accent)] dark:bg-transparent dark:text-[var(--accent)]">
           {data.risk} RISK
         </div>
       ) : null}
@@ -477,9 +483,8 @@ function NetworkRedStringEdge({
 
   const opacity = data?.active ? 0.95 : 0;
 
-  // Dark mode: structural steel for standard, phosphor sage for highlighted
-  const outerStroke = isDark ? "#124559" : "#000000";
-  const innerStroke = isDark ? "#598392" : "#D22B2B";
+  const outerStroke = isDark ? "#EAE5C9" : "#000000";
+  const innerStroke = "#D22B2B";
 
   return (
     <g className="transition-opacity duration-300" style={{ opacity }}>
@@ -573,6 +578,15 @@ function NetworkGraphCanvas() {
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   useEffect(() => {
+    if (!isFiltersOpen) return;
+    const closeFilters = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsFiltersOpen(false);
+    };
+    window.addEventListener("keydown", closeFilters);
+    return () => window.removeEventListener("keydown", closeFilters);
+  }, [isFiltersOpen]);
+
+  useEffect(() => {
     setEnabledLinkKinds(new Set(linkFilters.map((filter) => filter.id)));
     setHopLimit(2);
     setIsFiltersOpen(false);
@@ -645,7 +659,7 @@ function NetworkGraphCanvas() {
           markerEnd: active
             ? {
                 type: MarkerType.ArrowClosed,
-                color: isDark ? "#AEC3B0" : "#D22B2B",
+                color: "#D22B2B",
                 width: 18,
                 height: 18,
               }
@@ -688,16 +702,16 @@ function NetworkGraphCanvas() {
         return (
           <label
             key={filter.id}
-            className="flex min-h-11 cursor-pointer items-center gap-2 border-2 border-black bg-white px-2 py-2 shadow-[3px_3px_0_black] dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0] dark:shadow-none"
+            className="flex min-h-11 cursor-pointer items-center gap-2 border-2 border-black bg-white px-2 py-2 shadow-[3px_3px_0_black] dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)] dark:shadow-none"
           >
             <input
               type="checkbox"
               checked={checked}
               onChange={() => toggleLinkKind(filter.id)}
-              className="h-5 w-5 shrink-0 accent-black dark:accent-[#AEC3B0]"
+              className="h-5 w-5 shrink-0 accent-black dark:accent-[var(--accent)]"
             />
             <span
-              className="h-3 w-3 shrink-0 border-2 border-black dark:border-[#598392]"
+              className="h-3 w-3 shrink-0 border-2 border-black dark:border-[var(--line)]"
               style={{
                 backgroundColor: isDark ? filter.darkTone : filter.tone,
               }}
@@ -709,7 +723,7 @@ function NetworkGraphCanvas() {
         );
       })}
 
-      <label className="grid min-h-11 gap-2 border-2 border-black bg-white px-2 py-2 shadow-[3px_3px_0_black] dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0] dark:shadow-none">
+      <label className="grid min-h-11 gap-2 border-2 border-black bg-white px-2 py-2 shadow-[3px_3px_0_black] dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)] dark:shadow-none">
         <span>Hops From Subject: {hopLimit}</span>
         <input
           type="range"
@@ -726,13 +740,13 @@ function NetworkGraphCanvas() {
       </label>
 
       <div className="grid grid-cols-2 gap-2">
-        <div className="flex min-h-11 items-center border-2 border-black bg-white px-2 py-2 dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0]">
+        <div className="flex min-h-11 items-center border-2 border-black bg-white px-2 py-2 dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)]">
           Edges: {visibleEdgeCount}
         </div>
         <button
           type="button"
           onClick={() => setSelectedLocationId(null)}
-          className="min-h-11 border-2 border-black bg-[#FCD34D] px-2 py-2 text-left text-black shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[#AEC3B0] dark:bg-[#124559] dark:text-[#AEC3B0] dark:shadow-none dark:hover:bg-[#AEC3B0] dark:hover:text-[#01161E]"
+          className="min-h-11 border-2 border-black bg-[#FCD34D] px-2 py-2 text-left text-black shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)] dark:shadow-none dark:hover:bg-[var(--ink)] dark:hover:text-[var(--accent-ink)]"
         >
           Clear Subject
         </button>
@@ -743,12 +757,13 @@ function NetworkGraphCanvas() {
   return (
     <div
       data-testid="network-graph"
-      className="relative h-full min-h-0 w-full flex-1 overflow-hidden bg-[#F4F4F0] dark:bg-[#01161E]"
+      className="relative h-full min-h-0 w-full flex-1 overflow-hidden bg-[#F4F4F0] dark:bg-[var(--paper)]"
     >
       {/* ── Collapsible filter box ──────────────── */}
       <aside
         data-testid="network-filter-box"
-        className="absolute left-3 top-3 z-50 flex max-h-[calc(100%-1.5rem)] w-[min(320px,calc(100%-1.5rem))] flex-col border-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase text-black shadow-[3px_3px_0_black] dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0] dark:shadow-[0_0_16px_rgba(1,22,30,0.8)] md:left-4 md:top-4 md:shadow-[4px_4px_0_black] dark:md:shadow-[0_0_16px_rgba(1,22,30,0.8)]"
+        data-network-popover={isFiltersOpen ? "true" : undefined}
+        className="absolute left-3 top-3 z-50 flex max-h-[calc(100%-1.5rem)] w-[min(320px,calc(100%-1.5rem))] flex-col border-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase text-black shadow-[3px_3px_0_black] dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[0_0_16px_rgba(6,20,27,0.8)] md:left-4 md:top-4 md:shadow-[4px_4px_0_black] dark:md:shadow-[0_0_16px_rgba(6,20,27,0.8)]"
       >
         <button
           type="button"
@@ -760,7 +775,7 @@ function NetworkGraphCanvas() {
           }
           aria-expanded={isFiltersOpen}
           aria-controls="network-link-filters"
-          className="flex min-h-11 w-full shrink-0 items-center justify-between bg-black px-3 text-left text-[#F4F4F0] dark:bg-[#01161E] dark:text-[#EFF6E0]"
+          className="flex min-h-11 w-full shrink-0 items-center justify-between bg-black px-3 text-left text-[#F4F4F0] dark:bg-[var(--paper)] dark:text-[var(--ink)]"
         >
           <span>[ {isFiltersOpen ? "-" : "+"} ] Link Filters</span>
           <span className="text-[9px] opacity-70">
@@ -772,7 +787,7 @@ function NetworkGraphCanvas() {
           {isFiltersOpen ? (
             <motion.div
               id="network-link-filters"
-              className="min-h-0 overflow-y-auto border-t-4 border-black dark:border-[#598392]"
+              className="min-h-0 overflow-y-auto border-t-4 border-black dark:border-[var(--line)]"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -805,19 +820,19 @@ function NetworkGraphCanvas() {
           panOnScroll
           zoomOnPinch
           zoomOnDoubleClick={false}
-          className="bg-[#F4F4F0] dark:bg-[#01161E]"
+          className="bg-[#F4F4F0] dark:bg-[var(--paper)]"
         >
           <Background
             variant={BackgroundVariant.Dots}
-            color={isDark ? "#598392" : "#000000"}
+            color={isDark ? "#EAE5C9" : "#000000"}
             gap={24}
             size={1.15}
           />
 
           {selectedNode ? (
             <Panel position="bottom-right" className="m-0">
-              <div className="max-h-[45dvh] w-[min(320px,calc(100vw-1.5rem))] overflow-y-auto border-4 border-black bg-white p-3 font-mono text-xs font-black uppercase shadow-[6px_6px_0_black] dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0] dark:shadow-[6px_6px_0_#01161E]">
-                <div className="mb-2 flex items-center gap-2 border-b-2 border-black pb-2 dark:border-[#598392]">
+              <div className="max-h-[45dvh] w-[min(320px,calc(100vw-1.5rem))] overflow-y-auto border-4 border-black bg-white p-3 font-mono text-xs font-black uppercase shadow-[6px_6px_0_black] dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[6px_6px_0_var(--ink)]">
+                <div className="mb-2 flex items-center gap-2 border-b-2 border-black pb-2 dark:border-[var(--line)]">
                   <Phone aria-hidden="true" size={17} strokeWidth={3} />
                   Subject Locked
                 </div>
@@ -829,7 +844,7 @@ function NetworkGraphCanvas() {
                 <button
                   type="button"
                   onClick={openLedger}
-                  className="w-full border-4 border-black bg-[#D22B2B] px-3 py-2 text-left text-white shadow-[4px_4px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none dark:border-[#598392] dark:shadow-[4px_4px_0_#01161E]"
+                  className="w-full border-4 border-black bg-[#D22B2B] px-3 py-2 text-left text-white shadow-[4px_4px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none dark:border-[var(--line)] dark:shadow-[4px_4px_0_var(--ink)]"
                 >
                   [ INSPECT DOSSIER ]
                 </button>
@@ -855,7 +870,7 @@ function NetworkGraphCanvas() {
                     sourceVerificationStatus:
                       activeInvestigation.type === "DEMO" ? "demo" : "verified",
                   }}
-                  className="mt-2 w-full border-4 border-black bg-[#FCD34D] px-3 py-2 text-left text-[10px] font-black uppercase text-black shadow-[4px_4px_0_black] dark:border-[#AEC3B0] dark:bg-[#AEC3B0] dark:text-[#01161E] dark:shadow-none"
+                  className="mt-2 w-full border-4 border-black bg-[#FCD34D] px-3 py-2 text-left text-[10px] font-black uppercase text-black shadow-[4px_4px_0_black] dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)] dark:shadow-none"
                 />
               </div>
             </Panel>
@@ -867,48 +882,157 @@ function NetworkGraphCanvas() {
 }
 
 export function NetworkGraphWorkspace() {
+  const { isPublicDemo } = useInvestigationAccess();
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
   useInvestigationStore((state) => state.investigationRevision);
   const networkMode = useInvestigationStore((state) => state.networkMode);
   const setNetworkMode = useInvestigationStore((state) => state.setNetworkMode);
+  const isFocusMode = useInvestigationStore(
+    (state) => state.isNetworkFocusMode,
+  );
+  const setFocusMode = useInvestigationStore(
+    (state) => state.setNetworkFocusMode,
+  );
+  const [focusToolsExpanded, setFocusToolsExpanded] = useState(true);
+  const wasFocusMode = useRef(false);
+
+  useEffect(() => {
+    if (isFocusMode && !wasFocusMode.current) setFocusToolsExpanded(true);
+    wasFocusMode.current = isFocusMode;
+  }, [isFocusMode]);
+
+  useEffect(() => {
+    if (!isFocusMode) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (
+        document.querySelector(
+          '[role="dialog"], [data-network-popover="true"]',
+        )
+      )
+        return;
+      setFocusMode(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isFocusMode, setFocusMode]);
 
   const modeSelector = (
-    <div className="flex shrink-0 items-center gap-2 border-b-4 border-[var(--ink)] bg-[var(--paper)] px-2 py-2 font-mono text-[10px] font-black uppercase sm:px-4">
-      <span className="mr-1 hidden opacity-60 lg:inline">View //</span>
+    <div
+      className="flex shrink-0 items-center gap-1"
+      role="group"
+      aria-label="Network view"
+    >
       <button
         type="button"
         onClick={() => setNetworkMode("case")}
         aria-pressed={networkMode === "case"}
-        className={`min-h-9 border-2 border-[var(--ink)] px-3 shadow-[3px_3px_0_var(--ink)] ${networkMode === "case" ? "bg-[var(--ink)] text-[var(--paper)]" : "bg-[var(--panel)] text-[var(--ink)]"}`}
+        className={`fatal-raised-control min-h-9 px-2.5 font-mono text-[9px] font-black uppercase sm:px-3 ${networkMode === "case" ? "!bg-[var(--ink)] !text-[var(--paper)] dark:!border-[var(--accent)] dark:!bg-[var(--accent)] dark:!text-[var(--accent-ink)]" : ""}`}
       >
-        Case Graph <span className="hidden sm:inline">// Authoritative</span>
+        <span className="hidden xl:inline">Case graph</span>
+        <span className="xl:hidden">Case</span>
       </button>
       <button
         type="button"
-        onClick={() => setNetworkMode("workspace")}
-        aria-pressed={networkMode === "workspace"}
-        className={`min-h-9 border-2 border-[var(--ink)] px-3 shadow-[3px_3px_0_var(--ink)] ${networkMode === "workspace" ? "bg-[var(--accent)] text-[var(--ink)]" : "bg-[var(--panel)] text-[var(--ink)]"}`}
+        onClick={() => {
+          if (!isPublicDemo) setNetworkMode("workspace");
+        }}
+        aria-pressed={!isPublicDemo && networkMode === "workspace"}
+        aria-disabled={isPublicDemo}
+        title={isPublicDemo ? "Sign up to create and save a custom workspace" : undefined}
+        className={`fatal-raised-control min-h-9 px-2.5 font-mono text-[9px] font-black uppercase sm:px-3 ${networkMode === "workspace" ? "fatal-raised-control--primary" : ""}`}
       >
-        Custom Workspace <span className="hidden sm:inline">// Analyst</span>
+        <span className="hidden xl:inline">Custom workspace</span>
+        <span className="xl:hidden">Custom</span>
       </button>
+      {isPublicDemo ? (
+        <Link
+          href="/?next=%2Fcases%2Fnew#signup"
+          className="hidden text-[9px] font-black uppercase underline sm:inline"
+        >
+          Sign up to create
+        </Link>
+      ) : null}
     </div>
   );
 
-  if (networkMode === "workspace") {
+  const focusButton = (
+    <button
+      type="button"
+      onClick={() => setFocusMode(!isFocusMode)}
+      className={`fatal-raised-control flex min-h-9 shrink-0 items-center gap-1.5 px-2.5 font-mono text-[9px] font-black uppercase ${isFocusMode ? "fatal-raised-control--primary" : ""}`}
+      aria-pressed={isFocusMode}
+      aria-label={isFocusMode ? "Exit focus mode" : "Enter focus mode"}
+      title={isFocusMode ? "Exit focus mode" : "Focus mode"}
+    >
+      {isFocusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+      <span>{isFocusMode ? "Exit focus mode" : "Focus"}</span>
+    </button>
+  );
+
+  const focusToolsButton = isFocusMode ? (
+    <button
+      type="button"
+      onClick={() => setFocusToolsExpanded((expanded) => !expanded)}
+      className="fatal-raised-control flex min-h-9 shrink-0 items-center gap-1.5 px-2.5 font-mono text-[9px] font-black uppercase"
+      aria-expanded={focusToolsExpanded}
+      aria-controls="network-focus-toolkit"
+    >
+      {focusToolsExpanded ? (
+        <PanelTopClose aria-hidden="true" size={14} />
+      ) : (
+        <PanelTopOpen aria-hidden="true" size={14} />
+      )}
+      {focusToolsExpanded ? "Collapse tools" : "Expand tools"}
+    </button>
+  ) : null;
+
+  const caseToolbar = (
+    <div className="hide-scrollbar flex min-h-12 shrink-0 flex-wrap items-center gap-2 overflow-visible border-b-2 border-[var(--ink)] bg-[var(--paper)] px-2 py-1.5 sm:flex-nowrap sm:overflow-x-auto sm:px-3">
+      {!isFocusMode || focusToolsExpanded ? (
+        <div className={isFocusMode ? "hidden shrink-0 sm:block" : "shrink-0"}>
+          {modeSelector}
+        </div>
+      ) : null}
+      <span className="w-full min-w-0 flex-1 truncate font-mono text-[9px] font-black uppercase opacity-55 sm:w-auto">
+        {getInvestigation(activeInvestigationId).displayName} // Authoritative
+      </span>
+      {isFocusMode ? (
+        <div className="flex w-full min-w-0 gap-2 sm:ml-auto sm:w-auto sm:shrink-0">
+          <div className="min-w-0 flex-1 [&>button]:w-full sm:flex-none sm:[&>button]:w-auto">
+            {focusToolsButton}
+          </div>
+          <div className="min-w-0 flex-1 [&>button]:w-full sm:flex-none sm:[&>button]:w-auto">
+            {focusButton}
+          </div>
+        </div>
+      ) : (
+        <div className="ml-auto">{focusButton}</div>
+      )}
+    </div>
+  );
+
+  if (networkMode === "workspace" && !isPublicDemo) {
     return (
-      <div className="flex h-full min-h-0 flex-col">
-        {modeSelector}
-        <CustomNetworkWorkspace investigationId={activeInvestigationId} />
+      <div className="fatal-network-workspace flex h-full min-h-0 flex-col">
+        <CustomNetworkWorkspace
+          investigationId={activeInvestigationId}
+          toolbarLeading={modeSelector}
+          focusControl={focusButton}
+          isFocusMode={isFocusMode}
+          focusToolsExpanded={focusToolsExpanded}
+          focusToolsControl={focusToolsButton}
+        />
       </div>
     );
   }
 
   if (activeInvestigationId === "mumbai-2611") {
     return (
-      <div className="flex h-full min-h-0 flex-col">
-        {modeSelector}
+      <div className="fatal-network-workspace flex h-full min-h-0 flex-col">
+        {caseToolbar}
         <ReactFlowProvider key="mumbai-network-graph">
           <MumbaiNetworkGraph investigation={getInvestigation("mumbai-2611")} />
         </ReactFlowProvider>
@@ -917,8 +1041,8 @@ export function NetworkGraphWorkspace() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      {modeSelector}
+    <div className="fatal-network-workspace flex h-full min-h-0 flex-col">
+      {caseToolbar}
       <ReactFlowProvider key="demo-network-graph">
         <NetworkGraphCanvas />
       </ReactFlowProvider>

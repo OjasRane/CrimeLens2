@@ -5,7 +5,7 @@ import type {
   InvestigationId,
 } from "@/data/investigations/types";
 
-export const investigationRegistry: Record<InvestigationId, Investigation> = {
+export const investigationRegistry: Record<string, Investigation> = {
   demo: demoInvestigation,
   "mumbai-2611": mumbai2611Investigation,
 };
@@ -24,11 +24,13 @@ export const investigationOptions = [
 ];
 
 export function isInvestigationId(value: string): value is InvestigationId {
-  return value === "demo" || value === "mumbai-2611";
+  return value.trim().length > 0 && value.length <= 80;
 }
 
 export function getInvestigation(id: InvestigationId): Investigation {
-  return investigationRegistry[id] ?? investigationRegistry.demo;
+  const investigation = investigationRegistry[id];
+  if (!investigation) throw new Error("Investigation has not been authorized and loaded");
+  return investigation;
 }
 
 export function replaceInvestigation(investigation: Investigation) {
@@ -186,3 +188,9 @@ export function validateInvestigation(investigation: Investigation) {
 
 validateInvestigation(demoInvestigation);
 validateInvestigation(mumbai2611Investigation);
+
+export function clearPrivateInvestigations() {
+  for (const id of Object.keys(investigationRegistry)) {
+    if (id !== "demo" && id !== "mumbai-2611") delete investigationRegistry[id];
+  }
+}

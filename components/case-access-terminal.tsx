@@ -36,12 +36,12 @@ export function CaseAccessTerminal() {
         onChange={(event) => setCaseName(event.target.value)}
         autoComplete="off"
         spellCheck={false}
-        className="h-11 min-w-0 flex-1 border-4 border-black bg-[#F4F4F0] px-2 py-1 !text-xs font-black uppercase text-black shadow-[3px_3px_0_black] outline-none placeholder:text-black/45 focus:outline-none md:w-auto md:min-w-40 md:flex-none md:p-2 md:!text-sm md:shadow-[4px_4px_0_black] lg:min-w-48 dark:border dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0] dark:shadow-[inset_0_0_10px_rgba(174,195,176,0.12),0_0_12px_rgba(1,22,30,0.7)] dark:placeholder:text-[#598392]"
+        className="h-11 min-w-0 flex-1 border-4 border-black bg-[#F4F4F0] px-2 py-1 !text-xs font-black uppercase text-black shadow-[3px_3px_0_black] outline-none placeholder:text-black/45 focus:outline-none md:w-auto md:min-w-40 md:flex-none md:p-2 md:!text-sm md:shadow-[4px_4px_0_black] lg:min-w-48 dark:border dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)] dark:shadow-[inset_0_0_10px_rgba(251,191,36,0.12),0_0_12px_rgba(6,20,27,0.7)] dark:placeholder:text-[var(--dim)]"
       />
       <button
         type="submit"
         disabled={caseName.trim().length === 0}
-        className="h-11 shrink-0 whitespace-nowrap border-4 border-black bg-black px-2 py-1 !text-xs font-bold text-white shadow-[3px_3px_0_black] hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-45 max-[374px]:!text-[10px] md:px-4 md:py-2 md:!text-sm md:shadow-[4px_4px_0_black] dark:border dark:border-[#598392] dark:bg-[#124559] dark:text-[#AEC3B0] dark:shadow-[inset_0_0_10px_rgba(174,195,176,0.1),0_0_12px_rgba(1,22,30,0.65)] dark:hover:bg-[#AEC3B0] dark:hover:text-[#01161E]"
+        className="h-11 shrink-0 whitespace-nowrap border-4 border-black bg-black px-2 py-1 !text-xs font-bold text-white shadow-[3px_3px_0_black] hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-45 max-[374px]:!text-[10px] md:px-4 md:py-2 md:!text-sm md:shadow-[4px_4px_0_black] dark:border dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)] dark:shadow-[inset_0_0_10px_rgba(251,191,36,0.1),0_0_12px_rgba(6,20,27,0.65)] dark:hover:bg-[var(--ink)] dark:hover:text-[var(--accent-ink)]"
       >
         <span className="md:hidden">[ JOIN ]</span>
         <span className="hidden md:inline">[ INITIATE UPLINK ]</span>

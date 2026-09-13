@@ -417,7 +417,7 @@ export const InvestigationPinMarker = memo(function InvestigationPinMarker({
           event.stopPropagation();
           if (!placementActive) onSelect(pin.id);
         }}
-        className={`fatal-investigation-pin grid min-h-0 w-12 place-items-center focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FCD34D] ${selected ? "is-selected" : ""}`}
+        className={`fatal-investigation-pin grid min-h-0 w-12 place-items-center focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--accent)] ${selected ? "is-selected" : ""}`}
       >
         <span
           className="grid h-7 w-7 rotate-45 place-items-center border-2 bg-[var(--panel)] shadow-[2px_2px_0_rgba(0,0,0,0.55)]"
@@ -441,10 +441,10 @@ export const InvestigationPinMarker = memo(function InvestigationPinMarker({
 export function TemporaryInvestigationPinMarker() {
   return (
     <div className="fatal-pin-placement-marker relative grid h-14 w-14 place-items-center" aria-label="Temporary investigation pin">
-      <span className="absolute inset-1 rounded-full border-2 border-[#FCD34D]" />
-      <span className="absolute h-full w-px bg-[#FCD34D]" />
-      <span className="absolute h-px w-full bg-[#FCD34D]" />
-      <span className="relative h-5 w-5 rotate-45 border-2 border-black bg-[#FCD34D] shadow-[2px_2px_0_black]" />
+      <span className="absolute inset-1 rounded-full border-2 border-[var(--accent)]" />
+      <span className="absolute h-full w-px bg-[var(--accent)]" />
+      <span className="absolute h-px w-full bg-[var(--accent)]" />
+      <span className="relative h-5 w-5 rotate-45 border-2 border-[var(--ink)] bg-[var(--accent)] shadow-[2px_2px_0_var(--ink)]" />
     </div>
   );
 }

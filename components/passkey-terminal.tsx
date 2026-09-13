@@ -1,4 +1,5 @@
 "use client";
+import { safeReturnPath } from "@/lib/public-access";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
@@ -31,15 +32,15 @@ import {
 
 const panel =
   "border-4 border-black bg-white shadow-[8px_8px_0_black] " +
-  "dark:border-[#EAE5C9] dark:bg-[#132E3A] dark:shadow-[8px_8px_0_#EAE5C9]";
+  "dark:border-[var(--line)] dark:bg-[var(--panel)] dark:shadow-[8px_8px_0_var(--ink)]";
 
 const physicalButton =
   "border-4 border-black bg-white text-black shadow-[6px_6px_0_black] " +
   "transition-[transform,box-shadow,background-color,color] duration-150 hover:bg-black hover:text-white " +
   "focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-[#D22B2B] " +
   "active:translate-x-[6px] active:translate-y-[6px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-55 " +
-  "dark:border-[#EAE5C9] dark:bg-[#132E3A] dark:text-[#EAE5C9] " +
-  "dark:shadow-[6px_6px_0_#EAE5C9] dark:hover:bg-[#EAE5C9] dark:hover:text-[#06141B]";
+  "dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] " +
+  "dark:shadow-[6px_6px_0_var(--ink)] dark:hover:bg-[var(--ink)] dark:hover:text-[var(--accent-ink)]";
 
 const orderedStates: AuthVisualState[] = [
   "idle",
@@ -210,7 +211,7 @@ export function PasskeyTerminal() {
         );
         if (!componentActive.current) return;
         setProfile(existingProfile);
-        router.replace("/dashboard");
+        router.replace(safeReturnPath(new URLSearchParams(window.location.search).get("next")));
       } catch {
         await supabase.auth.signOut();
       }
@@ -312,7 +313,7 @@ export function PasskeyTerminal() {
       if (!reduceMotion) playVerifiedTone();
 
       redirectTimer.current = window.setTimeout(
-        () => router.replace("/dashboard"),
+        () => router.replace(safeReturnPath(new URLSearchParams(window.location.search).get("next"))),
         reduceMotion ? 250 : 850,
       );
     } catch (error) {
@@ -343,10 +344,10 @@ export function PasskeyTerminal() {
   })();
 
   return (
-    <main className="login-terminal min-h-screen w-full bg-[#F4F4F0] bg-[radial-gradient(#000000_1px,transparent_1px)] [background-size:24px_24px] font-mono uppercase tracking-[0.18em] text-black dark:bg-[#06141B] dark:bg-[radial-gradient(#EAE5C9_1px,transparent_1px)] dark:[background-size:24px_24px] dark:text-[#EAE5C9]">
+    <main className="login-terminal min-h-screen w-full bg-[#F4F4F0] bg-[radial-gradient(#000000_1px,transparent_1px)] [background-size:24px_24px] font-mono uppercase tracking-[0.18em] text-black dark:bg-[var(--paper)] dark:bg-[radial-gradient(var(--ink)_1px,transparent_1px)] dark:[background-size:24px_24px] dark:text-[var(--ink)]">
       <div className="mx-auto flex min-h-dvh max-w-6xl flex-col justify-center gap-5 px-3 py-5 sm:gap-8 sm:px-8 sm:py-10">
         <div className="flex items-center justify-between gap-4 text-[10px] font-bold">
-          <span className="bg-[#F4F4F0] px-2 py-1 tracking-[0.24em] dark:bg-[#06141B] sm:tracking-[0.32em]">
+          <span className="bg-[#F4F4F0] px-2 py-1 tracking-[0.24em] dark:bg-[var(--paper)] sm:tracking-[0.32em]">
             SECURE // {isDark ? "EVIDENCE-LOCKER" : "EVIDENCE-BOARD"} MODE
           </span>
           <button
@@ -368,7 +369,7 @@ export function PasskeyTerminal() {
           <section className={`flex flex-col gap-5 p-4 sm:gap-6 sm:p-8 ${panel}`}>
             <header className="flex flex-col gap-3">
               <div className="flex items-center gap-2 text-[9px] font-bold">
-                <span className="inline-block h-2 w-2 bg-black dark:bg-[#EAE5C9]" />
+                <span className="inline-block h-2 w-2 bg-black dark:bg-[var(--ink)]" />
                 SECURE LINK // ROOT ACCESS // LOGIN
               </div>
               <h1 className="font-serif text-2xl font-black leading-[0.95] tracking-[-0.035em] sm:text-4xl">
@@ -393,7 +394,7 @@ export function PasskeyTerminal() {
                 : "[ VERIFY WITH PASSKEY ]"}
             </button>
 
-            <p className="border-2 border-dashed border-black bg-white px-4 py-3 text-[9px] font-bold leading-5 dark:border-[#EAE5C9] dark:bg-[#132E3A]">
+            <p className="border-2 border-dashed border-black bg-white px-4 py-3 text-[9px] font-bold leading-5 dark:border-[var(--line)] dark:bg-[var(--panel)]">
               PUBLIC-KEY AUTHENTICATION
               <br />
               YOUR AUTHENTICATOR WILL REQUEST LOCAL IDENTITY VERIFICATION.
@@ -401,12 +402,12 @@ export function PasskeyTerminal() {
 
             <div className="flex flex-col gap-2 text-[10px] font-bold">
               <span>AGENT IDENTIFICATION</span>
-              <div className="min-h-12 border-4 border-black bg-white px-3 py-3 text-sm font-bold tracking-[0.16em] dark:border-[#EAE5C9] dark:bg-[#06141B]">
+              <div className="min-h-12 border-4 border-black bg-white px-3 py-3 text-sm font-bold tracking-[0.16em] dark:border-[var(--line)] dark:bg-[var(--paper)]">
                 {profile ? `AGENT // ${profile.agent_id}` : "RESOLVED AFTER AUTHENTICATION"}
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-4 border-4 border-black px-4 py-3 text-[11px] font-bold dark:border-[#EAE5C9]">
+            <div className="flex items-center justify-between gap-4 border-4 border-black px-4 py-3 text-[11px] font-bold dark:border-[var(--line)]">
               <span className="flex items-center gap-2">
                 {profile ? (
                   <ShieldCheck className="h-4 w-4" />
@@ -421,7 +422,7 @@ export function PasskeyTerminal() {
             </div>
 
             <div
-              className="min-h-12 border-l-4 border-black pl-4 text-[9px] font-bold leading-5 dark:border-[#EAE5C9]"
+              className="min-h-12 border-l-4 border-black pl-4 text-[9px] font-bold leading-5 dark:border-[var(--line)]"
               role="status"
               aria-live="polite"
               aria-atomic="true"
@@ -441,7 +442,7 @@ export function PasskeyTerminal() {
             </div>
 
             {process.env.NODE_ENV === "development" ? (
-              <div className="flex flex-col gap-2 border-t-4 border-dashed border-black pt-4 dark:border-[#EAE5C9]">
+              <div className="flex flex-col gap-2 border-t-4 border-dashed border-black pt-4 dark:border-[var(--line)]">
                 <span className="text-[9px] font-bold opacity-60">
                   // DEV VISUAL PREVIEW ONLY
                 </span>
@@ -468,12 +469,12 @@ export function PasskeyTerminal() {
 
           <section className="flex flex-col gap-6">
             <div className={`relative aspect-square w-full overflow-hidden p-1 max-[370px]:aspect-[4/5] ${panel}`}>
-              <div className="relative flex h-full w-full flex-col overflow-hidden bg-white p-5 dark:bg-[#06141B] sm:p-10">
+              <div className="relative flex h-full w-full flex-col overflow-hidden bg-white p-5 dark:bg-[var(--paper)] sm:p-10">
                 {["left-3 top-3", "right-3 top-3", "left-3 bottom-3", "right-3 bottom-3"].map(
                   (position, index) => (
                     <span
                       key={position}
-                      className={`absolute h-7 w-7 border-black dark:border-[#EAE5C9] ${position} ${
+                      className={`absolute h-7 w-7 border-black dark:border-[var(--line)] ${position} ${
                         index < 2 ? "border-t-4" : "border-b-4"
                       } ${index % 2 === 0 ? "border-l-4" : "border-r-4"}`}
                     />
@@ -559,7 +560,7 @@ export function PasskeyTerminal() {
                 <span>{progress}%</span>
               </div>
               <div
-                className="grid h-6 grid-cols-10 gap-1 border-4 border-black bg-white p-1 dark:border-[#EAE5C9] dark:bg-[#06141B]"
+                className="grid h-6 grid-cols-10 gap-1 border-4 border-black bg-white p-1 dark:border-[var(--line)] dark:bg-[var(--paper)]"
                 role="progressbar"
                 aria-label="Authentication sequence"
                 aria-valuemin={0}
@@ -571,8 +572,8 @@ export function PasskeyTerminal() {
                     key={index}
                     className={
                       index < Math.ceil(progress / 10)
-                        ? "bg-black dark:bg-[#EAE5C9]"
-                        : "bg-black/10 dark:bg-[#EAE5C9]/10"
+                        ? "bg-black dark:bg-[var(--ink)]"
+                        : "bg-black/10 dark:bg-[var(--ink)]/10"
                     }
                   />
                 ))}

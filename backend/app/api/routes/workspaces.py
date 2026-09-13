@@ -47,6 +47,7 @@ def _require_case_access(repository: InvestigationRepository, profile: Authorize
         user_clearance=profile.clearance_level,
         classification=investigation["classification"],
         is_demo=investigation["isDemo"],
+        membership_required=profile.public_account or investigation.get("accessMode") == "private",
         has_explicit_access=repository.has_explicit_access(investigation_id, profile.user_id),
     ):
         raise HTTPException(status_code=403, detail={"code": "INVESTIGATION_ACCESS_DENIED", "message": "Your role or clearance does not permit this investigation."})
@@ -60,6 +61,7 @@ def _workspace_or_404(repository: InvestigationRepository, profile: AuthorizedPr
     workspace = repository.get_graph_workspace(workspace_id, profile.user_id)
     if not workspace:
         raise HTTPException(status_code=404, detail={"code": "WORKSPACE_NOT_FOUND", "message": "Workspace not found."})
+    _require_case_access(repository, profile, workspace["investigation_id"])
     return workspace
 
 
@@ -100,6 +102,7 @@ def get_workspace(
     workspace = repository.get_graph_workspace(workspace_id, profile.user_id)
     if not workspace:
         raise HTTPException(status_code=404, detail={"code": "WORKSPACE_NOT_FOUND", "message": "Workspace not found."})
+    _require_case_access(repository, profile, workspace["investigation_id"])
     return GraphWorkspace.model_validate(workspace)
 
 
@@ -114,12 +117,16 @@ def save_workspace(
         raise HTTPException(status_code=422, detail={"code": "WORKSPACE_ID_MISMATCH", "message": "Workspace identifiers do not match."})
     _require_case_access(repository, profile, payload.investigation_id)
     existing = repository.get_graph_workspace(workspace_id, profile.user_id)
+    if existing and existing["investigation_id"] != payload.investigation_id:
+        raise HTTPException(422, detail={"code":"WORKSPACE_CASE_MISMATCH", "message":"A workspace cannot change investigations."})
     if existing and payload.version < existing["version"]:
         raise HTTPException(status_code=409, detail={"code": "WORKSPACE_VERSION_CONFLICT", "message": "A newer workspace version is already stored."})
     try:
         workspace = repository.save_graph_workspace(payload.model_dump(mode="json"), profile.user_id)
     except PermissionError as error:
         raise HTTPException(status_code=404, detail={"code": "WORKSPACE_NOT_FOUND", "message": "Workspace not found."}) from error
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail={"code":"WORKSPACE_VERSION_CONFLICT", "message":"A newer workspace version is already stored. Reload before editing."}) from error
     if not existing:
         _audit(repository, profile, "WORKSPACE_CREATED", workspace_id, payload.investigation_id)
     old_nodes = {str(item["id"]): item for item in (existing or {}).get("nodes", [])}
@@ -181,6 +188,7 @@ def delete_workspace(
     workspace = repository.get_graph_workspace(workspace_id, profile.user_id)
     if not workspace:
         raise HTTPException(status_code=404, detail={"code": "WORKSPACE_NOT_FOUND", "message": "Workspace not found."})
+    _require_case_access(repository, profile, workspace["investigation_id"])
     if not repository.delete_graph_workspace(workspace_id, profile.user_id):
         raise HTTPException(status_code=404, detail={"code": "WORKSPACE_NOT_FOUND", "message": "Workspace not found."})
     _audit(repository, profile, "WORKSPACE_DELETED", workspace_id, workspace["investigation_id"])

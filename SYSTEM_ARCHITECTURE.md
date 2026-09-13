@@ -586,3 +586,11 @@ fixture-oriented parser supports safe demos without inventing absent entities.
 Original files are stored in the configured pilot storage directory; production
 deployment requires managed encrypted object storage, malware scanning, durable
 workers, retention controls, and operational review.
+
+## Public entry and membership-scoped cases (September 2026)
+
+The public archive, allowlisted read-only snapshot routes, verified onboarding RPC, private case
+creation, account-scoped graph persistence and isolated Liveblocks authentication are described in
+[the implementation notes](docs/PUBLIC_ENTRY_IMPLEMENTATION.md). They supersede the earlier
+invite-only enrollment, development bypass and unauthenticated uplink descriptions. Legacy
+collaboration room IDs and contents remain unchanged; new private rooms use a separate project.

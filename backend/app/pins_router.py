@@ -12,10 +12,12 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from .api.dependencies import (
     get_runtime_settings,
+    get_repository,
     require_active_profile,
     require_investigation_access,
 )
 from .core.config import Settings
+from .services.repository import InvestigationRepository
 from .schemas.auth import AuthorizedProfile
 
 
@@ -243,8 +245,16 @@ def _validate_links(
     linked_evidence_id: str | None,
     linked_suspect_id: str | None,
     linked_timeline_event_id: str | None,
+    repository: InvestigationRepository | None = None,
 ) -> None:
-    catalog = CASE_LINK_CATALOG[investigation_id]
+    catalog = CASE_LINK_CATALOG.get(investigation_id, {"evidence": set(), "suspect": set(), "timeline": set()})
+    if repository is not None:
+        facts, _ = repository.get_facts(investigation_id, limit=10000)
+        catalog = {
+            "evidence": catalog["evidence"] | {item["id"] for item in facts},
+            "suspect": catalog["suspect"] | {item["id"] for item in repository.get_network(investigation_id)["nodes"]},
+            "timeline": catalog["timeline"] | {item["id"] for item in repository.get_timeline(investigation_id)["events"]},
+        }
     candidates = (
         ("Linked evidence", linked_evidence_id, "evidence"),
         ("Linked suspect", linked_suspect_id, "suspect"),
@@ -324,6 +334,7 @@ def build_pins_router() -> APIRouter:
         _investigation: dict = Depends(require_investigation_access),
         profile: AuthorizedProfile = Depends(require_active_profile),
         settings: Settings = Depends(get_runtime_settings),
+        repository: InvestigationRepository = Depends(get_repository),
     ) -> list[InvestigationPin]:
         try:
             with psycopg.connect(_database_url(settings), row_factory=dict_row) as connection:
@@ -350,6 +361,7 @@ def build_pins_router() -> APIRouter:
         _investigation: dict = Depends(require_investigation_access),
         profile: AuthorizedProfile = Depends(require_active_profile),
         settings: Settings = Depends(get_runtime_settings),
+        repository: InvestigationRepository = Depends(get_repository),
     ) -> InvestigationPin:
         _require_write_access(profile)
         _validate_links(
@@ -357,6 +369,7 @@ def build_pins_router() -> APIRouter:
             payload.linked_evidence_id,
             payload.linked_suspect_id,
             payload.linked_timeline_event_id,
+            repository,
         )
 
         try:
@@ -423,6 +436,7 @@ def build_pins_router() -> APIRouter:
         _investigation: dict = Depends(require_investigation_access),
         profile: AuthorizedProfile = Depends(require_active_profile),
         settings: Settings = Depends(get_runtime_settings),
+        repository: InvestigationRepository = Depends(get_repository),
     ) -> InvestigationPin:
         _require_write_access(profile)
 
@@ -450,6 +464,7 @@ def build_pins_router() -> APIRouter:
                             "linked_timeline_event_id",
                             existing.linked_timeline_event_id,
                         ),
+                        repository,
                     )
                     columns = {
                         "title": "title",
@@ -492,6 +507,7 @@ def build_pins_router() -> APIRouter:
         _investigation: dict = Depends(require_investigation_access),
         profile: AuthorizedProfile = Depends(require_active_profile),
         settings: Settings = Depends(get_runtime_settings),
+        repository: InvestigationRepository = Depends(get_repository),
     ) -> Response:
         _require_write_access(profile)
 

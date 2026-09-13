@@ -1,0 +1,10 @@
+{
+  "fixture": "synthetic-gap-cameras-v1",
+  "investigationId": "demo",
+  "notice": "Synthetic local interaction fixtures. These are not historical cameras or evidence.",
+  "cameras": [
+    {"id":"10000000-0000-4000-8000-000000000001","label":"SYNTHETIC // Platform 9 North","latitude":41.8840,"longitude":-87.6285,"sourceRef":"SYNTHETIC-GAP-CAMERA-001","recordingAvailability":"UNKNOWN","retentionInformation":"Synthetic fixture; availability unknown."},
+    {"id":"10000000-0000-4000-8000-000000000002","label":"SYNTHETIC // Canal Concourse","latitude":41.8750,"longitude":-87.6287,"sourceRef":"SYNTHETIC-GAP-CAMERA-002","recordingAvailability":"UNKNOWN","retentionInformation":"Synthetic fixture; availability unknown."},
+    {"id":"10000000-0000-4000-8000-000000000003","label":"SYNTHETIC // Annex Approach","latitude":41.8795,"longitude":-87.6209,"sourceRef":"SYNTHETIC-GAP-CAMERA-003","recordingAvailability":"UNKNOWN","retentionInformation":"Synthetic fixture; availability unknown."}
+  ]
+}

@@ -120,6 +120,12 @@ GET /api/v1/investigations/{investigation_id}/search?q=
 GET /api/v1/investigations/{investigation_id}/activity
 GET /api/v1/investigations/{investigation_id}/status
 POST /api/v1/investigations/{investigation_id}/reports
+GET|POST /api/v1/investigations/{investigation_id}/cameras
+PATCH /api/v1/investigations/{investigation_id}/cameras/{camera_id}
+POST /api/v1/investigations/{investigation_id}/gap-reconstructions/preview
+GET|POST /api/v1/investigations/{investigation_id}/gap-reconstructions
+GET /api/v1/investigations/{investigation_id}/gap-reconstructions/{run_id}
+PATCH /api/v1/investigations/{investigation_id}/gap-reconstructions/{run_id}/cameras/{camera_id}/review
 ```
 
 The final audit route requires a supervisor or administrator role. Every
@@ -199,3 +205,32 @@ The authority boundary is enforced server-side: extraction writes only
 separate idempotent commit endpoint may write reviewed records into canonical
 entities, locations, timeline events, relationships, and facts. The feature is
 a pilot and does not claim legal chain-of-custody certification.
+
+## Gap Reconstruction
+
+Gap Reconstruction stores camera inventory, immutable calculation snapshots,
+and per-camera review workflows separately from canonical case data. The model
+uses straight-line geodesic reachability; it does not claim a road route, an
+actual sighting, camera field of view, footage availability, or guilt.
+
+Optional demonstration cameras are in
+`backend/fixtures/synthetic_gap_cameras.json`. They are never loaded
+automatically and are clearly synthetic. After applying migrations to a local
+database, load them idempotently with:
+
+```bash
+backend/.venv/bin/python backend/scripts/load_synthetic_gap_cameras.py --actor-user-id <local-profile-user-uuid>
+```
+
+The loader refuses non-local database hosts. No camera fixtures are provided
+for the Mumbai 26/11 investigation.
+
+## Public onboarding and private cases
+
+`POST /api/v1/investigations` now creates a server-identified empty case and explicit owner membership
+in one transaction, with an owner-scoped `requestId` for retries. New public profiles and private
+cases require membership rather than clearance fallback. `POST /api/v1/collaboration/auth` checks
+Supabase identity, membership and the exact room mapping; its secret must belong to a separate
+Liveblocks project with public authentication disabled. See the
+[operator configuration and verification notes](../docs/PUBLIC_ENTRY_IMPLEMENTATION.md).
+The new migration is additive; do not reset or reseed to enable this feature.

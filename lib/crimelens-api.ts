@@ -33,6 +33,13 @@ import type {
   InvestigationStatus,
   ReportDraft,
 } from "@/lib/evidence-types";
+import type {
+  CameraReviewStatus,
+  GapCamera,
+  GapCameraReview,
+  GapPreview,
+  GapRequest,
+} from "@/lib/gap-reconstruction";
 
 const apiBase = (
   process.env.NEXT_PUBLIC_CRIMELENS_API_URL ?? "http://localhost:8000"
@@ -76,7 +83,7 @@ type FactsResponse = {
   offset: number;
 };
 
-async function accessToken(): Promise<string> {
+async function accessToken(expectedUserId?: string): Promise<string> {
   if (!isSupabaseBrowserConfigured) {
     throw new CrimeLensApiError(
       "Supabase Auth is not configured.",
@@ -92,6 +99,7 @@ async function accessToken(): Promise<string> {
       401,
     );
   }
+  if (expectedUserId && data.session.user.id !== expectedUserId) throw new CrimeLensApiError("The active account changed. Reload this workspace.", "ACCOUNT_CHANGED", 401);
   return data.session.access_token;
 }
 
@@ -127,8 +135,9 @@ async function mutate<T>(
   method: "POST" | "PATCH" | "DELETE",
   body?: unknown,
   signal?: AbortSignal,
+  expectedUserId?: string,
 ): Promise<T> {
-  const token = await accessToken();
+  const token = await accessToken(expectedUserId);
   const response = await fetch(`${apiBase}${path}`, {
     method,
     signal,
@@ -326,6 +335,67 @@ export async function getInvestigationBundle(
   };
 }
 
+export function listGapCameras(
+  investigationId: InvestigationId,
+  signal?: AbortSignal,
+) {
+  return request<GapCamera[]>(
+    `/api/v1/investigations/${encodeURIComponent(investigationId)}/cameras`,
+    signal,
+  );
+}
+
+export function previewGapReconstruction(
+  investigationId: InvestigationId,
+  payload: GapRequest,
+  signal?: AbortSignal,
+) {
+  return mutate<GapPreview>(
+    `/api/v1/investigations/${encodeURIComponent(investigationId)}/gap-reconstructions/preview`,
+    "POST",
+    payload,
+    signal,
+  );
+}
+
+export function saveGapReconstruction(
+  investigationId: InvestigationId,
+  payload: GapRequest,
+  signal?: AbortSignal,
+) {
+  return mutate<GapPreview>(
+    `/api/v1/investigations/${encodeURIComponent(investigationId)}/gap-reconstructions`,
+    "POST",
+    payload,
+    signal,
+  );
+}
+
+export function listGapReconstructions(
+  investigationId: InvestigationId,
+  signal?: AbortSignal,
+) {
+  return request<GapPreview[]>(
+    `/api/v1/investigations/${encodeURIComponent(investigationId)}/gap-reconstructions`,
+    signal,
+  );
+}
+
+export function updateGapCameraReview(
+  investigationId: InvestigationId,
+  runId: string,
+  cameraId: string,
+  payload: { status: CameraReviewStatus; notes: string; evidenceId?: string },
+  signal?: AbortSignal,
+) {
+  return mutate<GapCameraReview>(
+    `/api/v1/investigations/${encodeURIComponent(investigationId)}/gap-reconstructions/${encodeURIComponent(runId)}/cameras/${encodeURIComponent(cameraId)}/review`,
+    "PATCH",
+    payload,
+    signal,
+  );
+}
+
 export function getGraphWorkspaces(
   investigationId: InvestigationId,
   signal?: AbortSignal,
@@ -360,12 +430,14 @@ export function saveGraphWorkspace(
   workspaceId: string,
   payload: GraphWorkspace,
   signal?: AbortSignal,
+  expectedUserId?: string,
 ) {
   return mutate<GraphWorkspace>(
     `/api/v1/workspaces/${encodeURIComponent(workspaceId)}`,
     "PATCH",
     payload,
     signal,
+    expectedUserId,
   );
 }
 
@@ -567,4 +639,11 @@ export function generateCaseBrief(
     { include },
     signal,
   );
+}
+
+export function createPrivateInvestigation(payload: { name: string; description: string; requestId: string }) {
+  return mutate<InvestigationDetail>("/api/v1/investigations", "POST", payload);
+}
+export function authorizePrivateRoom(investigationId: string, room: string) {
+  return mutate<{token:string}>("/api/v1/collaboration/auth", "POST", { investigationId, room });
 }

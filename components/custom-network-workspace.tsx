@@ -1,4 +1,7 @@
 "use client";
+import { useAccountId } from "@/components/authenticated-workspace";
+import { networkStorageKey } from "@/lib/public-access";
+import { duplicateGraphWorkspace } from "@/lib/network-workspace-persistence";
 
 import dagre from "@dagrejs/dagre";
 import {
@@ -24,9 +27,10 @@ import {
   Bot,
   Building2,
   Car,
-  ChevronLeft,
-  ChevronRight,
+  ChevronDown,
   CircleUserRound,
+  Copy,
+  Ellipsis,
   FileText,
   Focus,
   GitBranchPlus,
@@ -36,6 +40,10 @@ import {
   MapPin,
   Network,
   NotebookPen,
+  PanelRight,
+  Pencil,
+  Pin,
+  PinOff,
   Phone,
   Plus,
   Radio,
@@ -56,8 +64,10 @@ import {
   useRef,
   useState,
   type ComponentType,
+  type CSSProperties,
   type DragEvent,
   type FormEvent,
+  type ReactNode,
 } from "react";
 import { getInvestigation } from "@/data/investigations/registry";
 import type {
@@ -133,6 +143,7 @@ type EditorState =
   | { kind: "snapshots" }
   | { kind: "snapshot" }
   | { kind: "analysis" }
+  | { kind: "conflicts" }
   | null;
 
 type InspectorTab = "details" | "basis" | "connections" | "conflicts" | "ai";
@@ -171,7 +182,9 @@ const graphKindToWorkspaceType: Record<GraphNodeKind, WorkspaceNodeType> = {
 const fieldClass =
   "min-h-10 w-full border-2 border-[var(--ink)] bg-[var(--panel)] px-3 py-2 font-mono text-xs font-bold text-[var(--ink)] outline-none focus:shadow-[3px_3px_0_var(--danger)]";
 const buttonClass =
-  "min-h-10 border-2 border-[var(--ink)] bg-[var(--panel)] px-3 py-2 font-mono text-[10px] font-black uppercase text-[var(--ink)] shadow-[3px_3px_0_var(--ink)] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:cursor-not-allowed disabled:opacity-35";
+  "fatal-raised-control min-h-10 px-3 py-2 font-mono text-[10px] font-black uppercase";
+const toolbarButtonClass =
+  "fatal-raised-control flex min-h-9 shrink-0 items-center justify-center gap-1.5 px-2.5 font-mono text-[9px] font-black uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--danger)]";
 
 function id() {
   return crypto.randomUUID();
@@ -369,6 +382,15 @@ function Modal({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const returnFocus = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    returnFocus.current = document.activeElement as HTMLElement | null;
+    return () => {
+      if (returnFocus.current?.isConnected) returnFocus.current.focus();
+    };
+  }, []);
+
   return (
     <div
       className="absolute inset-0 z-[90] grid place-items-center bg-black/55 p-3"
@@ -398,6 +420,46 @@ function Modal({
   );
 }
 
+function WorkspaceSidePanel({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const returnFocus = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    returnFocus.current = document.activeElement as HTMLElement | null;
+    return () => {
+      if (returnFocus.current?.isConnected) returnFocus.current.focus();
+    };
+  }, []);
+
+  return (
+    <aside
+      role="dialog"
+      aria-label={title}
+      className="absolute inset-0 z-[70] flex min-h-0 flex-col border-0 border-[var(--ink)] bg-[var(--paper)] text-[var(--ink)] shadow-none sm:bottom-3 sm:left-auto sm:right-3 sm:top-[calc(var(--network-toolbar-height)+0.75rem)] sm:w-[min(390px,calc(100%-1.5rem))] sm:border-2 sm:shadow-[5px_5px_0_var(--ink)]"
+    >
+      <header className="flex min-h-12 shrink-0 items-center justify-between gap-3 border-b-2 border-[var(--ink)] bg-[var(--ink)] px-3 text-[var(--paper)]">
+        <h3 className="font-serif text-lg font-black">{title}</h3>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={`Close ${title}`}
+          className="grid h-9 w-9 place-items-center border-2 border-current"
+        >
+          <X size={17} />
+        </button>
+      </header>
+      <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+    </aside>
+  );
+}
+
 function EmptyState({
   onNode,
   onCase,
@@ -407,22 +469,24 @@ function EmptyState({
 }) {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center p-6">
-      <div className="pointer-events-auto max-w-sm border-4 border-[var(--ink)] bg-[var(--paper)] p-6 text-center font-mono uppercase text-[var(--ink)] shadow-[7px_7px_0_var(--ink)]">
-        <Network className="mx-auto mb-3" size={32} strokeWidth={3} />
-        <p className="font-serif text-2xl font-black">No entities on canvas</p>
-        <p className="mt-2 text-[10px] font-bold opacity-65">
-          Build a theory from scratch or reference verified case data.
+      <div className="pointer-events-auto max-w-md border-2 border-[var(--ink)] bg-[var(--paper)] p-5 text-left font-mono text-[var(--ink)] shadow-[3px_3px_0_var(--ink)]">
+        <Network className="mb-3" size={26} strokeWidth={2.5} />
+        <p className="font-serif text-xl font-black">
+          Start your investigation workspace
         </p>
-        <div className="mt-5 grid gap-2 sm:grid-cols-2">
-          <button type="button" onClick={onNode} className={buttonClass}>
-            + First Node
-          </button>
+        <p className="mt-2 text-[11px] font-bold leading-relaxed opacity-65">
+          Add existing case evidence or create your first entity.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
             onClick={onCase}
             className={`${buttonClass} !bg-[var(--accent)]`}
           >
-            Add From Case
+            Add from case
+          </button>
+          <button type="button" onClick={onNode} className={buttonClass}>
+            Create entity
           </button>
         </div>
       </div>
@@ -432,9 +496,24 @@ function EmptyState({
 
 function CustomNetworkWorkspaceInner({
   investigationId,
+  toolbarLeading,
+  focusControl,
+  isFocusMode,
+  focusToolsExpanded,
+  focusToolsControl,
 }: {
   investigationId: InvestigationId;
+  toolbarLeading: ReactNode;
+  focusControl: ReactNode;
+  isFocusMode: boolean;
+  focusToolsExpanded: boolean;
+  focusToolsControl: ReactNode;
 }) {
+  const accountId = useAccountId();
+  const savedFingerprints = useRef(new Map<string, string>());
+  const savedVersions = useRef(new Map<string, number>());
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const [saveAttempt, setSaveAttempt] = useState(0);
   const investigation = getInvestigation(investigationId);
   const setActiveWorkspace = useInvestigationStore(
     (state) => state.setActiveWorkspace,
@@ -456,11 +535,20 @@ function CustomNetworkWorkspaceInner({
   const [workspaces, setWorkspaces] = useState<GraphWorkspace[]>([]);
   const [activeId, setActiveId] = useState("");
   const [hydrated, setHydrated] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "local">(
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "local" | "error">(
     "saved",
   );
   const [editor, setEditor] = useState<EditorState>(null);
-  const [libraryOpen, setLibraryOpen] = useState(true);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [libraryPinned, setLibraryPinned] = useState(() =>
+    typeof window === "undefined"
+      ? false
+      : localStorage.getItem("crimelens-network-library-pinned") === "true",
+  );
+  const [libraryQuery, setLibraryQuery] = useState("");
+  const [openMenu, setOpenMenu] = useState<
+    "workspace" | "add" | "panels" | "more" | null
+  >(null);
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [caseQuery, setCaseQuery] = useState("");
@@ -488,6 +576,16 @@ function CustomNetworkWorkspaceInner({
     Edge<WorkspaceEdgeData>
   > | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [toolbarElement, setToolbarElement] = useState<HTMLDivElement | null>(
+    null,
+  );
+  const [toolbarHeight, setToolbarHeight] = useState(48);
+  const workspaceMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const addTriggerRef = useRef<HTMLButtonElement>(null);
+  const panelsMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const moreMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const previousOpenMenu = useRef<typeof openMenu>(null);
+  const previousLibraryOpen = useRef(libraryOpen);
   const dragStart = useRef<HistorySnapshot | null>(null);
   const processedRequest = useRef(0);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -508,55 +606,69 @@ function CustomNetworkWorkspaceInner({
   latestHydrated.current = hydrated;
 
   useEffect(() => {
-    let cancelled = false;
-    const storageKey = `crimelens-network-workspaces:${investigationId}`;
-    const raw = localStorage.getItem(storageKey);
-    let local: GraphWorkspace[] = [];
-    try {
-      local = raw
-        ? (JSON.parse(raw) as GraphWorkspace[]).map((workspace) =>
-            normalizeWorkspace(workspace, investigation),
-          )
-        : [];
-    } catch {
-      local = [];
-    }
-    if (!local.length) local = [createBlankWorkspace(investigationId)];
-    setWorkspaces(local);
-    const savedActiveId = localStorage.getItem(`${storageKey}:active`);
-    setActiveId(
-      local.some((workspace) => workspace.id === savedActiveId)
-        ? savedActiveId!
-        : local[0].id,
+    if (!toolbarElement) return;
+    const updateHeight = () => setToolbarHeight(toolbarElement.offsetHeight);
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(toolbarElement);
+    return () => observer.disconnect();
+  }, [toolbarElement]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      "crimelens-network-library-pinned",
+      String(libraryPinned),
     );
-    setHydrated(true);
-    if (isSupabaseBrowserConfigured) {
-      void getGraphWorkspaces(investigationId)
-        .then(async (summaries) =>
-          Promise.all(summaries.map((item) => getGraphWorkspace(item.id))),
-        )
-        .then((remote) => {
-          if (!cancelled && remote.length) {
-            setWorkspaces(
-              remote.map((workspace) =>
-                normalizeWorkspace(workspace, investigation),
-              ),
-            );
-            setActiveId(remote[0].id);
-          }
-        })
-        .catch(() => setSaveStatus("local"));
-    } else {
-      setSaveStatus("local");
-    }
-    return () => {
-      cancelled = true;
-    };
-  }, [investigation, investigationId]);
+    if (libraryPinned) setLibraryOpen(true);
+  }, [libraryPinned]);
+
+  useEffect(() => {
+    const previous = previousOpenMenu.current;
+    previousOpenMenu.current = openMenu;
+    if (!previous || openMenu || editor) return;
+    const trigger =
+      previous === "workspace"
+        ? workspaceMenuTriggerRef.current
+        : previous === "panels"
+          ? panelsMenuTriggerRef.current
+          : previous === "more"
+            ? moreMenuTriggerRef.current
+            : null;
+    requestAnimationFrame(() => trigger?.focus());
+  }, [editor, openMenu]);
+
+  useEffect(() => {
+    const wasOpen = previousLibraryOpen.current;
+    previousLibraryOpen.current = libraryOpen;
+    if (!wasOpen || libraryOpen || editor) return;
+    requestAnimationFrame(() => addTriggerRef.current?.focus());
+  }, [editor, libraryOpen]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setHydrated(false);
+    setWorkspaces([]);
+    // Authenticate and load the server first. Never import unclaimed legacy storage.
+    void getGraphWorkspaces(investigationId)
+      .then(summaries => Promise.all(summaries.map(item => getGraphWorkspace(item.id))))
+      .then(remote => {
+        if (cancelled) return;
+        const items = remote.length ? remote.map(workspace => normalizeWorkspace(workspace, investigation)) : [createBlankWorkspace(investigationId)];
+        for (const item of items) {
+          if (remote.some(record => record.id === item.id)) savedFingerprints.current.set(item.id, JSON.stringify(item));
+          savedVersions.current.set(item.id, item.version);
+        }
+        setWorkspaces(items);
+        const savedId = localStorage.getItem(`${networkStorageKey(accountId, investigationId)}:active`);
+        setActiveId(items.some(item => item.id === savedId) ? savedId! : items[0].id);
+        setHydrated(true);
+      }).catch(() => { if (!cancelled) setSaveStatus("error"); });
+    return () => { cancelled = true; };
+  }, [accountId, investigation, investigationId]);
 
   useEffect(() => {
     if (!hydrated || !workspaces.length) return;
-    const storageKey = `crimelens-network-workspaces:${investigationId}`;
+    const storageKey = networkStorageKey(accountId, investigationId);
     if (persistenceTimer.current) clearTimeout(persistenceTimer.current);
     if (saveTimer.current) clearTimeout(saveTimer.current);
     setSaveStatus(isSupabaseBrowserConfigured ? "saving" : "local");
@@ -564,21 +676,34 @@ function CustomNetworkWorkspaceInner({
       localStorage.setItem(storageKey, JSON.stringify(workspaces));
       localStorage.setItem(`${storageKey}:active`, activeId);
     }, 250);
-    if (current && isSupabaseBrowserConfigured) {
-      saveTimer.current = setTimeout(() => {
-        void saveGraphWorkspace(current.id, current)
-          .then(() => setSaveStatus("saved"))
-          .catch(() => setSaveStatus("local"));
-      }, 650);
-    }
+    let cancelled = false;
+    saveTimer.current = setTimeout(() => {
+      saveQueue.current = saveQueue.current.then(async () => {
+        if (cancelled) return;
+        try {
+          for (const workspace of workspaces) {
+            const fingerprint = JSON.stringify(workspace);
+            if (savedFingerprints.current.get(workspace.id) === fingerprint) continue;
+            const saved = await saveGraphWorkspace(workspace.id, {
+              ...workspace,
+              version: Math.max(workspace.version, savedVersions.current.get(workspace.id) ?? 1),
+            }, undefined, accountId);
+            savedFingerprints.current.set(workspace.id, fingerprint);
+            savedVersions.current.set(workspace.id, saved.version);
+          }
+          if (!cancelled) setSaveStatus("saved");
+        } catch { if (!cancelled) setSaveStatus("error"); }
+      });
+    }, 650);
     return () => {
+      cancelled = true;
       if (persistenceTimer.current) clearTimeout(persistenceTimer.current);
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [activeId, current, hydrated, investigationId, workspaces]);
+  }, [accountId, activeId, current, hydrated, investigationId, workspaces, saveAttempt]);
 
   useEffect(() => {
-    const storageKey = `crimelens-network-workspaces:${investigationId}`;
+    const storageKey = networkStorageKey(accountId, investigationId);
     return () => {
       if (!latestHydrated.current || !latestWorkspaces.current.length) return;
       localStorage.setItem(
@@ -587,7 +712,7 @@ function CustomNetworkWorkspaceInner({
       );
       localStorage.setItem(`${storageKey}:active`, latestActiveId.current);
     };
-  }, [investigationId]);
+  }, [accountId, investigationId]);
 
   useEffect(() => {
     setNetworkWorkspaceCatalog(
@@ -675,8 +800,11 @@ function CustomNetworkWorkspaceInner({
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement;
-      if (target.matches("input, textarea, select, [contenteditable='true']"))
+      const target = event.target;
+      if (
+        target instanceof Element &&
+        target.matches("input, textarea, select, [contenteditable='true']")
+      )
         return;
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
@@ -686,14 +814,25 @@ function CustomNetworkWorkspaceInner({
         event.preventDefault();
         deleteSelection();
       } else if (event.key === "Escape") {
+        if (openMenu) {
+          setOpenMenu(null);
+          return;
+        }
+        if (libraryOpen && !libraryPinned) {
+          setLibraryOpen(false);
+          return;
+        }
+        if (editor) {
+          setEditor(null);
+          return;
+        }
         setSelectedNodeIds([]);
         setSelectedEdgeId(null);
-        setEditor(null);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [deleteSelection, redo, undo]);
+  }, [deleteSelection, editor, libraryOpen, libraryPinned, openMenu, redo, undo]);
 
   const canvasNodes = useMemo<CanvasNode[]>(() => {
     if (!current) return [];
@@ -851,6 +990,63 @@ function CustomNetworkWorkspaceInner({
       }));
     return [...documented, ...ghostSuggestions];
   }, [canvasNodes, current, pathEdgeIds, selectedEdgeId]);
+
+  function selectWorkspace(workspaceId: string, closeMenu = false) {
+    const next = workspaces.find((workspace) => workspace.id === workspaceId);
+    setActiveId(workspaceId);
+    setVerificationFilter(
+      next?.filters?.verification ?? ["verified", "manual", "hypothesis"],
+    );
+    setPast([]);
+    setFuture([]);
+    if (closeMenu) setOpenMenu(null);
+  }
+
+  function duplicateWorkspace() {
+    const copy = duplicateGraphWorkspace(current);
+    setWorkspaces((items) => [...items, copy]);
+    setActiveId(copy.id);
+    setOpenMenu(null);
+  }
+
+  async function deleteWorkspace() {
+    if (
+      !confirm(
+        `DELETE WORKSPACE?\n\n${current.name}\n\nThis does not modify case data.`,
+      )
+    )
+      return;
+    try { await deleteGraphWorkspace(current.id); }
+    catch { setSaveStatus("error"); return; }
+    setWorkspaces((items) =>
+      items.filter((item) => item.id !== current.id),
+    );
+    setActiveId(
+      workspaces.find((item) => item.id !== current.id)?.id ?? "",
+    );
+    setOpenMenu(null);
+
+  }
+
+  function connectNodes() {
+    if (current.nodes.length < 2) {
+      alert("Create or import at least two nodes before connecting them.");
+      return;
+    }
+    const source = selectedNodeIds[0] ?? current.nodes[0].id;
+    const target =
+      selectedNodeIds.find((nodeId) => nodeId !== source) ??
+      current.nodes.find((node) => node.id !== source)!.id;
+    setEditor({ kind: "edge", source, target });
+  }
+
+  function groupNodes() {
+    if (selectedNodeIds.length < 2) {
+      alert("Select two or more nodes to create a group.");
+      return;
+    }
+    setEditor({ kind: "group" });
+  }
 
   function createNode(
     type: WorkspaceNodeType,
@@ -1365,7 +1561,7 @@ function CustomNetworkWorkspaceInner({
   if (!current)
     return (
       <div className="grid h-full place-items-center font-mono text-xs font-black uppercase">
-        Loading custom workspace…
+        {saveStatus === "error" ? "Workspace access failed. Reload to retry; no private data has been loaded." : "Loading custom workspace…"}
       </div>
     );
   const selectedNode = current.nodes.find(
@@ -1413,31 +1609,329 @@ function CustomNetworkWorkspaceInner({
   const sourceFact = selectedNode?.sourceFactId
     ? investigation.facts.find((fact) => fact.id === selectedNode.sourceFactId)
     : null;
+  const isPrimaryPanelOpen =
+    editor?.kind === "analysis" ||
+    editor?.kind === "conflicts" ||
+    editor?.kind === "questions" ||
+    editor?.kind === "snapshots";
+  const visibleLibraryTypes = workspaceNodeTypes.filter((type) =>
+    type.replaceAll("_", " ").includes(libraryQuery.trim().toLowerCase()),
+  );
+  const nodeLibraryContent = (
+    <>
+      <div className="flex min-h-11 items-center gap-2 border-b-2 border-[var(--ink)] px-2">
+        <span className="min-w-0 flex-1 font-mono text-[10px] font-black uppercase">
+          Node library
+        </span>
+        <button
+          type="button"
+          className="grid h-8 w-8 place-items-center border border-[var(--ink)]"
+          onClick={() => setLibraryPinned((pinned) => !pinned)}
+          aria-pressed={libraryPinned}
+          aria-label={libraryPinned ? "Unpin node library" : "Pin node library"}
+          title={libraryPinned ? "Unpin library" : "Pin library open"}
+        >
+          {libraryPinned ? <PinOff size={14} /> : <Pin size={14} />}
+        </button>
+        <button
+          type="button"
+          className="grid h-8 w-8 place-items-center border border-[var(--ink)]"
+          onClick={() => setLibraryOpen(false)}
+          aria-label="Close node library"
+        >
+          <X size={14} />
+        </button>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-2">
+        <label className="relative block">
+          <Search
+            aria-hidden="true"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2"
+            size={14}
+          />
+          <span className="sr-only">Search node types</span>
+          <input
+            value={libraryQuery}
+            onChange={(event) => setLibraryQuery(event.target.value)}
+            placeholder="Search node types"
+            className={`${fieldClass} !min-h-9 pl-8 !text-[10px]`}
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            setEditor({ kind: "case" });
+            if (!libraryPinned) setLibraryOpen(false);
+          }}
+          className={`${buttonClass} mt-2 w-full !bg-[var(--accent)]`}
+        >
+          Add from case
+        </button>
+        <div className="mt-2 grid gap-1.5">
+          {visibleLibraryTypes.map((type) => {
+            const Icon = iconByType[type];
+            return (
+              <button
+                key={type}
+                type="button"
+                draggable
+                onDragStart={(event) =>
+                  event.dataTransfer.setData(
+                    "application/crimelens-node",
+                    type,
+                  )
+                }
+                onDragEnd={() => {
+                  if (!libraryPinned) setLibraryOpen(false);
+                }}
+                onClick={() => {
+                  createNode(type);
+                  if (!libraryPinned) setLibraryOpen(false);
+                }}
+                className="flex min-h-10 w-full items-center gap-2 border border-[var(--ink)] bg-[var(--panel)] px-2 text-left font-mono text-[9px] font-black uppercase hover:border-2"
+              >
+                <Icon size={15} strokeWidth={2.5} />
+                {type.replaceAll("_", " ")}
+              </button>
+            );
+          })}
+          {!visibleLibraryTypes.length ? (
+            <p className="border border-dashed border-[var(--ink)] p-3 font-mono text-[9px] font-bold">
+              No matching node types.
+            </p>
+          ) : null}
+        </div>
+        {current.groups.length ? (
+          <div className="mt-4 border-t-2 border-[var(--ink)] pt-3">
+            <p className="mb-2 font-mono text-[9px] font-black uppercase">
+              Groups
+            </p>
+            {current.groups.map((group) => (
+              <div
+                key={group.id}
+                className="mb-1.5 flex items-center gap-1 border border-dashed border-[var(--ink)] bg-[var(--panel)] px-2 py-1.5 font-mono text-[8px] font-black uppercase"
+              >
+                <span className="min-w-0 flex-1 truncate">{group.name}</span>
+                <button
+                  type="button"
+                  aria-label={`Delete group ${group.name}`}
+                  onClick={() =>
+                    commit((workspace) => ({
+                      ...workspace,
+                      groups: workspace.groups.filter(
+                        (item) => item.id !== group.id,
+                      ),
+                    }))
+                  }
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </>
+  );
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-[var(--paper)] text-[var(--ink)]">
-      <div className="shrink-0 border-b-4 border-[var(--ink)] bg-[var(--paper)] p-2 font-mono">
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="flex min-w-52 flex-1 items-center gap-2 text-[9px] font-black uppercase sm:flex-none">
-            Workspace
+    <div
+      className="relative flex h-full min-h-0 flex-col bg-[var(--paper)] text-[var(--ink)]"
+      style={
+        { "--network-toolbar-height": `${toolbarHeight}px` } as CSSProperties
+      }
+    >
+      <div
+        ref={setToolbarElement}
+        className="relative z-50 shrink-0 border-b-2 border-[var(--ink)] bg-[var(--paper)] font-mono dark:border-[var(--line)]"
+      >
+        {isFocusMode ? (
+          <>
+            <div className="hide-scrollbar flex min-h-12 flex-wrap items-center gap-2 overflow-visible px-2 py-1.5 sm:flex-nowrap sm:overflow-x-auto">
+              <div className="hidden shrink-0 sm:block">{toolbarLeading}</div>
+              <div className="w-full min-w-0 flex-1 sm:w-auto sm:min-w-32">
+                <p className="truncate text-[9px] font-black uppercase">
+                  {investigation.displayName}
+                </p>
+                <p className="truncate text-[8px] font-bold uppercase opacity-55">
+                  Workspace // {current.name}
+                </p>
+              </div>
+              <div className="flex w-full min-w-0 gap-2 sm:w-auto sm:shrink-0">
+                <div className="min-w-0 flex-1 [&>button]:w-full sm:flex-none sm:[&>button]:w-auto">
+                  {focusToolsControl}
+                </div>
+                <div className="min-w-0 flex-1 [&>button]:w-full sm:flex-none sm:[&>button]:w-auto">
+                  {focusControl}
+                </div>
+              </div>
+            </div>
+
+            {focusToolsExpanded ? (
+              <div
+                id="network-focus-toolkit"
+                className="hide-scrollbar grid grid-flow-col auto-cols-[minmax(270px,85vw)] gap-2 overflow-x-auto border-t-2 border-[var(--ink)] bg-[var(--panel)] p-2 dark:border-[var(--line)] md:grid-flow-row md:auto-cols-auto md:grid-cols-2 xl:grid-cols-4"
+              >
+                <fieldset className="min-w-0 border-2 border-[var(--ink)] bg-[var(--paper)] p-2 shadow-[2px_2px_0_var(--ink)] dark:border-[var(--line)] dark:shadow-[2px_2px_0_var(--ink)]">
+                  <legend className="px-1 text-[8px] font-black uppercase opacity-65">
+                    Workspace
+                  </legend>
+                  <label className="block">
+                    <span className="sr-only">Existing workspace</span>
+                    <select
+                      value={current.id}
+                      onChange={(event) => selectWorkspace(event.target.value)}
+                      className={`${fieldClass} !min-h-9 py-1 !text-[9px]`}
+                    >
+                      {workspaces.map((workspace) => (
+                        <option key={workspace.id} value={workspace.id}>
+                          {workspace.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <button type="button" className={toolbarButtonClass} onClick={() => setEditor({ kind: "workspace" })}>
+                      <Plus aria-hidden="true" size={13} /> New
+                    </button>
+                    <button type="button" className={toolbarButtonClass} onClick={() => setEditor({ kind: "workspace", workspace: current })}>
+                      <Pencil aria-hidden="true" size={13} /> Rename
+                    </button>
+                    <button type="button" className={toolbarButtonClass} onClick={duplicateWorkspace}>
+                      <Copy aria-hidden="true" size={13} /> Duplicate
+                    </button>
+                    <button type="button" className={toolbarButtonClass} disabled={workspaces.length === 1} onClick={deleteWorkspace}>
+                      <Trash2 aria-hidden="true" size={13} /> Delete
+                    </button>
+                  </div>
+                  <p className="mt-2 text-[8px] font-black uppercase opacity-60" aria-live="polite">
+                    ● {saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Not saved — retry" : saveStatus === "local" ? "Saved locally" : "Saved"}
+                    {saveStatus === "error" && <button type="button" className="ml-2 underline" onClick={() => setSaveAttempt(n => n + 1)}>Retry save</button>}
+                  </p>
+                </fieldset>
+
+                <fieldset className="min-w-0 border-2 border-[var(--ink)] bg-[var(--paper)] p-2 shadow-[2px_2px_0_var(--ink)] dark:border-[var(--line)] dark:shadow-[2px_2px_0_var(--ink)]">
+                  <legend className="px-1 text-[8px] font-black uppercase opacity-65">Build</legend>
+                  <div className="flex flex-wrap gap-2">
+                    <button ref={addTriggerRef} type="button" className={toolbarButtonClass} onClick={() => { setLibraryOpen((open) => !open); setOpenMenu(null); }} aria-expanded={libraryOpen} aria-controls="network-node-library">
+                      <Network aria-hidden="true" size={13} /> Library
+                    </button>
+                    <button type="button" className={`${toolbarButtonClass} fatal-raised-control--primary`} onClick={() => createNode("person")}>
+                      <Plus aria-hidden="true" size={13} /> Node
+                    </button>
+                    <button type="button" className={toolbarButtonClass} disabled={current.nodes.length < 2} onClick={connectNodes}>
+                      <GitBranchPlus aria-hidden="true" size={13} /> Connect
+                    </button>
+                    <button type="button" className={toolbarButtonClass} disabled={selectedNodeIds.length < 2} onClick={groupNodes}>
+                      <LayoutTemplate aria-hidden="true" size={13} /> Group
+                    </button>
+                    <button type="button" className={toolbarButtonClass} onClick={() => createNode("note")}>
+                      <NotebookPen aria-hidden="true" size={13} /> Note
+                    </button>
+                    <button type="button" className={toolbarButtonClass} onClick={() => setEditor({ kind: "case" })}>
+                      <BookOpenText aria-hidden="true" size={13} /> Add from case
+                    </button>
+                  </div>
+                </fieldset>
+
+                <fieldset className="min-w-0 border-2 border-[var(--ink)] bg-[var(--paper)] p-2 shadow-[2px_2px_0_var(--ink)] dark:border-[var(--line)] dark:shadow-[2px_2px_0_var(--ink)]">
+                  <legend className="px-1 text-[8px] font-black uppercase opacity-65">Investigate</legend>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" className={`${toolbarButtonClass} fatal-raised-control--primary`} onClick={() => void runAnalysis()}>
+                      <BrainCircuit aria-hidden="true" size={13} /> Analyze connections
+                    </button>
+                    <button type="button" className={toolbarButtonClass} onClick={() => setEditor({ kind: "path" })}>
+                      <Route aria-hidden="true" size={13} /> Find path
+                    </button>
+                    <button type="button" className={toolbarButtonClass} onClick={() => setEditor({ kind: "questions" })}>
+                      <ListChecks aria-hidden="true" size={13} /> Questions
+                    </button>
+                    <button type="button" className={toolbarButtonClass} onClick={() => setEditor({ kind: "snapshots" })}>
+                      <History aria-hidden="true" size={13} /> History
+                    </button>
+                  </div>
+                </fieldset>
+
+                <fieldset className="min-w-0 border-2 border-[var(--ink)] bg-[var(--paper)] p-2 shadow-[2px_2px_0_var(--ink)] dark:border-[var(--line)] dark:shadow-[2px_2px_0_var(--ink)]">
+                  <legend className="px-1 text-[8px] font-black uppercase opacity-65">Arrange</legend>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" className={toolbarButtonClass} onClick={autoLayout}>
+                      <LayoutTemplate aria-hidden="true" size={13} /> Auto layout
+                    </button>
+                    <button type="button" className={toolbarButtonClass} disabled={!past.length} onClick={undo} title="Undo (Ctrl/Command+Z)">
+                      <Undo2 aria-hidden="true" size={13} /> Undo
+                    </button>
+                    <button type="button" className={toolbarButtonClass} disabled={!future.length} onClick={redo} title="Redo (Ctrl/Command+Shift+Z)">
+                      <Redo2 aria-hidden="true" size={13} /> Redo
+                    </button>
+                    <button type="button" className={toolbarButtonClass} onClick={() => void flowRef.current?.fitView({ padding: 0.18, duration: 300 })}>
+                      <Focus aria-hidden="true" size={13} /> Fit
+                    </button>
+                  </div>
+                </fieldset>
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <div className="hide-scrollbar flex min-h-14 items-center gap-2 overflow-x-auto px-2 py-2">
+            {toolbarLeading}
+            {focusControl}
+            <label className="hidden min-w-0 shrink-0 items-center lg:flex">
+              <span className="sr-only">Workspace</span>
+              <select value={current.id} onChange={(event) => selectWorkspace(event.target.value)} className={`${fieldClass} !min-h-9 !w-40 py-1 !text-[9px]`}>
+                {workspaces.map((workspace) => <option key={workspace.id} value={workspace.id}>{workspace.name}</option>)}
+              </select>
+            </label>
+            <button ref={workspaceMenuTriggerRef} className={toolbarButtonClass} type="button" onClick={() => setOpenMenu((menu) => menu === "workspace" ? null : "workspace")} aria-expanded={openMenu === "workspace"} aria-controls="workspace-management-menu">
+              <Ellipsis aria-hidden="true" size={14} /> Workspace
+            </button>
+            <span className="shrink-0 text-[8px] font-black uppercase opacity-55" aria-live="polite">
+              ● {saveStatus === "saving" ? "Saving…" : saveStatus === "error" ? "Not saved — retry" : saveStatus === "local" ? "Saved locally" : "Saved"}
+                    {saveStatus === "error" && <button type="button" className="ml-2 underline" onClick={() => setSaveAttempt(n => n + 1)}>Retry save</button>}
+            </span>
+            <button ref={addTriggerRef} className={toolbarButtonClass} type="button" onClick={() => { setLibraryOpen((open) => !open); setOpenMenu(null); }} aria-expanded={libraryOpen} aria-controls="network-node-library">
+              <Network aria-hidden="true" size={13} /> Library
+            </button>
+            <button className={`${toolbarButtonClass} fatal-raised-control--primary`} type="button" onClick={() => createNode("person")}>
+              <Plus aria-hidden="true" size={13} /> Node
+            </button>
+            <button className={toolbarButtonClass} type="button" disabled={current.nodes.length < 2} onClick={connectNodes}>
+              <GitBranchPlus aria-hidden="true" size={13} /> Connect
+            </button>
+            <button className={toolbarButtonClass} type="button" disabled={selectedNodeIds.length < 2} onClick={groupNodes}>
+              <LayoutTemplate aria-hidden="true" size={13} /> Group
+            </button>
+            <button className={toolbarButtonClass} type="button" onClick={() => createNode("note")}>
+              <NotebookPen aria-hidden="true" size={13} /> Note
+            </button>
+            <button className={toolbarButtonClass} type="button" onClick={() => setEditor({ kind: "case" })}>
+              <BookOpenText aria-hidden="true" size={13} /> Add from case
+            </button>
+            <button className={`${toolbarButtonClass} fatal-raised-control--primary`} type="button" onClick={() => void runAnalysis()}>
+              <BrainCircuit aria-hidden="true" size={13} /> Analyze connections
+            </button>
+            <button ref={panelsMenuTriggerRef} className={toolbarButtonClass} type="button" onClick={() => setOpenMenu((menu) => menu === "panels" ? null : "panels")} aria-expanded={openMenu === "panels"} aria-controls="workspace-panels-menu">
+              <PanelRight aria-hidden="true" size={13} /> Panels
+            </button>
+            <button ref={moreMenuTriggerRef} className={toolbarButtonClass} type="button" onClick={() => setOpenMenu((menu) => menu === "more" ? null : "more")} aria-expanded={openMenu === "more"} aria-controls="workspace-more-menu">
+              <ChevronDown aria-hidden="true" size={13} /> More
+            </button>
+          </div>
+        )}
+      </div>
+
+      {openMenu === "workspace" ? (
+        <div
+          id="workspace-management-menu"
+          data-network-popover="true"
+          className="absolute left-2 top-[calc(var(--network-toolbar-height)+0.25rem)] z-[80] w-[min(290px,calc(100%-1rem))] border-2 border-[var(--ink)] bg-[var(--paper)] p-2 font-mono text-[9px] font-black uppercase shadow-[4px_4px_0_var(--ink)] sm:left-48"
+        >
+          <label className="grid gap-1">
+            Current workspace
             <select
               value={current.id}
-              onChange={(event) => {
-                const next = workspaces.find(
-                  (workspace) => workspace.id === event.target.value,
-                );
-                setActiveId(event.target.value);
-                setVerificationFilter(
-                  next?.filters?.verification ?? [
-                    "verified",
-                    "manual",
-                    "hypothesis",
-                  ],
-                );
-                setPast([]);
-                setFuture([]);
-              }}
-              className={`${fieldClass} !min-h-9 min-w-0 py-1 sm:w-56`}
+              onChange={(event) => selectWorkspace(event.target.value, true)}
+              className={`${fieldClass} mt-1 !min-h-9 py-1`}
             >
               {workspaces.map((workspace) => (
                 <option key={workspace.id} value={workspace.id}>
@@ -1446,288 +1940,122 @@ function CustomNetworkWorkspaceInner({
               ))}
             </select>
           </label>
-          <button
-            className={buttonClass}
-            type="button"
-            onClick={() => setEditor({ kind: "workspace" })}
-          >
-            <Plus size={14} className="inline" /> New
-          </button>
-          <button
-            className={buttonClass}
-            type="button"
-            onClick={() => setEditor({ kind: "workspace", workspace: current })}
-          >
-            Rename
-          </button>
-          <button
-            className={buttonClass}
-            type="button"
-            onClick={() => {
-              const copy = {
-                ...structuredClone(current),
-                id: id(),
-                name: `${current.name} COPY`,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                version: 1,
-              };
-              setWorkspaces((items) => [...items, copy]);
-              setActiveId(copy.id);
-            }}
-          >
-            Duplicate
-          </button>
-          <button
-            className={`${buttonClass} !bg-[var(--danger)] !text-white`}
-            type="button"
-            disabled={workspaces.length === 1}
-            onClick={() => {
-              if (
-                !confirm(
-                  `DELETE WORKSPACE?\n\n${current.name}\n\nThis does not modify case data.`,
-                )
-              )
-                return;
-              setWorkspaces((items) =>
-                items.filter((item) => item.id !== current.id),
-              );
-              setActiveId(
-                workspaces.find((item) => item.id !== current.id)?.id ?? "",
-              );
-              if (isSupabaseBrowserConfigured)
-                void deleteGraphWorkspace(current.id).catch(() => undefined);
-            }}
-          >
-            <Trash2 size={13} className="inline" /> Delete
-          </button>
-          <span
-            className="ml-auto text-[9px] font-black uppercase"
-            aria-live="polite"
-          >
-            ●{" "}
-            {saveStatus === "saving"
-              ? "Saving…"
-              : saveStatus === "local"
-                ? "Saved locally"
-                : "Saved"}
-          </span>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button
+              className={buttonClass}
+              type="button"
+              onClick={() => {
+                setEditor({ kind: "workspace" });
+                setOpenMenu(null);
+              }}
+            >
+              <Plus size={13} className="inline" /> New
+            </button>
+            <button
+              className={buttonClass}
+              type="button"
+              onClick={() => {
+                setEditor({ kind: "workspace", workspace: current });
+                setOpenMenu(null);
+              }}
+            >
+              Rename
+            </button>
+            <button
+              className={buttonClass}
+              type="button"
+              onClick={duplicateWorkspace}
+            >
+              Duplicate
+            </button>
+            <button
+              className={`${buttonClass} !bg-[var(--danger)] !text-white`}
+              type="button"
+              disabled={workspaces.length === 1}
+              onClick={deleteWorkspace}
+            >
+              <Trash2 size={13} className="inline" /> Delete
+            </button>
+          </div>
         </div>
-        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-          <button
-            className={`${buttonClass} !bg-[var(--ink)] !text-[var(--paper)]`}
-            type="button"
-            onClick={() => setEditor({ kind: "node", defaultType: "person" })}
-          >
-            <Plus size={14} className="inline" /> Node
-          </button>
-          <button
-            className={buttonClass}
-            type="button"
-            onClick={() => {
-              if (current.nodes.length < 2) {
-                alert(
-                  "Create or import at least two nodes before connecting them.",
-                );
-                return;
-              }
-              const source = selectedNodeIds[0] ?? current.nodes[0].id;
-              const target =
-                selectedNodeIds.find((nodeId) => nodeId !== source) ??
-                current.nodes.find((node) => node.id !== source)!.id;
-              setEditor({ kind: "edge", source, target });
-            }}
-          >
-            <GitBranchPlus size={14} className="inline" /> Connect
-          </button>
-          <button
-            className={buttonClass}
-            type="button"
-            onClick={() =>
-              selectedNodeIds.length
-                ? setEditor({ kind: "group" })
-                : alert("Select two or more nodes to create a group.")
-            }
-          >
-            <LayoutTemplate size={14} className="inline" /> Group
-          </button>
-          <button
-            className={buttonClass}
-            type="button"
-            onClick={() => setEditor({ kind: "node", defaultType: "note" })}
-          >
-            <NotebookPen size={14} className="inline" /> Note
-          </button>
-          <button
-            className={`${buttonClass} !bg-[var(--accent)]`}
-            type="button"
-            onClick={() => setEditor({ kind: "case" })}
-          >
-            Add From Case
-          </button>
-          <button className={buttonClass} type="button" onClick={autoLayout}>
-            <LayoutTemplate size={14} className="inline" /> Auto Layout
-          </button>
-          <button
-            className={buttonClass}
-            type="button"
-            disabled={!past.length}
-            onClick={undo}
-          >
-            <Undo2 size={14} className="inline" /> Undo
-          </button>
-          <button
-            className={buttonClass}
-            type="button"
-            disabled={!future.length}
-            onClick={redo}
-          >
-            <Redo2 size={14} className="inline" /> Redo
-          </button>
-          <button
-            className={buttonClass}
-            type="button"
-            onClick={() =>
-              void flowRef.current?.fitView({ padding: 0.18, duration: 300 })
-            }
-          >
-            <Focus size={14} className="inline" /> Fit
-          </button>
-        </div>
-        <div className="mt-2 flex items-center gap-2 overflow-x-auto border-2 border-[var(--ink)] bg-[var(--panel)] p-1.5 text-[8px] font-black uppercase">
-          <span className="shrink-0 bg-[var(--ink)] px-2 py-1.5 text-[var(--paper)]">
-            Workspace // {current.name}
-          </span>
-          <span className="shrink-0">{current.nodes.length} nodes</span>
-          <span className="shrink-0">{current.edges.length} links</span>
-          <span className="shrink-0">
-            {
-              current.edges.filter(
-                (edge) => edge.verificationStatus === "hypothesis",
-              ).length
-            }{" "}
-            hypotheses
-          </span>
-          <span className="shrink-0">
-            {
-              current.conflicts.filter((conflict) => conflict.status === "OPEN")
-                .length
-            }{" "}
-            conflicts
-          </span>
-          <span className="shrink-0">
-            {
-              current.questions.filter(
-                (question) => !["RESOLVED", "CLOSED"].includes(question.status),
-              ).length
-            }{" "}
-            open questions
-          </span>
-          <button
-            className={`${buttonClass} ml-auto !min-h-8 shrink-0 !bg-[var(--accent)] !px-2 !py-1`}
-            type="button"
-            onClick={() => void runAnalysis()}
-          >
-            <BrainCircuit size={13} className="inline" /> Analyze Connections
-          </button>
-          <button
-            className={`${buttonClass} !min-h-8 shrink-0 !px-2 !py-1`}
-            type="button"
-            onClick={() => setEditor({ kind: "path" })}
-          >
-            <Route size={13} className="inline" /> Find Path
-          </button>
-          <button
-            className={`${buttonClass} !min-h-8 shrink-0 !px-2 !py-1`}
-            type="button"
-            onClick={() => setEditor({ kind: "questions" })}
-          >
-            <ListChecks size={13} className="inline" /> Questions
-          </button>
-          <button
-            className={`${buttonClass} !min-h-8 shrink-0 !px-2 !py-1`}
-            type="button"
-            onClick={() => setEditor({ kind: "snapshots" })}
-          >
-            <History size={13} className="inline" /> History
-          </button>
-        </div>
-      </div>
+      ) : null}
 
-      <div className="relative flex min-h-0 flex-1">
-        <aside
-          className={`${libraryOpen ? "w-48" : "w-11"} z-30 hidden shrink-0 overflow-hidden border-r-4 border-[var(--ink)] bg-[var(--paper)] transition-[width] sm:block`}
+      {openMenu === "panels" ? (
+        <div
+          id="workspace-panels-menu"
+          data-network-popover="true"
+          className="absolute right-2 top-[calc(var(--network-toolbar-height)+0.25rem)] z-[80] grid w-52 gap-1 border-2 border-[var(--ink)] bg-[var(--paper)] p-2 shadow-[4px_4px_0_var(--ink)]"
         >
           <button
             type="button"
-            className="flex h-11 w-full items-center justify-between border-b-4 border-[var(--ink)] px-3 font-mono text-[10px] font-black uppercase"
-            onClick={() => setLibraryOpen((open) => !open)}
-            aria-expanded={libraryOpen}
+            disabled={!selectedNode && !selectedEdge}
+            className={buttonClass}
+            onClick={() => {
+              setInspectorOpen(true);
+              setEditor(null);
+              setOpenMenu(null);
+            }}
           >
-            {libraryOpen ? "Node Library" : ""}
-            {libraryOpen ? (
-              <ChevronLeft size={16} />
-            ) : (
-              <ChevronRight size={16} />
-            )}
+            Details
           </button>
-          {libraryOpen ? (
-            <div className="h-[calc(100%-2.75rem)] overflow-y-auto p-2">
-              {workspaceNodeTypes.map((type) => {
-                const Icon = iconByType[type];
-                return (
-                  <button
-                    key={type}
-                    type="button"
-                    draggable
-                    onDragStart={(event) =>
-                      event.dataTransfer.setData(
-                        "application/crimelens-node",
-                        type,
-                      )
-                    }
-                    onClick={() => createNode(type)}
-                    className="mb-2 flex min-h-10 w-full items-center gap-2 border-2 border-[var(--ink)] bg-[var(--panel)] px-2 text-left font-mono text-[9px] font-black uppercase shadow-[2px_2px_0_var(--ink)]"
-                  >
-                    <Icon size={15} strokeWidth={3} />
-                    {type}
-                  </button>
-                );
-              })}
-              {current.groups.length ? (
-                <div className="mt-4 border-t-4 border-[var(--ink)] pt-3">
-                  <p className="mb-2 font-mono text-[9px] font-black uppercase">
-                    Groups
-                  </p>
-                  {current.groups.map((group) => (
-                    <div
-                      key={group.id}
-                      className="mb-2 flex items-center gap-1 border-2 border-dashed border-[var(--ink)] bg-[var(--panel)] px-2 py-1.5 font-mono text-[8px] font-black uppercase"
-                    >
-                      <span className="min-w-0 flex-1 truncate">
-                        {group.name}
-                      </span>
-                      <button
-                        type="button"
-                        aria-label={`Delete group ${group.name}`}
-                        onClick={() =>
-                          commit((workspace) => ({
-                            ...workspace,
-                            groups: workspace.groups.filter(
-                              (item) => item.id !== group.id,
-                            ),
-                          }))
-                        }
-                      >
-                        <X size={13} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-        </aside>
+          <button type="button" className={buttonClass} onClick={() => { setEditor({ kind: "analysis" }); setOpenMenu(null); }}>
+            Analysis
+          </button>
+          <button type="button" className={buttonClass} onClick={() => { setEditor({ kind: "conflicts" }); setOpenMenu(null); }}>
+            Conflicts ({current.conflicts.filter((item) => item.status === "OPEN").length})
+          </button>
+          <button type="button" className={buttonClass} onClick={() => { setEditor({ kind: "questions" }); setOpenMenu(null); }}>
+            Questions ({current.questions.filter((item) => !["RESOLVED", "CLOSED"].includes(item.status)).length})
+          </button>
+          <button type="button" className={buttonClass} onClick={() => { setEditor({ kind: "snapshots" }); setOpenMenu(null); }}>
+            History
+          </button>
+        </div>
+      ) : null}
+
+      {openMenu === "more" ? (
+        <div
+          id="workspace-more-menu"
+          data-network-popover="true"
+          className="absolute right-2 top-[calc(var(--network-toolbar-height)+0.25rem)] z-[80] grid w-52 grid-cols-2 gap-1 border-2 border-[var(--ink)] bg-[var(--paper)] p-2 shadow-[4px_4px_0_var(--ink)]"
+        >
+          <button type="button" className={buttonClass} onClick={() => { autoLayout(); setOpenMenu(null); }}>
+            <LayoutTemplate size={13} className="inline" /> Auto-layout
+          </button>
+          <button type="button" className={buttonClass} onClick={() => { void flowRef.current?.fitView({ padding: 0.18, duration: 300 }); setOpenMenu(null); }}>
+            <Focus size={13} className="inline" /> Fit
+          </button>
+          <button type="button" className={buttonClass} disabled={!past.length} onClick={() => { undo(); setOpenMenu(null); }} title="Undo (Ctrl/Command+Z)">
+            <Undo2 size={13} className="inline" /> Undo
+          </button>
+          <button type="button" className={buttonClass} disabled={!future.length} onClick={() => { redo(); setOpenMenu(null); }} title="Redo (Ctrl/Command+Shift+Z)">
+            <Redo2 size={13} className="inline" /> Redo
+          </button>
+          <button type="button" className={`${buttonClass} col-span-2`} onClick={() => { setEditor({ kind: "path" }); setOpenMenu(null); }}>
+            <Route size={13} className="inline" /> Find connection path
+          </button>
+        </div>
+      ) : null}
+
+      <div className="relative flex min-h-0 flex-1">
+        {libraryOpen && libraryPinned ? (
+          <aside
+            id="network-node-library"
+            className="z-30 hidden w-56 shrink-0 flex-col overflow-hidden border-r-2 border-[var(--ink)] bg-[var(--paper)] sm:flex"
+          >
+            {nodeLibraryContent}
+          </aside>
+        ) : null}
+
+        {libraryOpen && !libraryPinned ? (
+          <aside
+            id="network-node-library"
+            data-network-popover="true"
+            className="absolute bottom-3 left-3 top-3 z-[60] flex w-[min(280px,calc(100%-1.5rem))] flex-col overflow-hidden border-2 border-[var(--ink)] bg-[var(--paper)] shadow-[5px_5px_0_var(--ink)]"
+          >
+            {nodeLibraryContent}
+          </aside>
+        ) : null}
 
         <main
           className="relative min-w-0 flex-1"
@@ -1749,7 +2077,7 @@ function CustomNetworkWorkspaceInner({
           }}
         >
           <div className="absolute left-3 right-3 top-3 z-20 flex max-w-xl gap-2">
-            <label className="relative min-w-0 flex-1">
+            <label className="relative w-[44%] min-w-0 shrink-0 sm:w-auto sm:flex-1">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2"
                 size={15}
@@ -1762,7 +2090,7 @@ function CustomNetworkWorkspaceInner({
                 className={`${fieldClass} pl-9`}
               />
             </label>
-            <div className="flex border-2 border-[var(--ink)] bg-[var(--panel)] p-1">
+            <div className="hide-scrollbar flex min-w-0 flex-1 overflow-x-auto border-2 border-[var(--ink)] bg-[var(--panel)] p-1">
               {(
                 ["verified", "manual", "hypothesis"] as WorkspaceVerification[]
               ).map((status) => (
@@ -1896,19 +2224,23 @@ function CustomNetworkWorkspaceInner({
               size={1.2}
             />
             <Controls position="bottom-left" />
-            <MiniMap
-              pannable
-              zoomable
-              className="!rounded-none !border-2 !border-[var(--ink)] !bg-[var(--panel)]"
-              nodeColor={(node) =>
-                node.type === "workspaceGroup" ? "var(--accent)" : "var(--ink)"
-              }
-            />
+            {current.nodes.length ? (
+              <MiniMap
+                pannable
+                zoomable
+                className="!rounded-none !border !border-[var(--ink)] !bg-[var(--panel)]"
+                nodeColor={(node) =>
+                  node.type === "workspaceGroup"
+                    ? "var(--accent)"
+                    : "var(--ink)"
+                }
+              />
+            ) : null}
           </ReactFlow>
         </main>
 
-        {(selectedNode || selectedEdge) && inspectorOpen ? (
-          <aside className="absolute bottom-3 right-3 z-40 max-h-[calc(100%-1.5rem)] w-[min(340px,calc(100%-1.5rem))] overflow-y-auto border-4 border-[var(--ink)] bg-[var(--panel)] p-4 font-mono text-[10px] font-black uppercase shadow-[6px_6px_0_var(--ink)]">
+        {(selectedNode || selectedEdge) && inspectorOpen && !isPrimaryPanelOpen ? (
+          <aside className="absolute inset-0 z-40 overflow-y-auto border-0 border-[var(--ink)] bg-[var(--panel)] p-4 font-mono text-[10px] font-black uppercase shadow-none sm:bottom-3 sm:left-auto sm:right-3 sm:top-3 sm:w-[min(340px,calc(100%-1.5rem))] sm:border-2 sm:shadow-[5px_5px_0_var(--ink)]">
             <button
               type="button"
               className="absolute right-2 top-2"
@@ -2940,8 +3272,88 @@ function CustomNetworkWorkspaceInner({
         </Modal>
       ) : null}
 
+      {editor?.kind === "conflicts" ? (
+        <WorkspaceSidePanel
+          title="Potential conflicts"
+          onClose={() => setEditor(null)}
+        >
+          <div className="grid gap-3 p-4 font-mono text-[10px] font-black uppercase">
+            {current.conflicts.length ? (
+              current.conflicts.map((conflict) => (
+                <article
+                  key={conflict.id}
+                  className="border-2 border-[var(--danger)] p-3"
+                >
+                  <p className="text-[var(--danger)]">
+                    {conflict.conflictType.replaceAll("_", " ")} // {conflict.status}
+                  </p>
+                  <p className="mt-2 normal-case">{conflict.explanation}</p>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      className={buttonClass}
+                      onClick={() => {
+                        const nodeIds = [
+                          conflict.resourceAType === "node"
+                            ? conflict.resourceAId
+                            : null,
+                          conflict.resourceBType === "node"
+                            ? conflict.resourceBId
+                            : null,
+                        ].filter((value): value is string => Boolean(value));
+                        const edgeId =
+                          conflict.resourceAType === "edge"
+                            ? conflict.resourceAId
+                            : conflict.resourceBType === "edge"
+                              ? conflict.resourceBId
+                              : null;
+                        setSelectedNodeIds(nodeIds);
+                        setSelectedEdgeId(edgeId);
+                        setInspectorTab("conflicts");
+                        setInspectorOpen(true);
+                        setEditor(null);
+                      }}
+                    >
+                      Show on graph
+                    </button>
+                    <button
+                      type="button"
+                      disabled={conflict.status !== "OPEN"}
+                      className={buttonClass}
+                      onClick={() =>
+                        commit((workspace) => ({
+                          ...workspace,
+                          conflicts: workspace.conflicts.map((item) =>
+                            item.id === conflict.id
+                              ? {
+                                  ...item,
+                                  status: "REVIEWED",
+                                  reviewedAt: new Date().toISOString(),
+                                }
+                              : item,
+                          ),
+                        }))
+                      }
+                    >
+                      Mark reviewed
+                    </button>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <p className="border-2 border-dashed border-[var(--ink)] p-4 normal-case">
+                No potential conflicts are recorded in this workspace.
+              </p>
+            )}
+          </div>
+        </WorkspaceSidePanel>
+      ) : null}
+
       {editor?.kind === "questions" ? (
-        <Modal title="Investigation Questions" onClose={() => setEditor(null)}>
+        <WorkspaceSidePanel
+          title="Investigation questions"
+          onClose={() => setEditor(null)}
+        >
           <div className="grid gap-3 p-4">
             <button
               type="button"
@@ -2993,7 +3405,7 @@ function CustomNetworkWorkspaceInner({
               </p>
             )}
           </div>
-        </Modal>
+        </WorkspaceSidePanel>
       ) : null}
 
       {editor?.kind === "question" ? (
@@ -3088,7 +3500,10 @@ function CustomNetworkWorkspaceInner({
       ) : null}
 
       {editor?.kind === "snapshots" ? (
-        <Modal title="Workspace History" onClose={() => setEditor(null)}>
+        <WorkspaceSidePanel
+          title="Workspace history"
+          onClose={() => setEditor(null)}
+        >
           <div className="grid gap-3 p-4">
             <button
               type="button"
@@ -3162,7 +3577,7 @@ function CustomNetworkWorkspaceInner({
               </p>
             )}
           </div>
-        </Modal>
+        </WorkspaceSidePanel>
       ) : null}
 
       {editor?.kind === "snapshot" ? (
@@ -3205,7 +3620,10 @@ function CustomNetworkWorkspaceInner({
       ) : null}
 
       {editor?.kind === "analysis" ? (
-        <Modal title="Connection Analysis" onClose={() => setEditor(null)}>
+        <WorkspaceSidePanel
+          title="Connection analysis"
+          onClose={() => setEditor(null)}
+        >
           <div className="grid gap-3 p-4 font-mono uppercase">
             <div className="border-2 border-[var(--ink)] bg-[var(--ink)] p-3 text-[var(--paper)]">
               <p>
@@ -3254,6 +3672,20 @@ function CustomNetworkWorkspaceInner({
                   <p className="mt-2 text-[8px]">
                     {suggestion.reasonCodes.join(" // ")}
                   </p>
+                  <button
+                    type="button"
+                    className={`${buttonClass} mt-3 w-full`}
+                    onClick={() => {
+                      setSelectedNodeIds([
+                        suggestion.sourceNodeId,
+                        suggestion.targetNodeId,
+                      ]);
+                      setSelectedEdgeId(null);
+                      setEditor(null);
+                    }}
+                  >
+                    Show nodes on graph
+                  </button>
                   {suggestion.status === "PENDING" ? (
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       <button
@@ -3303,7 +3735,7 @@ function CustomNetworkWorkspaceInner({
               </div>
             ) : null}
           </div>
-        </Modal>
+        </WorkspaceSidePanel>
       ) : null}
     </div>
   );
@@ -3311,14 +3743,29 @@ function CustomNetworkWorkspaceInner({
 
 export function CustomNetworkWorkspace({
   investigationId,
+  toolbarLeading,
+  focusControl,
+  isFocusMode,
+  focusToolsExpanded,
+  focusToolsControl,
 }: {
   investigationId: InvestigationId;
+  toolbarLeading: ReactNode;
+  focusControl: ReactNode;
+  isFocusMode: boolean;
+  focusToolsExpanded: boolean;
+  focusToolsControl: ReactNode;
 }) {
   return (
     <ReactFlowProvider>
       <CustomNetworkWorkspaceInner
         key={investigationId}
         investigationId={investigationId}
+        toolbarLeading={toolbarLeading}
+        focusControl={focusControl}
+        isFocusMode={isFocusMode}
+        focusToolsExpanded={focusToolsExpanded}
+        focusToolsControl={focusToolsControl}
       />
     </ReactFlowProvider>
   );

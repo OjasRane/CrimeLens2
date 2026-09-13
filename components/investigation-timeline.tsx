@@ -2,6 +2,7 @@
 
 import { AlertTriangle, Camera, MapPinned } from "lucide-react";
 import { motion } from "framer-motion";
+import { useInvestigationStore } from "@/store/use-investigation-store";
 
 
 export type IntersectingCamera = {
@@ -77,10 +78,10 @@ function StandardEventNode({ item }: { item: InvestigationEvent }) {
     >
       <span
         aria-hidden="true"
-        className="absolute left-[9px] top-5 z-10 h-4 w-4 bg-white border-4 border-black dark:border-[#EAE5C9] dark:bg-[#06141B]"
+        className="absolute left-[9px] top-5 z-10 h-4 w-4 bg-white border-4 border-black dark:border-[var(--line)] dark:bg-[var(--paper)]"
       />
 
-      <article className="border-2 border-black bg-white px-4 py-3 text-black dark:border-[#EAE5C9] dark:bg-[#06141B] dark:text-[#EAE5C9]">
+      <article className="border-2 border-black bg-white px-4 py-3 text-black dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)]">
         <time
           dateTime={item.timestamp}
           className="block font-mono text-[11px] font-black tracking-[0.16em] opacity-65"
@@ -99,6 +100,8 @@ function StandardEventNode({ item }: { item: InvestigationEvent }) {
 function BlindSpotNode({ item }: { item: InvestigationBlindSpot }) {
   const duration = formatMeasurement(item.duration_minutes);
   const radius = formatMeasurement(item.max_travel_radius_km);
+  const requestMapPan = useInvestigationStore((state) => state.requestMapPan);
+  const setActiveWorkspace = useInvestigationStore((state) => state.setActiveWorkspace);
 
   return (
     <motion.li
@@ -107,7 +110,7 @@ function BlindSpotNode({ item }: { item: InvestigationBlindSpot }) {
       transition={{ duration: 0.28, ease: "easeOut" }}
       className="relative py-2 pl-4 sm:-ml-4 sm:pl-0"
     >
-      <article className="relative overflow-hidden border-4 border-[#EF4444] bg-white text-[#EF4444] shadow-[7px_7px_0_#EF4444] dark:border-[#EAE5C9] dark:bg-[#06141B] dark:shadow-[7px_7px_0_#EAE5C9]">
+      <article className="relative overflow-hidden border-4 border-[#EF4444] bg-white text-[#EF4444] shadow-[7px_7px_0_#EF4444] dark:border-[var(--line)] dark:bg-[var(--paper)] dark:shadow-[7px_7px_0_var(--ink)]">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 hidden opacity-[0.14] dark:block"
@@ -121,20 +124,20 @@ function BlindSpotNode({ item }: { item: InvestigationBlindSpot }) {
           <div className="flex items-start gap-3">
             <AlertTriangle
               aria-hidden="true"
-              className="mt-0.5 size-7 shrink-0 stroke-[3] dark:text-[#EAE5C9]"
+              className="mt-0.5 size-7 shrink-0 stroke-[3] dark:text-[var(--ink)]"
             />
             <div>
               <p className="font-mono text-sm font-black uppercase tracking-[0.08em] sm:text-base">
                 [ 🔴 UNACCOUNTED TIME DEVIATION: {duration} MINS ]
               </p>
-              <p className="mt-2 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-black/60 dark:text-[#EAE5C9]/70">
+              <p className="mt-2 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-black/60 dark:text-[var(--ink)]/70">
                 {formatTimestamp(item.start_time)} → {formatTimestamp(item.end_time)}
               </p>
             </div>
           </div>
 
-          <div className="my-5 border-y-2 border-[#EF4444] py-4 dark:border-[#EAE5C9]">
-            <p className="flex items-center gap-2 font-mono text-xs font-black uppercase tracking-[0.08em] text-black dark:text-[#EAE5C9] sm:text-sm">
+          <div className="my-5 border-y-2 border-[#EF4444] py-4 dark:border-[var(--line)]">
+            <p className="flex items-center gap-2 font-mono text-xs font-black uppercase tracking-[0.08em] text-black dark:text-[var(--ink)] sm:text-sm">
               <Camera aria-hidden="true" className="size-5 shrink-0" />
               [ {item.intersecting_nodes.length} SURVEILLANCE NODES IDENTIFIED IN
               RADIUS ]
@@ -144,12 +147,10 @@ function BlindSpotNode({ item }: { item: InvestigationBlindSpot }) {
           <button
             type="button"
             onClick={() => {
-              console.log(
-                `[SEARCH GRID // ${item.id}]`,
-                item.intersecting_nodes,
-              );
+              requestMapPan([item.origin_lon, item.origin_lat], item.id);
+              setActiveWorkspace("map");
             }}
-            className="w-full border-4 border-black bg-[#EF4444] px-4 py-3 font-mono text-xs font-black uppercase tracking-[0.08em] text-white shadow-[4px_4px_0_#000] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-[#EF4444] dark:border-[#EAE5C9] dark:bg-[#EAE5C9] dark:text-[#06141B] dark:shadow-[4px_4px_0_#EF4444] dark:focus-visible:outline-[#EAE5C9]"
+            className="w-full border-4 border-black bg-[#EF4444] px-4 py-3 font-mono text-xs font-black uppercase tracking-[0.08em] text-white shadow-[4px_4px_0_#000] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-1 active:translate-y-1 active:shadow-none focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-[#EF4444] dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)] dark:shadow-[4px_4px_0_var(--ink)] dark:focus-visible:outline-[var(--accent)]"
           >
             [ GENERATE {radius}KM SEARCH GRID ]
           </button>
@@ -168,7 +169,7 @@ export function InvestigationTimeline({
       aria-label="Suspect investigation timeline"
       className={`w-full max-w-3xl ${className}`}
     >
-      <ol className="relative space-y-5 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-1 before:bg-black before:content-[''] dark:before:bg-[#EAE5C9]">
+      <ol className="relative space-y-5 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-1 before:bg-black before:content-[''] dark:before:bg-[var(--ink)]">
         {items.map((item) =>
           item.type === "BLIND_SPOT" ? (
             <BlindSpotNode key={item.id} item={item} />

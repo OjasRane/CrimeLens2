@@ -568,3 +568,11 @@ Pull requests are welcome for bug fixes and improvements.
 ## License
 
 MIT © 2026 — built with obsession for the TechRush 2026.
+
+### Public archive and private case onboarding
+
+The current entry page supports public read-only demos and verified email signup followed by
+passkey enrollment. New private cases require explicit membership, and custom graphs persist
+through authenticated owner-scoped APIs. See [implementation and configuration notes](docs/PUBLIC_ENTRY_IMPLEMENTATION.md)
+for the additive migration, email redirects/SMTP and isolated private Liveblocks setup. These notes
+supersede the invite-only enrollment and development authentication-bypass descriptions above.

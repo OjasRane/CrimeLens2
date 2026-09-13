@@ -4,8 +4,8 @@ import "./globals.css";
 import "maplibre-gl/dist/maplibre-gl.css";
 
 export const metadata: Metadata = {
-  title: "Global Intel Index",
-  description: "Secure agent clearance terminal for The Fatal Ledger",
+  title: "The Fatal Ledger — CrimeLens2",
+  description: "Explore the public case archive or open your own private investigation.",
 };
 
 export const viewport: Viewport = {

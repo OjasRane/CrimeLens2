@@ -54,7 +54,6 @@ const unsupportedCodes = new Set([
   "ERROR_AUTHENTICATOR_MISSING_USER_VERIFICATION_SUPPORT",
   "ERROR_AUTHENTICATOR_NO_SUPPORTED_PUBKEYCREDPARAMS_ALG",
   "NotSupportedError",
-  "SecurityError",
 ]);
 
 const deniedCodes = new Set([
@@ -93,9 +92,21 @@ export function classifyPasskeyError(error: unknown): ClassifiedAuthError {
   }
 
   if (
+    code === "SecurityError" ||
+    name === "SecurityError" ||
+    /invalid rp|relying party|rp id|invalid domain/i.test(message)
+  ) {
+    return {
+      state: "unsupported",
+      message:
+        "Passkey domain mismatch // open the site where this passkey was registered",
+    };
+  }
+
+  if (
     unsupportedCodes.has(code) ||
     unsupportedCodes.has(name) ||
-    /does not support webauthn|invalid rp|invalid domain/i.test(message)
+    /does not support webauthn/i.test(message)
   ) {
     return {
       state: "unsupported",
@@ -239,6 +250,7 @@ export const authProgress: Record<AuthVisualState, number> = {
 export async function loadAuthorizedProfile(
   supabase: SupabaseClient,
   userId: string,
+  provisionPublic = false,
 ): Promise<CrimeLensProfile> {
   const { data, error } = await supabase
     .from("profiles")
@@ -247,7 +259,15 @@ export async function loadAuthorizedProfile(
     .maybeSingle();
 
   if (error) throw error;
-  if (!data) throw new Error("AUTHORIZED_PROFILE_NOT_FOUND");
+  if (!data) {
+    if (!provisionPublic) throw new Error("AUTHORIZED_PROFILE_NOT_FOUND");
+    const { error: onboardingError } = await supabase.rpc("complete_public_onboarding");
+    if (onboardingError) throw new Error("Verified registration is required. Follow your email link, or contact your administrator for an existing account.");
+    const result = await supabase.from("profiles").select("user_id,agent_id,display_name,role,clearance,active").eq("user_id", userId).maybeSingle();
+    if (result.error || !result.data) throw new Error("AUTHORIZED_PROFILE_NOT_FOUND");
+    if (!result.data.active) throw new Error("AUTHORIZED_PROFILE_INACTIVE");
+    return result.data as CrimeLensProfile;
+  }
 
   const profile = data as CrimeLensProfile;
   if (!profile.active) throw new Error("AUTHORIZED_PROFILE_INACTIVE");

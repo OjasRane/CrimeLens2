@@ -25,6 +25,7 @@ import {
   INITIAL_EVIDENCE_NODES,
 } from "@/lib/evidence-board-storage";
 import type { NetworkWorkspaceCommand } from "@/lib/network-workspace-types";
+import type { GapPreview } from "@/lib/gap-reconstruction";
 
 export type EvidenceNodeType = "stickyNote" | "polaroid";
 export type ActiveWorkspace =
@@ -291,6 +292,7 @@ type InvestigationState = {
   investigationRevision: number;
   activeWorkspace: ActiveWorkspace;
   networkMode: NetworkMode;
+  isNetworkFocusMode: boolean;
   networkWorkspaceRequest: NetworkWorkspaceRequest | null;
   networkWorkspaceOptions: Array<{ id: string; name: string }>;
   activeNetworkWorkspaceId: string | null;
@@ -309,6 +311,8 @@ type InvestigationState = {
   incidentData: IncidentPoint[];
   movementData: MovementArc[];
   mapPanRequest: MapPanRequest | null;
+  gapReconstruction: GapPreview | null;
+  gapAnalysisTime: string | null;
   toggleCommandPalette: () => void;
   closeCommandPalette: () => void;
   setQrModalOpen: (isOpen: boolean) => void;
@@ -316,6 +320,7 @@ type InvestigationState = {
   hydrateInvestigation: (investigation: Investigation) => void;
   setActiveWorkspace: (workspace: ActiveWorkspace) => void;
   setNetworkMode: (mode: NetworkMode) => void;
+  setNetworkFocusMode: (isFocused: boolean) => void;
   requestNetworkWorkspace: (command: NetworkWorkspaceCommand) => void;
   setNetworkWorkspaceCatalog: (
     options: Array<{ id: string; name: string }>,
@@ -333,6 +338,8 @@ type InvestigationState = {
   setSelectedCrimeTypeEnabled: (crimeType: string, isEnabled: boolean) => void;
   setSpatialBounds: (bounds: SpatialBounds | null) => void;
   requestMapPan: (coordinates: [number, number], targetId: string) => void;
+  setGapReconstruction: (reconstruction: GapPreview | null) => void;
+  setGapAnalysisTime: (time: string) => void;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   addNode: (intelText: string) => void;
@@ -356,6 +363,7 @@ export const useInvestigationStore = create<InvestigationState>()(
     investigationRevision: 0,
     activeWorkspace: "map",
     networkMode: "case",
+    isNetworkFocusMode: false,
     networkWorkspaceRequest: null,
     networkWorkspaceOptions: [],
     activeNetworkWorkspaceId: null,
@@ -375,6 +383,8 @@ export const useInvestigationStore = create<InvestigationState>()(
     incidentData: INCIDENT_DATA,
     movementData: MOVEMENT_DATA,
     mapPanRequest: null,
+    gapReconstruction: null,
+    gapAnalysisTime: null,
     nodes: deserializeFlowNodes(INITIAL_EVIDENCE_NODES),
     edges: deserializeFlowEdges(INITIAL_EVIDENCE_EDGES),
     toggleCommandPalette: () =>
@@ -388,6 +398,10 @@ export const useInvestigationStore = create<InvestigationState>()(
 
       set({
         activeInvestigationId: investigation.id,
+        nodes: investigation.id === "demo" ? deserializeFlowNodes(INITIAL_EVIDENCE_NODES) : [],
+        edges: investigation.id === "demo" ? deserializeFlowEdges(INITIAL_EVIDENCE_EDGES) : [],
+        networkWorkspaceRequest: null,
+        networkMode: "case",
         timeRange: [
           investigation.timeline.startDate,
           investigation.timeline.endDate,
@@ -401,6 +415,8 @@ export const useInvestigationStore = create<InvestigationState>()(
         selectedCrimeTypes: [...investigation.map.filterGroups],
         spatialBounds: null,
         mapPanRequest: null,
+        gapReconstruction: null,
+        gapAnalysisTime: null,
         isMapPlaying: false,
         facts: investigation.facts,
         networkWorkspaceOptions: [],
@@ -422,9 +438,14 @@ export const useInvestigationStore = create<InvestigationState>()(
       }));
     },
     setActiveWorkspace: (workspace) => {
-      set({ activeWorkspace: workspace });
+      set({
+        activeWorkspace: workspace,
+        ...(workspace === "network" ? {} : { isNetworkFocusMode: false }),
+      });
     },
     setNetworkMode: (mode) => set({ networkMode: mode }),
+    setNetworkFocusMode: (isFocused) =>
+      set({ isNetworkFocusMode: isFocused }),
     requestNetworkWorkspace: (command) =>
       set((state) => ({
         networkWorkspaceRequest: {
@@ -513,6 +534,12 @@ export const useInvestigationStore = create<InvestigationState>()(
         },
       });
     },
+    setGapReconstruction: (reconstruction) =>
+      set({
+        gapReconstruction: reconstruction,
+        gapAnalysisTime: reconstruction?.selectedTime ?? null,
+      }),
+    setGapAnalysisTime: (time) => set({ gapAnalysisTime: time }),
     onNodesChange: (changes) => {
       set({ nodes: applyNodeChanges(changes, get().nodes) });
     },
@@ -656,6 +683,8 @@ export const useInvestigationStore = create<InvestigationState>()(
         selectedCrimeTypes: [...investigation.map.filterGroups],
         spatialBounds: null,
         isMapPlaying: false,
+        gapReconstruction: null,
+        gapAnalysisTime: null,
       });
     },
   }),

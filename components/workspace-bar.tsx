@@ -5,16 +5,18 @@ import {
   useInvestigationStore,
 } from "@/store/use-investigation-store";
 import { getInvestigation } from "@/data/investigations/registry";
+import { useInvestigationAccess } from "@/components/investigation-access";
 
-const workspaces: { id: ActiveWorkspace; label: string }[] = [
-  { id: "canvas", label: "01 // EVIDENCE BOARD" },
-  { id: "map", label: "02 // GEOSPATIAL MAP" },
-  { id: "network", label: "03 // NETWORK GRAPH" },
-  { id: "timeline", label: "04 // TIMELINE ANALYSIS" },
-  { id: "evidence", label: "05 // EVIDENCE INTAKE" },
+const workspaces: { id: ActiveWorkspace; number: string; label: string }[] = [
+  { id: "canvas", number: "01", label: "Evidence Board" },
+  { id: "map", number: "02", label: "Map" },
+  { id: "network", number: "03", label: "Network" },
+  { id: "timeline", number: "04", label: "Timeline" },
+  { id: "evidence", number: "05", label: "Evidence Intake" },
 ];
 
 export function WorkspaceBar() {
+  const { isPublicDemo } = useInvestigationAccess();
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
@@ -28,7 +30,10 @@ export function WorkspaceBar() {
   const activeInvestigation = getInvestigation(activeInvestigationId);
 
   return (
-    <nav className="fixed left-0 top-20 z-10 hidden h-16 w-full items-center gap-3 overflow-x-auto border-b-4 border-[var(--ink)] bg-[var(--paper)] px-5 font-mono shadow-[0_4px_0_var(--ink)] rounded-none md:flex">
+    <nav
+      aria-label="Investigation features"
+      className="hide-scrollbar fixed left-0 top-16 z-10 hidden h-14 w-full items-end gap-3 overflow-x-auto overflow-y-hidden border-b-4 border-[var(--ink)] bg-[var(--paper)] px-5 font-mono md:flex dark:border-[var(--line)]"
+    >
       {workspaces.map((workspace) => {
         const isActive = activeWorkspace === workspace.id;
 
@@ -37,18 +42,17 @@ export function WorkspaceBar() {
             key={workspace.id}
             type="button"
             onClick={() => setActiveWorkspace(workspace.id)}
-            className={`h-10 shrink-0 border-4 border-[var(--ink)] px-4 text-xs font-black uppercase tracking-normal shadow-[4px_4px_0_var(--ink)] transition-transform active:translate-x-1 active:translate-y-1 active:shadow-none rounded-none ${
-              isActive
-                ? "bg-[var(--ink)] text-[var(--paper)]"
-                : "bg-[var(--accent)] text-[var(--ink)] hover:-translate-x-0.5 hover:-translate-y-0.5"
-            }`}
+            className="fatal-case-tab flex h-12 shrink-0 items-center gap-2 px-4 pb-2 pt-3 text-[11px] font-black uppercase tracking-normal"
             aria-current={isActive ? "page" : undefined}
           >
-            [ {workspace.label} ]
+            <span className="text-[8px] opacity-65" aria-hidden="true">
+              {workspace.number}
+            </span>
+            <span>{isPublicDemo && workspace.id === "evidence" ? "Case Sources" : workspace.label}</span>
           </button>
         );
       })}
-      <div className="ml-auto flex shrink-0 items-center gap-2 border-2 border-[var(--ink)] bg-[var(--panel)] px-3 py-2 text-[10px] font-black uppercase shadow-[3px_3px_0_var(--ink)]">
+      <div className="ml-auto mb-2 flex h-8 shrink-0 items-center gap-2 border-2 border-[var(--ink)] bg-[var(--panel)] px-3 text-[9px] font-black uppercase shadow-[2px_2px_0_var(--ink)] dark:border-[var(--line)] dark:shadow-[2px_2px_0_var(--ink)]">
         [ {activeInvestigation.badge} ]
         <span className="hidden opacity-65 lg:inline">
           {activeInvestigation.caseId} // {activeInvestigation.caseType}

@@ -44,6 +44,7 @@ import {
   type EvidenceNodeType,
   useInvestigationStore,
 } from "@/store/use-investigation-store";
+import { useInvestigationAccess } from "@/components/investigation-access";
 
 const dragTransferType = "application/reactflow";
 
@@ -89,6 +90,7 @@ function EvidenceBox({
     screenPosition?: XYPosition,
   ) => void;
 }) {
+  const { canWrite } = useInvestigationAccess();
   const [isOpen, setIsOpen] = useState(false);
   const [touchDrag, setTouchDrag] = useState<TouchEvidenceDrag | null>(null);
   const touchDragRef = useRef<TouchEvidenceDrag | null>(null);
@@ -212,7 +214,7 @@ function EvidenceBox({
               [ OPEN CASE LEDGER ]
             </button>
           </div>
-          {evidenceItems.map((item) => (
+          {canWrite ? evidenceItems.map((item) => (
             <div key={item.nodeType}>
               <div
                 draggable
@@ -242,7 +244,11 @@ function EvidenceBox({
                 <span className="text-[9px] opacity-65">Tap / Drag</span>
               </button>
             </div>
-          ))}
+          )) : (
+            <div className="border-2 border-dashed border-[var(--ink)] bg-[var(--paper)] px-2 py-3 text-[9px] font-black uppercase">
+              Guest view // Board changes require your own investigation
+            </div>
+          )}
         </div>
       ) : null}
 
@@ -279,6 +285,7 @@ function BoardSurface({
   setNodeLock,
   isLive,
 }: BoardSurfaceProps) {
+  const { canWrite, isPublicDemo } = useInvestigationAccess();
   const { screenToFlowPosition } = useReactFlow();
   const { agentId } = useCollaborationIdentity();
   const boardRef = useRef<HTMLDivElement>(null);
@@ -296,18 +303,20 @@ function BoardSurface({
 
         return {
           ...node,
-          draggable: lockedBy === null || lockedBy === agentId,
+          draggable: canWrite && (lockedBy === null || lockedBy === agentId),
         };
       }),
-    [agentId, nodes],
+    [agentId, canWrite, nodes],
   );
 
   function handleDragOver(event: DragEvent<HTMLDivElement>) {
+    if (!canWrite) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
   }
 
   function handleDrop(event: DragEvent<HTMLDivElement>) {
+    if (!canWrite) return;
     event.preventDefault();
 
     const nodeType = event.dataTransfer.getData(dragTransferType);
@@ -323,6 +332,7 @@ function BoardSurface({
     nodeType: EvidenceNodeType,
     screenPosition?: XYPosition,
   ) {
+    if (!canWrite) return;
     const bounds = boardRef.current?.getBoundingClientRect();
     if (!bounds) return;
 
@@ -343,6 +353,7 @@ function BoardSurface({
   }
 
   function handleNodeDragStart(_event: unknown, node: Node) {
+    if (!canWrite) return;
     const lockedBy =
       typeof node.data.lockedBy === "string" ? node.data.lockedBy : null;
 
@@ -352,16 +363,24 @@ function BoardSurface({
   }
 
   function handleNodeDragStop(_event: unknown, node: Node) {
+    if (!canWrite) return;
     setNodeLock(node.id, null);
   }
 
   return (
     <div ref={boardRef} className="relative h-full w-full bg-[var(--paper)]">
       <EvidenceBox onMobilePlace={handleMobilePlace} />
+      {isPublicDemo && nodes.length === 0 ? (
+        <div className="pointer-events-none absolute inset-0 z-[5] grid place-items-center p-6">
+          <div className="max-w-md border-4 border-[var(--ink)] bg-[var(--panel)] p-5 text-center font-mono text-xs font-black uppercase shadow-[6px_6px_0_var(--ink)]">
+            No approved evidence-board snapshot is available for this public case. Use the Fact Ledger and Case Sources for the approved record.
+          </div>
+        </div>
+      ) : null}
       <div className="pointer-events-none absolute right-2 top-2 z-10 max-w-[calc(100%-13rem)] border-2 border-[var(--ink)] bg-[var(--paper)] px-2 py-2 text-right font-mono text-[9px] font-black uppercase shadow-[3px_3px_0_var(--ink)] max-[390px]:hidden md:right-4 md:top-4 md:text-[10px]">
         <div>[ {activeInvestigation.shortName} ]</div>
         <div className="mt-1 hidden font-bold normal-case opacity-65 sm:block">
-          Board storage follows the active collaboration room
+          {isPublicDemo ? "Approved local snapshot // No room connection" : "Board storage follows the active collaboration room"}
         </div>
       </div>
       <ReactFlow
@@ -370,12 +389,15 @@ function BoardSurface({
         onlyRenderVisibleElements
         nodeTypes={isLive ? liveNodeTypes : localNodeTypes}
         edgeTypes={edgeTypes}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        onNodeDragStart={handleNodeDragStart}
-        onNodeDragStop={handleNodeDragStop}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
+        onNodesChange={canWrite ? onNodesChange : undefined}
+        onEdgesChange={canWrite ? onEdgesChange : undefined}
+        onNodeDragStart={canWrite ? handleNodeDragStart : undefined}
+        onNodeDragStop={canWrite ? handleNodeDragStop : undefined}
+        onDragOver={canWrite ? handleDragOver : undefined}
+        onDrop={canWrite ? handleDrop : undefined}
+        nodesConnectable={canWrite}
+        edgesReconnectable={canWrite}
+        deleteKeyCode={canWrite ? ["Backspace", "Delete"] : null}
         fitView
         panOnScroll
         selectionOnDrag={false}

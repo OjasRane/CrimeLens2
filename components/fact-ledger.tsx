@@ -8,6 +8,7 @@ import type { InvestigationFact } from "@/data/investigations/types";
 import { serializeFlowNode } from "@/lib/evidence-board-storage";
 import { useMutation } from "@/lib/liveblocks";
 import { useInvestigationStore } from "@/store/use-investigation-store";
+import { useInvestigationAccess } from "@/components/investigation-access";
 
 type FactFilter = "all" | InvestigationFact["type"];
 
@@ -20,6 +21,7 @@ function FactLedgerView({
 }: {
   pinFactToBoard: (fact: InvestigationFact) => void;
 }) {
+  const { canWrite } = useInvestigationAccess();
   const [activeFilter, setActiveFilter] = useState<FactFilter>("all");
   const facts = useInvestigationStore((state) => state.facts);
   const activeInvestigationId = useInvestigationStore(
@@ -101,7 +103,7 @@ function FactLedgerView({
               Fact
             </th>
             <th className="w-[92px] border-4 border-[var(--ink)] bg-[var(--ink)] px-2 py-2 align-top font-black text-[var(--paper)] sm:w-[116px]">
-              Action
+              {canWrite ? "Action" : "Source"}
             </th>
           </tr>
         </thead>
@@ -126,7 +128,7 @@ function FactLedgerView({
                 </div>
               </td>
               <td className="border-4 border-[var(--ink)] bg-[var(--panel)] px-2 py-2 align-top">
-                <button
+                {canWrite ? <><button
                   type="button"
                   onClick={() => pinFactToBoard(fact)}
                   className="min-h-11 w-full border-2 border-[var(--ink)] bg-[var(--accent)] px-1 py-2 text-[10px] font-black uppercase leading-tight text-[var(--ink)] shadow-[3px_3px_0_var(--ink)] active:translate-x-1 active:translate-y-1 active:shadow-none rounded-none"
@@ -148,6 +150,11 @@ function FactLedgerView({
                   label="Network"
                   className="mt-2 min-h-11 w-full border-2 border-[var(--ink)] bg-[var(--panel)] px-1 py-2 text-[9px] font-black uppercase leading-tight text-[var(--ink)] shadow-[3px_3px_0_var(--ink)] active:translate-x-1 active:translate-y-1 active:shadow-none"
                 />
+                </> : (
+                  <div className="break-words text-[9px] font-bold normal-case leading-tight">
+                    {fact.sourceRef}
+                  </div>
+                )}
               </td>
             </tr>
           ))}

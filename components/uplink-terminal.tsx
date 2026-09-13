@@ -1,4 +1,8 @@
 "use client";
+import { getInvestigation } from "@/data/investigations/registry";
+import { privateCollaborationEnabled } from "@/lib/liveblocks";
+import { LiveList } from "@liveblocks/client";
+import { useInvestigationStore } from "@/store/use-investigation-store";
 
 import { ClientSideSuspense } from "@liveblocks/react";
 import type { Node } from "@xyflow/react";
@@ -74,12 +78,12 @@ function UplinkInterface({ roomId }: { roomId: string }) {
   const isDisabled = !isConnected || !intel.trim() || status !== "idle";
 
   return (
-    <main className="fixed inset-0 flex min-h-dvh flex-col overflow-y-auto bg-[#031820] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] font-mono text-[#F4F1DC] sm:justify-center sm:p-6">
+    <main className="fixed inset-0 flex min-h-dvh flex-col overflow-y-auto bg-[#031820] px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] font-mono text-[#F4F1DC] sm:justify-center sm:p-6 dark:bg-[var(--paper)] dark:text-[var(--ink)]">
       <div className="mx-auto flex w-full max-w-lg flex-col gap-4 py-2 sm:gap-6">
         <header className="border-l-2 border-[#32D6A0] pl-4">
           <p
             className={`text-xs font-bold uppercase tracking-[0.16em] ${
-              isConnected ? "animate-pulse text-[#32D6A0]" : "text-[#6F8F96]"
+              isConnected ? "animate-pulse text-[#32D6A0]" : "text-[#6F8F96] dark:text-[var(--dim)]"
             }`}
             role="status"
             aria-live="polite"
@@ -91,7 +95,7 @@ function UplinkInterface({ roomId }: { roomId: string }) {
           <h1 className="mt-3 text-2xl font-black uppercase leading-none tracking-tight sm:text-3xl">
             Field Intelligence Relay
           </h1>
-          <p className="mt-3 text-xs uppercase tracking-[0.12em] text-[#6F8F96]">
+          <p className="mt-3 text-xs uppercase tracking-[0.12em] text-[#6F8F96] dark:text-[var(--dim)]">
             Case channel: {roomId}
           </p>
         </header>
@@ -99,7 +103,7 @@ function UplinkInterface({ roomId }: { roomId: string }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <label
             htmlFor="uplink-intel"
-            className="text-xs font-bold uppercase tracking-[0.14em] text-[#6F8F96]"
+            className="text-xs font-bold uppercase tracking-[0.14em] text-[#6F8F96] dark:text-[var(--dim)]"
           >
             Intelligence payload
           </label>
@@ -110,13 +114,13 @@ function UplinkInterface({ roomId }: { roomId: string }) {
             placeholder="ENTER FIELD INTELLIGENCE..."
             rows={6}
             autoFocus
-            className="min-h-36 w-full resize-y rounded-none border border-[#426D79] bg-transparent p-4 text-base leading-relaxed text-[#F4F1DC] outline-none placeholder:text-[#6F8F96] focus:border-[#32D6A0] disabled:opacity-50 sm:min-h-52 sm:resize-none"
+            className="min-h-36 w-full resize-y rounded-none border border-[#426D79] bg-transparent p-4 text-base leading-relaxed text-[#F4F1DC] outline-none placeholder:text-[#6F8F96] focus:border-[#FCD34D] disabled:opacity-50 sm:min-h-52 sm:resize-none dark:border-[var(--line)] dark:text-[var(--ink)] dark:placeholder:text-[var(--dim)] dark:focus:border-[var(--accent)]"
             disabled={!isConnected || status !== "idle"}
           />
           <button
             type="submit"
             disabled={isDisabled}
-            className="min-h-14 w-full rounded-none border border-[#32D6A0] bg-[#32D6A0] px-5 py-4 text-base font-black uppercase tracking-[0.12em] text-[#031820] transition-colors active:bg-[#F4F1DC] disabled:cursor-not-allowed disabled:border-[#426D79] disabled:bg-[#144453] disabled:text-[#6F8F96]"
+            className="min-h-14 w-full rounded-none border border-[#FCD34D] bg-[#FCD34D] px-5 py-4 text-base font-black uppercase tracking-[0.12em] text-[#031820] transition-colors active:bg-[#F4F1DC] disabled:cursor-not-allowed disabled:border-[#426D79] disabled:bg-[#144453] disabled:text-[#6F8F96] dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)] dark:active:bg-[var(--ink)] dark:disabled:border-[var(--line)] dark:disabled:bg-[var(--panel)] dark:disabled:text-[var(--dim)]"
           >
             {status === "sent"
               ? "[ TRANSMITTED ]"
@@ -126,7 +130,7 @@ function UplinkInterface({ roomId }: { roomId: string }) {
           </button>
         </form>
 
-        <p className="border-t border-[#426D79] pt-4 text-[11px] uppercase leading-relaxed tracking-[0.12em] text-[#6F8F96]">
+        <p className="border-t border-[#426D79] pt-4 text-[11px] uppercase leading-relaxed tracking-[0.12em] text-[#6F8F96] dark:border-[var(--line)] dark:text-[var(--dim)]">
           Payloads are inserted onto the command center evidence board at the
           shared staging coordinates.
         </p>
@@ -147,8 +151,8 @@ function MissingLiveblocksConfiguration() {
 
 function MissingCaseId() {
   return (
-    <main className="fixed inset-0 flex min-h-screen items-center justify-center overflow-y-auto bg-[#031820] p-6 font-mono text-[#FFD45A]">
-      <p className="max-w-md border border-[#FFD45A] p-5 text-center text-sm font-bold uppercase tracking-[0.14em]">
+    <main className="fixed inset-0 flex min-h-screen items-center justify-center overflow-y-auto bg-[#031820] p-6 font-mono text-[#FFD45A] dark:bg-[var(--paper)] dark:text-[var(--accent)]">
+      <p className="max-w-md border border-[#FFD45A] p-5 text-center text-sm font-bold uppercase tracking-[0.14em] dark:border-[var(--accent)]">
         [ UPLINK OFFLINE: CASE ID NOT PROVIDED ]
       </p>
     </main>
@@ -157,7 +161,7 @@ function MissingCaseId() {
 
 function UplinkStorageFallback() {
   return (
-    <main className="fixed inset-0 flex min-h-screen items-center justify-center overflow-y-auto bg-[#031820] p-6 font-mono text-[#6F8F96]">
+    <main className="fixed inset-0 flex min-h-screen items-center justify-center overflow-y-auto bg-[#031820] p-6 font-mono text-[#6F8F96] dark:bg-[var(--paper)] dark:text-[var(--dim)]">
       <p className="animate-pulse text-center text-sm font-bold uppercase tracking-[0.16em]">
         [ DECRYPTING LEDGER... ]
       </p>
@@ -167,7 +171,9 @@ function UplinkStorageFallback() {
 
 export function UplinkTerminal() {
   const searchParams = useSearchParams();
-  const requestedCase = formatCaseName(searchParams.get("case") ?? "");
+  const investigationId = useInvestigationStore(state => state.activeInvestigationId);
+  const investigation = getInvestigation(investigationId);
+  const requestedCase = investigation.type === "PRIVATE" ? (privateCollaborationEnabled ? investigation.roomId ?? "" : "") : formatCaseName(searchParams.get("case") ?? "");
 
   if (!requestedCase) return <MissingCaseId />;
   if (!isLiveblocksConfigured) return <MissingLiveblocksConfiguration />;
@@ -176,7 +182,7 @@ export function UplinkTerminal() {
     <RoomProvider
       id={requestedCase}
       initialPresence={{ x: null, y: null, agentId: "FIELD-UPLINK" }}
-      initialStorage={createInitialEvidenceStorage}
+      initialStorage={requestedCase.startsWith("private-board-") ? () => ({nodes:new LiveList([]),edges:new LiveList([])}) : createInitialEvidenceStorage}
     >
       <ClientSideSuspense fallback={<UplinkStorageFallback />}>
         <UplinkInterface roomId={requestedCase} />

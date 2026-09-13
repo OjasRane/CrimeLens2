@@ -1,19 +1,20 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Clock3, FileUp, Map, Network, PanelsTopLeft } from "lucide-react";
 import { triggerHaptic } from "@/lib/haptics";
 import { useInvestigationStore } from "@/store/use-investigation-store";
+import { useInvestigationAccess } from "@/components/investigation-access";
 
 const mobileWorkspaces = [
-  { id: "map" as const, label: "MAP", icon: Map },
-  { id: "canvas" as const, label: "BOARD", icon: PanelsTopLeft },
-  { id: "network" as const, label: "GRAPH", icon: Network },
-  { id: "timeline" as const, label: "TIME", icon: Clock3 },
-  { id: "evidence" as const, label: "INTAKE", icon: FileUp },
+  { id: "canvas" as const, number: "01", label: "Board", icon: PanelsTopLeft },
+  { id: "map" as const, number: "02", label: "Map", icon: Map },
+  { id: "network" as const, number: "03", label: "Network", icon: Network },
+  { id: "timeline" as const, number: "04", label: "Timeline", icon: Clock3 },
+  { id: "evidence" as const, number: "05", label: "Intake", icon: FileUp },
 ];
 
 export function MobileWorkspaceNav() {
+  const { isPublicDemo } = useInvestigationAccess();
   const activeWorkspace = useInvestigationStore(
     (state) => state.activeWorkspace,
   );
@@ -24,9 +25,9 @@ export function MobileWorkspaceNav() {
   return (
     <nav
       aria-label="Mobile workspace"
-      className="fixed inset-x-0 bottom-[env(safe-area-inset-bottom)] z-[70] grid h-16 w-full grid-cols-5 border-t-4 border-black bg-[#F4F4F0] p-1 font-mono shadow-[0_-4px_0_black] md:hidden dark:border-[#598392] dark:bg-[#01161E] dark:shadow-[0_-4px_16px_rgba(1,22,30,0.75)]"
+      className="fixed inset-x-0 bottom-[env(safe-area-inset-bottom)] z-[70] grid h-16 w-full grid-cols-5 gap-1 border-t-4 border-[var(--ink)] bg-[var(--paper)] p-1 font-mono shadow-[0_-4px_0_var(--ink)] md:hidden dark:border-[var(--line)] dark:shadow-[0_-4px_0_var(--ink)]"
     >
-      {mobileWorkspaces.map(({ id, label, icon: Icon }) => {
+      {mobileWorkspaces.map(({ id, number, label, icon: Icon }) => {
         const isActive = activeWorkspace === id;
 
         return (
@@ -38,21 +39,24 @@ export function MobileWorkspaceNav() {
               setActiveWorkspace(id);
             }}
             aria-current={isActive ? "page" : undefined}
-            className={`relative isolate flex min-h-11 min-w-0 items-center justify-center gap-1 overflow-hidden border-2 px-1 text-[9px] font-black uppercase dark:border-[#598392] sm:gap-2 sm:text-[11px] ${
+            className={`relative isolate flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden border-2 px-0.5 font-black uppercase shadow-[2px_2px_0_var(--ink)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[var(--line)] dark:shadow-[2px_2px_0_var(--ink)] sm:flex-row sm:gap-2 sm:text-[11px] ${
               isActive
-                ? "border-black bg-white text-white dark:bg-[#01161E] dark:text-[#AEC3B0]"
-                : "border-black bg-white text-black dark:border-[#598392] dark:bg-[#124559] dark:text-[#EFF6E0]"
+                ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)] dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]"
+                : "border-[var(--ink)] bg-[var(--panel)] text-[var(--ink)] dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)]"
             }`}
           >
             {isActive ? (
-              <motion.div
-                layoutId="active-nav-pill"
-                className="absolute inset-0 -z-10 border-2 border-black bg-black dark:border dark:border-[#AEC3B0] dark:bg-transparent dark:shadow-[0_5px_12px_rgba(174,195,176,0.45)]"
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              <div
+                className="absolute inset-0 -z-10 border-2 border-[var(--ink)] bg-[var(--ink)] dark:border-[var(--accent)] dark:bg-[var(--paper)]"
               />
             ) : null}
-            <Icon aria-hidden="true" size={18} strokeWidth={2.5} />
-            <span>{label}</span>
+            <span className="flex items-center gap-0.5 text-[7px] leading-none opacity-65 sm:text-[9px]">
+              <span aria-hidden="true">{number}</span>
+              <Icon aria-hidden="true" size={13} strokeWidth={2.5} />
+            </span>
+            <span className="max-w-full truncate text-[7px] leading-none sm:text-[11px]">
+              {isPublicDemo && id === "evidence" ? "Sources" : label}
+            </span>
           </button>
         );
       })}

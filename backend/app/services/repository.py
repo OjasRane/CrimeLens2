@@ -21,7 +21,7 @@ def _detail_from_seed(investigation: SeedPayload) -> dict[str, Any]:
     return {
         key: deepcopy(value)
         for key, value in investigation.items()
-        if key not in {"map", "graph", "timeline", "casualtyLedger", "facts"}
+        if key not in {"map", "graph", "timeline", "casualtyLedger", "facts", "creationKey", "ownerUserId"}
     } | {
         "classification": investigation.get("classification", "standard"),
         "isDemo": investigation.get("type") == "DEMO",
@@ -32,6 +32,7 @@ def _detail_from_seed(investigation: SeedPayload) -> dict[str, Any]:
 
 def _summary_from_detail(detail: SeedPayload) -> dict[str, Any]:
     return {
+        "accessMode": detail.get("accessMode", "legacy"),
         "id": detail["id"],
         "slug": detail["slug"],
         "name": detail["name"],
@@ -465,7 +466,7 @@ class PostgresInvestigationRepository(InvestigationRepository):
                 """
                 SELECT user_id, agent_id, display_name, role,
                        COALESCE(clearance_level, clearance) AS clearance_level,
-                       active
+                       active, public_account
                 FROM public.profiles WHERE user_id = %s
                 """,
                 (user_id,),
@@ -755,10 +756,17 @@ class PostgresInvestigationRepository(InvestigationRepository):
     def save_graph_workspace(self, payload: dict[str, Any], owner_user_id: UUID) -> dict[str, Any]:
         workspace_id = payload["id"]
         with self._connect() as connection, connection.cursor() as cursor:
-            cursor.execute("SELECT owner_user_id, created_at, version FROM public.graph_workspaces WHERE id = %s FOR UPDATE", (workspace_id,))
+            # Serialize even first inserts: SELECT FOR UPDATE alone cannot lock an absent row.
+            # Otherwise competing owners could reach ON CONFLICT before the ownership check.
+            cursor.execute("SELECT pg_advisory_xact_lock(hashtextextended(%s,0))", (str(workspace_id),))
+            cursor.execute("SELECT owner_user_id, investigation_id, created_at, version FROM public.graph_workspaces WHERE id = %s FOR UPDATE", (workspace_id,))
             existing = cursor.fetchone()
             if existing and existing["owner_user_id"] != owner_user_id:
                 raise PermissionError("workspace owner mismatch")
+            if existing and existing["investigation_id"] != payload["investigation_id"]:
+                raise PermissionError("workspace case mismatch")
+            if existing and int(payload.get("version", 1)) < int(existing["version"]):
+                raise ValueError("workspace version conflict")
             next_version = max(int(payload.get("version", 1)), int(existing["version"]) + 1 if existing else 1)
             cursor.execute(
                 """INSERT INTO public.graph_workspaces

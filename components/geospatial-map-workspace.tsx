@@ -44,12 +44,18 @@ import {
   type InvestigationPinCategory,
   type InvestigationPinFormValues,
 } from "@/lib/investigation-pins";
+import {
+  reachabilityAt,
+  type CameraReviewStatus,
+} from "@/lib/gap-reconstruction";
+import { updateGapCameraReview } from "@/lib/crimelens-api";
+import { useInvestigationAccess } from "@/components/investigation-access";
 
 /* ─── Deck.gl imports ─────────────────────────── */
 
 import { DeckGL } from "@deck.gl/react";
 import { HeatmapLayer, HexagonLayer } from "@deck.gl/aggregation-layers";
-import { ArcLayer, PathLayer, ScatterplotLayer } from "@deck.gl/layers";
+import { ArcLayer, PathLayer, PolygonLayer, ScatterplotLayer } from "@deck.gl/layers";
 import {
   AmbientLight,
   DirectionalLight,
@@ -341,7 +347,7 @@ function isWithinBounds(
 function TacticalMarker({ color }: { color: string }) {
   return (
     <div
-      className="h-4 w-4 border border-[#EFF6E0] shadow-[0_0_10px_rgba(239,246,224,0.3)]"
+      className="h-4 w-4 border border-[#EFF6E0] shadow-[0_0_10px_rgba(239,246,224,0.3)] dark:border-[var(--line)] dark:shadow-[0_0_10px_rgba(234,229,201,0.3)]"
       style={{
         backgroundColor: color,
         transform: "rotate(45deg)",
@@ -357,32 +363,49 @@ function getTooltip({
   layer,
 }: {
   object?: unknown;
-  layer?: { id?: string };
-}) {
+  layer?: { id?: string } | null;
+}, isDark = false) {
   if (!object) return null;
 
   if (layer?.id === "hexagon-layer") {
     const hex = object as { points?: unknown[]; elevationValue?: number };
     const count = hex.points?.length ?? hex.elevationValue ?? 0;
+    const colors = isDark
+      ? {
+          background: "rgba(19,46,58,0.96)",
+          border: "#EAE5C9",
+          text: "#EAE5C9",
+          muted: "rgba(234,229,201,0.6)",
+          accent: "#FBBF24",
+          shadow: "rgba(6,20,27,0.72)",
+        }
+      : {
+          background: "rgba(18,69,89,0.92)",
+          border: "#598392",
+          text: "#EFF6E0",
+          muted: "#598392",
+          accent: "#FCD34D",
+          shadow: "rgba(1,22,30,0.6)",
+        };
     return {
       html: `
         <div style="
-          background: rgba(18,69,89,0.92);
+          background: ${colors.background};
           backdrop-filter: blur(12px);
-          border: 1px solid #598392;
+          border: 1px solid ${colors.border};
           border-radius: 0;
           padding: 10px 14px;
           font-family: 'Courier New', monospace;
           font-size: 11px;
           font-weight: 900;
-          color: #EFF6E0;
+          color: ${colors.text};
           text-transform: uppercase;
           letter-spacing: 0.1em;
-          box-shadow: 0 4px 20px rgba(1,22,30,0.6);
+          box-shadow: 0 4px 20px ${colors.shadow};
         ">
-          <div style="color: #598392; font-size: 9px; margin-bottom: 4px;">CRIME DENSITY ANALYSIS</div>
-          <div style="font-size: 16px; color: #AEC3B0;">${count} INCIDENTS</div>
-          <div style="color: #598392; font-size: 9px; margin-top: 4px;">HEX BIN AGGREGATE</div>
+          <div style="color: ${colors.muted}; font-size: 9px; margin-bottom: 4px;">CRIME DENSITY ANALYSIS</div>
+          <div style="font-size: 16px; color: ${colors.accent};">${count} INCIDENTS</div>
+          <div style="color: ${colors.muted}; font-size: 9px; margin-top: 4px;">HEX BIN AGGREGATE</div>
         </div>
       `,
       style: {
@@ -395,26 +418,43 @@ function getTooltip({
 
   if (layer?.id === "arc-layer") {
     const arc = object as MovementArc;
+    const colors = isDark
+      ? {
+          background: "rgba(19,46,58,0.96)",
+          border: "#EAE5C9",
+          text: "#EAE5C9",
+          muted: "rgba(234,229,201,0.6)",
+          accent: "#FBBF24",
+          shadow: "rgba(6,20,27,0.72)",
+        }
+      : {
+          background: "rgba(18,69,89,0.92)",
+          border: "#598392",
+          text: "#EFF6E0",
+          muted: "#598392",
+          accent: "#FCD34D",
+          shadow: "rgba(1,22,30,0.6)",
+        };
     return {
       html: `
         <div style="
-          background: rgba(18,69,89,0.92);
+          background: ${colors.background};
           backdrop-filter: blur(12px);
-          border: 1px solid #598392;
+          border: 1px solid ${colors.border};
           border-radius: 0;
           padding: 10px 14px;
           font-family: 'Courier New', monospace;
           font-size: 11px;
           font-weight: 900;
-          color: #EFF6E0;
+          color: ${colors.text};
           text-transform: uppercase;
           letter-spacing: 0.1em;
-          box-shadow: 0 4px 20px rgba(1,22,30,0.6);
+          box-shadow: 0 4px 20px ${colors.shadow};
         ">
-          <div style="color: #598392; font-size: 9px; margin-bottom: 4px;">MOVEMENT TRACE</div>
-          <div style="color: #AEC3B0; margin-bottom: 4px;">${arc.label}</div>
+          <div style="color: ${colors.muted}; font-size: 9px; margin-bottom: 4px;">MOVEMENT TRACE</div>
+          <div style="color: ${colors.accent}; margin-bottom: 4px;">${arc.label}</div>
           <div>IN: ${arc.inbound} / OUT: ${arc.outbound}</div>
-          <div style="color: #598392; font-size: 9px; margin-top: 4px;">${arc.date}</div>
+          <div style="color: ${colors.muted}; font-size: 9px; margin-top: 4px;">${arc.date}</div>
         </div>
       `,
       style: {
@@ -431,6 +471,7 @@ function getTooltip({
 /* ─── Component ───────────────────────────────── */
 
 export function GeospatialMapWorkspace() {
+  const { canWrite, isPublicDemo } = useInvestigationAccess();
   const [isFullscreenMap, setIsFullscreenMap] = useState(false);
   const [activeLayer, setActiveLayer] = useState<ActiveLayerType>("PINS");
   const [viewMode, setViewMode] = useState<ViewMode>("2D");
@@ -454,6 +495,12 @@ export function GeospatialMapWorkspace() {
   const [deletePinId, setDeletePinId] = useState<string | null>(null);
   const [isDeletingPin, setIsDeletingPin] = useState(false);
   const [pinFeedback, setPinFeedback] = useState<string | null>(null);
+  const [selectedGapCameraId, setSelectedGapCameraId] = useState<string | null>(null);
+  const [reviewStatus, setReviewStatus] = useState<CameraReviewStatus>("NOT_REVIEWED");
+  const [reviewNotes, setReviewNotes] = useState("");
+  const [reviewEvidenceId, setReviewEvidenceId] = useState("");
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewError, setReviewError] = useState<string | null>(null);
   const pinMutationInFlightRef = useRef(false);
   const pinFeedbackTimerRef = useRef<number | null>(null);
 
@@ -526,6 +573,12 @@ export function GeospatialMapWorkspace() {
 
   const loadPins = useCallback(
     async (signal?: AbortSignal) => {
+      if (!canWrite) {
+        setPins([]);
+        setPinsLoading(false);
+        setPinsLoadError(null);
+        return [];
+      }
       setPinsLoading(true);
       setPinsLoadError(null);
       try {
@@ -547,7 +600,7 @@ export function GeospatialMapWorkspace() {
         if (!signal?.aborted) setPinsLoading(false);
       }
     },
-    [activeInvestigationId],
+    [activeInvestigationId, canWrite],
   );
 
   const cancelPinOperation = useCallback(() => {
@@ -599,8 +652,27 @@ export function GeospatialMapWorkspace() {
     (s) => s.setSelectedLocationId,
   );
   const clearAllFilters = useInvestigationStore((s) => s.clearAllFilters);
+  const gapReconstruction = useInvestigationStore((s) => s.gapReconstruction);
+  const gapAnalysisTime = useInvestigationStore((s) => s.gapAnalysisTime);
+  const setGapAnalysisTime = useInvestigationStore((s) => s.setGapAnalysisTime);
+  const setGapReconstruction = useInvestigationStore((s) => s.setGapReconstruction);
+  const gapReachability = useMemo(
+    () => gapReconstruction && gapAnalysisTime
+      ? reachabilityAt(gapReconstruction, gapAnalysisTime)
+      : null,
+    [gapAnalysisTime, gapReconstruction],
+  );
+  const selectedGapCamera =
+    gapReconstruction?.candidates.find(
+      (item) => item.camera.id === selectedGapCameraId,
+    ) ?? null;
+  const savedGapRunId = gapReconstruction?.id ?? null;
 
   const beginOrCancelPinPlacement = useCallback(() => {
+    if (!canWrite) {
+      showPinFeedback("READ ONLY // START YOUR OWN INVESTIGATION TO ADD PINS");
+      return;
+    }
     if (pinOperationActive) {
       cancelPinOperation();
       return;
@@ -614,7 +686,7 @@ export function GeospatialMapWorkspace() {
     setTemporaryPin(null);
     setPinMutationError(null);
     setIsAddPinMode(true);
-  }, [cancelPinOperation, pinOperationActive, setSelectedLocationId]);
+  }, [canWrite, cancelPinOperation, pinOperationActive, setSelectedLocationId, showPinFeedback]);
 
   const selectUserPin = useCallback(
     (pinId: string) => {
@@ -652,6 +724,7 @@ export function GeospatialMapWorkspace() {
 
   const savePin = useCallback(
     async (values: InvestigationPinFormValues) => {
+      if (!canWrite) return;
       if (pinMutationInFlightRef.current) return;
       const investigationId = activeInvestigationId;
       pinMutationInFlightRef.current = true;
@@ -708,6 +781,7 @@ export function GeospatialMapWorkspace() {
     },
     [
       activeInvestigationId,
+      canWrite,
       pinEditorMode,
       selectedPin,
       showPinFeedback,
@@ -716,6 +790,7 @@ export function GeospatialMapWorkspace() {
   );
 
   const confirmDeletePin = useCallback(async () => {
+    if (!canWrite) return;
     if (!pinPendingDelete || pinMutationInFlightRef.current) return;
     const investigationId = activeInvestigationId;
     pinMutationInFlightRef.current = true;
@@ -744,7 +819,7 @@ export function GeospatialMapWorkspace() {
       pinMutationInFlightRef.current = false;
       setIsDeletingPin(false);
     }
-  }, [activeInvestigationId, pinPendingDelete, showPinFeedback]);
+  }, [activeInvestigationId, canWrite, pinPendingDelete, showPinFeedback]);
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -855,6 +930,27 @@ export function GeospatialMapWorkspace() {
     liveViewStateRef.current = nextViewState;
     setViewState(nextViewState);
   }, [activeInvestigation]);
+
+  useEffect(() => {
+    setSelectedGapCameraId(null);
+    setReviewError(null);
+    if (!gapReconstruction) return;
+    const west = Math.min(gapReconstruction.startCoordinates.longitude, gapReconstruction.endCoordinates.longitude);
+    const east = Math.max(gapReconstruction.startCoordinates.longitude, gapReconstruction.endCoordinates.longitude);
+    const south = Math.min(gapReconstruction.startCoordinates.latitude, gapReconstruction.endCoordinates.latitude);
+    const north = Math.max(gapReconstruction.startCoordinates.latitude, gapReconstruction.endCoordinates.latitude);
+    const span = Math.max(east - west, north - south, 0.002);
+    const nextViewState = {
+      ...liveViewStateRef.current,
+      longitude: (west + east) / 2,
+      latitude: (south + north) / 2,
+      zoom: Math.max(4, Math.min(15, Math.log2(25 / span))),
+      transitionDuration: 700,
+      transitionInterpolator: new FlyToInterpolator(),
+    };
+    liveViewStateRef.current = nextViewState;
+    setViewState(nextViewState);
+  }, [gapReconstruction]);
 
   const changeViewMode = useCallback((mode: ViewMode) => {
     const camera =
@@ -1135,6 +1231,34 @@ export function GeospatialMapWorkspace() {
         }),
       );
     }
+    if (gapReconstruction && gapReachability) {
+      result.push(
+        new PolygonLayer<{ polygon: [number, number][] }>({
+          id: "gap-forward-region",
+          data: [{ polygon: gapReachability.forwardRegion }],
+          getPolygon: (item) => item.polygon,
+          filled: true,
+          stroked: true,
+          getFillColor: [252, 211, 77, 65],
+          getLineColor: [252, 211, 77, 235],
+          getLineWidth: 2,
+          lineWidthUnits: "pixels",
+          pickable: false,
+        }),
+        new PolygonLayer<{ polygon: [number, number][] }>({
+          id: "gap-backward-region",
+          data: [{ polygon: gapReachability.backwardRegion }],
+          getPolygon: (item) => item.polygon,
+          filled: true,
+          stroked: true,
+          getFillColor: [99, 102, 241, 65],
+          getLineColor: [99, 102, 241, 235],
+          getLineWidth: 2,
+          lineWidthUnits: "pixels",
+          pickable: false,
+        }),
+      );
+    }
     return result;
   }, [
     activeInvestigationId,
@@ -1143,6 +1267,8 @@ export function GeospatialMapWorkspace() {
     filteredMovements,
     isDark,
     viewMode,
+    gapReachability,
+    gapReconstruction,
   ]);
 
   /* ── Playback timer ────────────────────────── */
@@ -1193,7 +1319,7 @@ export function GeospatialMapWorkspace() {
   // Prevent WebGL crash by waiting for theme resolution
   if (!mounted || !resolvedTheme) {
     return (
-      <div className="relative h-full min-h-0 w-full bg-[#F4F4F0] dark:bg-[#01161E]" />
+      <div className="relative h-full min-h-0 w-full bg-[#F4F4F0] dark:bg-[var(--paper)]" />
     );
   }
 
@@ -1413,7 +1539,7 @@ export function GeospatialMapWorkspace() {
         controller={true}
         layers={layers}
         effects={MAP_EFFECTS}
-        getTooltip={getTooltip as any}
+        getTooltip={(info) => getTooltip(info, isDark) as any}
         style={MAP_DIMENSIONS}
       >
         <Map
@@ -1422,6 +1548,25 @@ export function GeospatialMapWorkspace() {
           reuseMaps={true}
           attributionControl={false}
         >
+          {gapReconstruction ? (
+            <>
+              {[
+                { key: "START", point: gapReconstruction.startCoordinates, color: "#FCD34D" },
+                { key: "END", point: gapReconstruction.endCoordinates, color: "#6366F1" },
+              ].map((marker) => (
+                <Marker key={marker.key} longitude={marker.point.longitude} latitude={marker.point.latitude} anchor="center">
+                  <div aria-label={`${marker.key} documented observation`} className="grid size-10 place-items-center rounded-full border-4 border-black bg-white font-mono text-[9px] font-black text-black shadow-[3px_3px_0_#000]" style={{ outline: `3px solid ${marker.color}` }}>{marker.key === "START" ? "A" : "B"}</div>
+                </Marker>
+              ))}
+              {gapReconstruction.candidates.map((candidate) => (
+                <Marker key={candidate.camera.id} longitude={candidate.camera.coordinates.longitude} latitude={candidate.camera.coordinates.latitude} anchor="center">
+                  <button type="button" aria-label={`Inspect candidate camera ${candidate.camera.label}`} onClick={(event) => { event.stopPropagation(); const review = gapReconstruction.reviews?.find((item) => item.cameraId === candidate.camera.id); setReviewStatus(review?.status ?? "NOT_REVIEWED"); setReviewNotes(review?.notes ?? ""); setReviewEvidenceId(review?.evidenceId ?? ""); setSelectedGapCameraId(candidate.camera.id); setReviewError(null); }} className={`relative grid size-11 place-items-center focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[#FCD34D] ${candidate.camera.isSynthetic ? "text-amber-500" : "text-red-600"}`}>
+                    <span className="absolute h-0.5 w-9 bg-current"/><span className="absolute h-9 w-0.5 bg-current"/><span className="size-4 rounded-full border-[3px] border-current bg-white/80"/>
+                  </button>
+                </Marker>
+              ))}
+            </>
+          ) : null}
           {activeLayer === "PINS" &&
             showSystemLocations &&
             visibleSystemLocations.map((incident) => (
@@ -1483,6 +1628,28 @@ export function GeospatialMapWorkspace() {
           ) : null}
         </Map>
       </DeckGL>
+
+      {gapReconstruction && gapAnalysisTime ? (
+        <div className="absolute left-3 right-3 top-3 z-30 border-4 border-[var(--ink)] bg-[var(--paper)] p-3 font-mono text-[10px] font-black uppercase text-[var(--ink)] shadow-[5px_5px_0_var(--ink)] md:left-4 md:right-auto md:w-[min(520px,calc(100%-2rem))]">
+          <div className="flex items-start justify-between gap-3">
+            <div><div className="text-[var(--danger)]">[ GAP ANALYSIS // CALCULATED, NOT OBSERVED ]</div><div className="mt-1 normal-case opacity-75">{gapReconstruction.modelLabel}</div></div>
+            <button type="button" aria-label="Remove gap analysis overlay" onClick={() => setGapReconstruction(null)} className="grid size-9 shrink-0 place-items-center border-2 border-[var(--ink)]"><X className="size-4"/></button>
+          </div>
+          <label className="mt-3 block">Analysis time // {new Date(gapAnalysisTime).toLocaleString()}<input aria-label="Gap analysis time" type="range" min={Date.parse(gapReconstruction.startTime)} max={Date.parse(gapReconstruction.endTime)} step={1000} value={Date.parse(gapAnalysisTime)} onChange={(event) => setGapAnalysisTime(new Date(Number(event.target.value)).toISOString())} className="mt-2 w-full accent-[var(--danger)]"/></label>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1"><span className="text-amber-600">FORWARD {gapReachability?.forwardRadiusKm.toFixed(2)} KM</span><span className="text-indigo-600">BACKWARD {gapReachability?.backwardRadiusKm.toFixed(2)} KM</span><span>{gapReconstruction.candidates.length} CANDIDATE CAMERAS</span>{gapReconstruction.isEnvelope ? <span>TIME ENVELOPE</span> : null}</div>
+        </div>
+      ) : null}
+
+      {selectedGapCamera ? (
+        <aside className="absolute bottom-3 left-3 right-3 z-40 max-h-[58dvh] overflow-y-auto border-4 border-[var(--ink)] bg-[var(--paper)] p-3 font-mono text-[10px] font-black uppercase text-[var(--ink)] shadow-[6px_6px_0_var(--ink)] md:bottom-28 md:left-auto md:right-4 md:w-[380px]">
+          <button type="button" aria-label="Close camera inspector" onClick={() => setSelectedGapCameraId(null)} className="absolute right-2 top-2 grid size-8 place-items-center border-2 border-[var(--ink)]"><X className="size-4"/></button>
+          <div className="pr-10 text-sm">{selectedGapCamera.camera.label}</div>
+          <div className="mt-1 text-[var(--danger)]">Candidate for review only {selectedGapCamera.camera.isSynthetic ? "// SYNTHETIC" : ""}</div>
+          <dl className="mt-3 space-y-2 normal-case"><div><dt className="uppercase opacity-60">Estimated review window</dt><dd>{selectedGapCamera.earliestArrival ? new Date(selectedGapCamera.earliestArrival).toLocaleString() : "Unknown"} → {selectedGapCamera.latestDeparture ? new Date(selectedGapCamera.latestDeparture).toLocaleString() : "Unknown"}</dd></div><div><dt className="uppercase opacity-60">Rationale</dt><dd>{selectedGapCamera.reason}</dd></div><div><dt className="uppercase opacity-60">Source / availability</dt><dd>{selectedGapCamera.camera.sourceRef} // recording {selectedGapCamera.recordingAvailability.toLowerCase()} // operation {selectedGapCamera.operationalStatus.toLowerCase()}</dd></div><div><dt className="uppercase opacity-60">Retention</dt><dd>{selectedGapCamera.camera.retentionInformation || "Unknown"}</dd></div></dl>
+          {savedGapRunId && canWrite ? <div className="mt-4 border-t-2 border-[var(--ink)] pt-3"><label className="block">Review status<select value={reviewStatus} onChange={(event)=>setReviewStatus(event.target.value as CameraReviewStatus)} className="mt-1 min-h-11 w-full border-2 border-[var(--ink)] bg-[var(--panel)] p-2"><option>NOT_REVIEWED</option><option>REQUESTED</option><option>FOOTAGE_UNAVAILABLE</option><option>REVIEWED_NO_RELEVANT_FINDING</option><option>RELEVANT_FOOTAGE_FOUND</option></select></label><label className="mt-2 block">Investigator notes<textarea value={reviewNotes} onChange={(event)=>setReviewNotes(event.target.value)} className="mt-1 min-h-20 w-full border-2 border-[var(--ink)] bg-[var(--panel)] p-2 normal-case"/></label><label className="mt-2 block">Existing evidence UUID (optional)<input value={reviewEvidenceId} onChange={(event)=>setReviewEvidenceId(event.target.value)} className="mt-1 min-h-11 w-full border-2 border-[var(--ink)] bg-[var(--panel)] p-2 normal-case" placeholder="Link a supported ingested item"/></label>{reviewError ? <p role="alert" className="mt-2 text-[var(--danger)]">{reviewError}</p> : null}<button type="button" disabled={reviewBusy} onClick={async()=>{if(!canWrite)return;setReviewBusy(true);setReviewError(null);try{await updateGapCameraReview(activeInvestigationId,savedGapRunId,selectedGapCamera.camera.id,{status:reviewStatus,notes:reviewNotes,...(reviewEvidenceId.trim()?{evidenceId:reviewEvidenceId.trim()}:{})});}catch(error){setReviewError(error instanceof Error?error.message:"Review could not be saved.");}finally{setReviewBusy(false);}}} className="mt-2 min-h-11 w-full border-2 border-[var(--ink)] bg-[var(--accent)] p-2 disabled:opacity-50">{reviewBusy ? "SAVING…" : "SAVE REVIEW"}</button></div> : <p className="mt-4 border-2 border-dashed border-[var(--ink)] p-2 normal-case">{isPublicDemo ? "Guest view is read only. Camera review changes require your own investigation." : "Save the reconstruction workflow before changing review status."}</p>}
+          <p className="mt-3 normal-case opacity-70">A candidate does not establish that footage exists or that the subject was captured. Supported evidence may be linked through the existing evidence-ingestion workflow; video processing is not available.</p>
+        </aside>
+      ) : null}
 
       {activeLayer === "DENSITY" && activeInvestigation.map.densityNotice ? (
         <div className="absolute left-1/2 top-1/2 z-20 w-[min(340px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 border-4 border-[var(--ink)] bg-[var(--accent)] px-4 py-3 text-center font-mono text-xs font-black uppercase text-[var(--ink)] shadow-[5px_5px_0_var(--ink)]">
@@ -1579,7 +1746,7 @@ export function GeospatialMapWorkspace() {
         </aside>
       ) : null}
 
-      {selectedPin && !pinEditorMode ? (
+      {canWrite && selectedPin && !pinEditorMode ? (
         <InvestigationPinDetails
           pin={selectedPin}
           linkOptions={pinLinkOptions}
@@ -1595,7 +1762,7 @@ export function GeospatialMapWorkspace() {
         />
       ) : null}
 
-      {pinEditorMode === "create" && temporaryPin ? (
+      {canWrite && pinEditorMode === "create" && temporaryPin ? (
         <InvestigationPinEditor
           key={`create-${temporaryPin.latitude}-${temporaryPin.longitude}`}
           mode="create"
@@ -1609,7 +1776,7 @@ export function GeospatialMapWorkspace() {
         />
       ) : null}
 
-      {pinEditorMode === "edit" && selectedPin ? (
+      {canWrite && pinEditorMode === "edit" && selectedPin ? (
         <InvestigationPinEditor
           key={`edit-${selectedPin.id}-${selectedPin.updatedAt}`}
           mode="edit"
@@ -1650,7 +1817,7 @@ export function GeospatialMapWorkspace() {
       <div
         role="group"
         aria-label="Map view mode"
-        className="absolute right-3 top-3 z-20 flex border-4 border-black bg-white font-mono text-[9px] font-black uppercase shadow-[4px_4px_0_black] dark:border dark:border-[#598392] dark:bg-[#01161E] dark:shadow-[inset_0_0_14px_rgba(174,195,176,0.12),0_0_18px_rgba(1,22,30,0.72)] sm:right-4 sm:top-4 sm:text-xs"
+        className="absolute right-3 top-3 z-20 flex border-4 border-black bg-white font-mono text-[9px] font-black uppercase shadow-[4px_4px_0_black] dark:border dark:border-[var(--line)] dark:bg-[var(--paper)] dark:shadow-[inset_0_0_14px_rgba(251,191,36,0.12),0_0_18px_rgba(6,20,27,0.72)] sm:right-4 sm:top-4 sm:text-xs"
       >
         {(["2D", "3D"] as ViewMode[]).map((mode) => {
           const isActive = viewMode === mode;
@@ -1667,8 +1834,8 @@ export function GeospatialMapWorkspace() {
               }}
               className={`px-2 py-2 sm:px-4 ${
                 isActive
-                  ? "bg-black text-white dark:bg-[#AEC3B0] dark:text-[#01161E] dark:[text-shadow:none]"
-                  : "bg-white text-black dark:bg-transparent dark:text-[#EFF6E0] dark:[text-shadow:0_0_7px_rgba(174,195,176,0.38)]"
+                  ? "bg-black text-white dark:bg-[var(--accent)] dark:text-[var(--accent-ink)] dark:[text-shadow:none]"
+                  : "bg-white text-black dark:bg-transparent dark:text-[var(--ink)] dark:[text-shadow:0_0_7px_rgba(251,191,36,0.38)]"
               }`}
             >
               [ {label} ]
@@ -1678,7 +1845,7 @@ export function GeospatialMapWorkspace() {
       </div>
 
       {/* Analysis layer toggle */}
-      <div className="absolute right-4 top-16 z-20 hidden border border-[#598392] font-mono text-xs font-black uppercase tracking-wide shadow-[4px_4px_0_rgba(1,22,30,0.8)] lg:flex">
+      <div className="absolute right-4 top-16 z-20 hidden border border-[#598392] font-mono text-xs font-black uppercase tracking-wide shadow-[4px_4px_0_rgba(1,22,30,0.8)] lg:flex dark:border-[var(--line)] dark:shadow-[4px_4px_0_var(--ink)]">
         {(["PINS", "HEAT", "DENSITY", "ROUTES"] as ActiveLayerType[]).map(
           (layer) => (
             <button
@@ -1693,8 +1860,8 @@ export function GeospatialMapWorkspace() {
               }}
               className={`px-3 py-2 transition-colors ${
                 activeLayer === layer
-                  ? "bg-[#EFF6E0] text-[#01161E]"
-                  : "border-r border-[#598392] bg-[#124559] text-[#EFF6E0] last:border-r-0 hover:bg-[#598392]"
+                  ? "bg-[#EFF6E0] text-[#01161E] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]"
+                  : "border-r border-[#598392] bg-[#124559] text-[#EFF6E0] last:border-r-0 hover:bg-[#598392] dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:hover:bg-[var(--surface)]"
               }`}
             >
               {layer}
@@ -1705,10 +1872,12 @@ export function GeospatialMapWorkspace() {
           type="button"
           aria-pressed={pinOperationActive}
           onClick={beginOrCancelPinPlacement}
-          className={`flex items-center gap-1 border-l-2 px-3 py-2 transition-[transform,background-color,color] duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FCD34D] ${
+          disabled={!canWrite}
+          title={isPublicDemo ? "Start your own investigation to add persistent pins" : undefined}
+          className={`flex items-center gap-1 border-l-2 px-3 py-2 transition-[transform,background-color,color] duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FCD34D] dark:focus-visible:ring-[var(--accent)] ${
             pinOperationActive
-              ? "border-[#EFF6E0] bg-[#D22B2B] text-white"
-              : "border-[#598392] bg-[#FCD34D] text-black"
+              ? "border-[#EFF6E0] bg-[#D22B2B] text-white dark:border-[var(--line)]"
+              : "border-[#598392] bg-[#FCD34D] text-black dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]"
           }`}
         >
           {pinOperationActive ? (
@@ -1716,7 +1885,7 @@ export function GeospatialMapWorkspace() {
           ) : (
             <Plus aria-hidden="true" size={14} strokeWidth={3} />
           )}
-          {pinOperationActive ? "CANCEL PIN" : "ADD PIN"}
+          {isPublicDemo ? "READ ONLY" : pinOperationActive ? "CANCEL PIN" : "ADD PIN"}
         </button>
       </div>
 
@@ -1741,7 +1910,7 @@ export function GeospatialMapWorkspace() {
             triggerHaptic("light");
             setIsMobileFiltersOpen(true);
           }}
-          className="min-h-11 min-w-0 flex-1 truncate border-4 border-black bg-[#F4F4F0] px-2 text-black shadow-[3px_3px_0_black] dark:border-[#598392] dark:bg-[#01161E] dark:text-[#AEC3B0] dark:shadow-[0_0_12px_rgba(1,22,30,0.75)]"
+          className="min-h-11 min-w-0 flex-1 truncate border-4 border-black bg-[#F4F4F0] px-2 text-black shadow-[3px_3px_0_black] dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--accent)] dark:shadow-[0_0_12px_rgba(6,20,27,0.75)]"
         >
           [ FILTERS ]
         </button>
@@ -1749,10 +1918,12 @@ export function GeospatialMapWorkspace() {
           type="button"
           aria-pressed={pinOperationActive}
           onClick={beginOrCancelPinPlacement}
-          className={`ml-2 flex min-h-11 shrink-0 items-center gap-1 border-4 border-black px-2 shadow-[3px_3px_0_black] dark:border-[#598392] ${
+          disabled={!canWrite}
+          title={isPublicDemo ? "Start your own investigation to add persistent pins" : undefined}
+          className={`ml-2 flex min-h-11 shrink-0 items-center gap-1 border-4 border-black px-2 shadow-[3px_3px_0_black] dark:border-[var(--line)] ${
             pinOperationActive
               ? "bg-[#D22B2B] text-white"
-              : "bg-[#FCD34D] text-black dark:bg-[#AEC3B0] dark:text-[#01161E]"
+              : "bg-[#FCD34D] text-black dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]"
           }`}
         >
           {pinOperationActive ? (
@@ -1760,7 +1931,7 @@ export function GeospatialMapWorkspace() {
           ) : (
             <Plus aria-hidden="true" size={13} strokeWidth={3} />
           )}
-          {pinOperationActive ? "CANCEL" : "ADD PIN"}
+          {isPublicDemo ? "READ ONLY" : pinOperationActive ? "CANCEL" : "ADD PIN"}
         </button>
       </div>
 
@@ -1777,18 +1948,18 @@ export function GeospatialMapWorkspace() {
               onClick={() => setIsMobileFiltersOpen(false)}
             />
             <motion.aside
-              className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4rem)] z-[90] max-h-[72dvh] overflow-y-auto border-t-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[0_-4px_0_black] md:bottom-8 lg:hidden dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0] dark:shadow-[0_-10px_28px_rgba(1,22,30,0.85)]"
+              className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4rem)] z-[90] max-h-[72dvh] overflow-y-auto border-t-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[0_-4px_0_black] md:bottom-8 lg:hidden dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)] dark:shadow-[0_-10px_28px_rgba(6,20,27,0.85)]"
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ duration: 0.22, ease: "easeOut" }}
             >
-              <div className="sticky top-0 z-10 flex min-h-14 items-center justify-between border-b-4 border-black bg-black px-3 text-white dark:border-[#598392] dark:bg-[#124559] dark:text-[#AEC3B0]">
+              <div className="sticky top-0 z-10 flex min-h-14 items-center justify-between border-b-4 border-black bg-black px-3 text-white dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--accent)]">
                 <span>[ ACTIVE FILTERS ]</span>
                 <button
                   type="button"
                   onClick={() => setIsMobileFiltersOpen(false)}
-                  className="grid h-11 w-11 place-items-center border-2 border-white bg-black text-white dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0]"
+                  className="grid h-11 w-11 place-items-center border-2 border-white bg-black text-white dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)]"
                   aria-label="Close active filters"
                 >
                   [ X ]

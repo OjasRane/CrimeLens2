@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import type { ReactNode } from "react";
 import { useInvestigationStore } from "@/store/use-investigation-store";
+import { useInvestigationAccess } from "@/components/investigation-access";
 
 function WorkspaceLoading() {
   return (
@@ -44,6 +45,10 @@ const EvidenceIntakeWorkspace = dynamic(
     ),
   { ssr: false, loading: WorkspaceLoading },
 );
+const PublicCaseSources = dynamic(
+  () => import("@/components/public-case-sources").then((module) => module.PublicCaseSources),
+  { ssr: false, loading: WorkspaceLoading },
+);
 
 function WorkspaceFrame({
   title,
@@ -53,13 +58,9 @@ function WorkspaceFrame({
   children: ReactNode;
 }) {
   return (
-    <div className="h-full min-h-0 overflow-hidden bg-[var(--paper)] p-0 md:p-4">
-      <section className="flex h-full min-h-0 flex-col border-0 border-[var(--ink)] bg-[var(--panel)] shadow-none rounded-none md:min-h-full md:border-4 md:shadow-[4px_4px_0_var(--ink)]">
-        <div className="hidden shrink-0 border-b-4 border-[var(--ink)] bg-[var(--paper)] px-4 py-3 md:block">
-          <h2 className="font-serif text-3xl font-black uppercase leading-none">
-            {title}
-          </h2>
-        </div>
+    <div className="h-full min-h-0 overflow-hidden bg-[var(--paper)] p-0 md:p-2">
+      <section className="flex h-full min-h-0 flex-col border-0 border-[var(--ink)] bg-[var(--panel)] shadow-none rounded-none md:min-h-full md:border-2 md:shadow-[3px_3px_0_var(--ink)]">
+        <h2 className="sr-only">{title}</h2>
         {children}
       </section>
     </div>
@@ -67,6 +68,7 @@ function WorkspaceFrame({
 }
 
 export function WorkspaceViewport() {
+  const { isPublicDemo } = useInvestigationAccess();
   const activeWorkspace = useInvestigationStore(
     (state) => state.activeWorkspace,
   );
@@ -88,7 +90,7 @@ export function WorkspaceViewport() {
   }
 
   if (activeWorkspace === "evidence") {
-    return <EvidenceIntakeWorkspace />;
+    return isPublicDemo ? <PublicCaseSources /> : <EvidenceIntakeWorkspace />;
   }
 
   return <Board />;

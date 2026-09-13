@@ -18,6 +18,7 @@ import { triggerHaptic } from "@/lib/haptics";
 import { useBroadcastEvent } from "@/lib/liveblocks";
 import { useInvestigationStore } from "@/store/use-investigation-store";
 import type { NetworkWorkspaceCommand } from "@/lib/network-workspace-types";
+import { useInvestigationAccess } from "@/components/investigation-access";
 
 type TargetCategory = "SYSTEM ACTIONS" | "INVESTIGATION ACTIONS" | "WORKSPACE ACTIONS" | "PERSONNEL" | "SECTORS" | "VEHICLES";
 
@@ -203,6 +204,7 @@ type CommandPaletteProps = {
 };
 
 function CommandPalette({ broadcast }: CommandPaletteProps) {
+  const { isPublicDemo } = useInvestigationAccess();
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
@@ -235,7 +237,12 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
   const [highlightedIndex, setHighlightedIndex] = useState(0);
 
   const investigationTargets = useMemo<CommandResult[]>(() => {
-    if (activeInvestigationId === "demo") return [...INVESTIGATION_ACTIONS, ...WORKSPACE_ACTIONS, ...TARGETS];
+    if (activeInvestigationId === "demo") {
+      const targets = [...INVESTIGATION_ACTIONS, ...WORKSPACE_ACTIONS, ...TARGETS];
+      return isPublicDemo
+        ? targets.filter((target) => target.type !== "workspace_action" && target.type !== "system_action")
+        : targets;
+    }
 
     const systemAction = TARGETS[0];
     const locationTargets: IntelligenceTarget[] = activeInvestigation.map.locations
@@ -278,8 +285,11 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
         ];
       });
 
-    return [systemAction, ...INVESTIGATION_ACTIONS, ...WORKSPACE_ACTIONS, ...entityTargets, ...locationTargets];
-  }, [activeInvestigation, activeInvestigationId]);
+    const targets: CommandResult[] = [systemAction, ...INVESTIGATION_ACTIONS, ...WORKSPACE_ACTIONS, ...entityTargets, ...locationTargets];
+    return isPublicDemo
+      ? targets.filter((target) => target.type !== "workspace_action" && target.type !== "system_action")
+      : targets;
+  }, [activeInvestigation, activeInvestigationId, isPublicDemo]);
 
   const results = useMemo(() => {
     const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
@@ -329,6 +339,10 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
   }, [highlightedIndex]);
 
   const execute = (target: CommandResult, shouldBroadcast: boolean) => {
+    if (isPublicDemo && (target.type === "system_action" || target.type === "workspace_action")) {
+      close();
+      return;
+    }
     if (target.type === "system_action" && target.id === "sys-action-uplink") {
       setQrModalOpen(true);
       close();
@@ -417,13 +431,13 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
             role="dialog"
             aria-modal="true"
             aria-label="Global intelligence command palette"
-            className="flex w-full max-w-[780px] flex-col overflow-hidden border-4 border-black bg-[#F4F4F0] font-mono text-black shadow-[4px_4px_0_black] max-md:fixed max-md:inset-0 max-md:h-dvh max-md:w-full max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:pb-[env(safe-area-inset-bottom)] max-md:pt-[env(safe-area-inset-top)] max-md:shadow-none md:shadow-[8px_8px_0_black] dark:border dark:border-[#598392] dark:bg-[#01161E] dark:text-[#EFF6E0] dark:shadow-[inset_0_0_20px_rgba(174,195,176,0.16),0_0_20px_rgba(1,22,30,0.7)] dark:[text-shadow:0_0_7px_rgba(174,195,176,0.38)]"
+            className="flex w-full max-w-[780px] flex-col overflow-hidden border-4 border-black bg-[#F4F4F0] font-mono text-black shadow-[4px_4px_0_black] max-md:fixed max-md:inset-0 max-md:h-dvh max-md:w-full max-md:max-w-none max-md:rounded-none max-md:border-0 max-md:pb-[env(safe-area-inset-bottom)] max-md:pt-[env(safe-area-inset-top)] max-md:shadow-none md:shadow-[8px_8px_0_black] dark:border dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)] dark:shadow-[inset_0_0_20px_rgba(251,191,36,0.16),0_0_20px_rgba(6,20,27,0.7)] dark:[text-shadow:0_0_7px_rgba(251,191,36,0.38)]"
             initial={{ opacity: 0, scale: 0.88, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 5 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
           >
-            <header className="flex items-center justify-between border-b-4 border-black px-5 py-3 dark:border-b dark:border-[#598392] dark:bg-[#124559]/45">
+            <header className="flex items-center justify-between border-b-4 border-black px-5 py-3 dark:border-b dark:border-[var(--line)] dark:bg-[var(--panel)]/45">
               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] sm:text-xs">
                 <Radio
                   aria-hidden="true"
@@ -435,7 +449,7 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
               <button
                 type="button"
                 onClick={close}
-                className="grid h-11 w-11 place-items-center border-2 border-black hover:bg-black hover:text-[#F4F4F0] md:h-8 md:w-8 dark:border dark:border-[#598392] dark:text-[#AEC3B0] dark:hover:bg-[#AEC3B0] dark:hover:text-[#01161E]"
+                className="grid h-11 w-11 place-items-center border-2 border-black hover:bg-black hover:text-[#F4F4F0] md:h-8 md:w-8 dark:border dark:border-[var(--line)] dark:text-[var(--accent)] dark:hover:bg-[var(--accent)] dark:hover:text-[var(--accent-ink)]"
                 aria-label="Close command palette"
               >
                 <X aria-hidden="true" size={18} strokeWidth={3} />
@@ -446,7 +460,7 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
               <label htmlFor="global-intelligence-search" className="sr-only">
                 Search intelligence records
               </label>
-              <div className="flex items-center gap-3 border-b-4 border-black pb-3 dark:border-b dark:border-[#598392]">
+              <div className="flex items-center gap-3 border-b-4 border-black pb-3 dark:border-b dark:border-[var(--line)]">
                 <Search
                   aria-hidden="true"
                   className="shrink-0"
@@ -470,11 +484,11 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
                   onChange={(event) => setQuery(event.target.value)}
                   onKeyDown={onInputKeyDown}
                   placeholder="QUERY TARGETS OR COMMANDS..."
-                  className="min-w-0 flex-1 border-0 bg-transparent p-0 text-base font-black uppercase caret-black outline-none placeholder:text-black/35 focus:outline-none sm:text-4xl dark:caret-transparent dark:text-[#EFF6E0] dark:placeholder:text-[#598392]"
+                  className="min-w-0 flex-1 border-0 bg-transparent p-0 text-base font-black uppercase caret-black outline-none placeholder:text-black/35 focus:outline-none sm:text-4xl dark:caret-transparent dark:text-[var(--ink)] dark:placeholder:text-[var(--dim)]"
                 />
                 <span
                   aria-hidden="true"
-                  className="fatal-terminal-cursor text-2xl leading-none dark:text-[#AEC3B0] sm:text-4xl"
+                  className="fatal-terminal-cursor text-2xl leading-none dark:text-[var(--accent)] sm:text-4xl"
                 >
                   █
                 </span>
@@ -493,7 +507,7 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
             <div
               id="command-palette-results"
               role="listbox"
-              className="fatal-command-results min-h-0 flex-1 overflow-y-auto border-t-2 border-black max-md:max-h-none md:max-h-[min(52vh,430px)] dark:border-t dark:border-[#598392]"
+              className="fatal-command-results min-h-0 flex-1 overflow-y-auto border-t-2 border-black max-md:max-h-none md:max-h-[min(52vh,430px)] dark:border-t dark:border-[var(--line)]"
             >
               {results.length > 0 ? (
                 CATEGORIES.map((category) => {
@@ -504,7 +518,7 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
 
                   return (
                     <section key={category} aria-label={category}>
-                      <div className="sticky top-0 z-10 border-b-2 border-black bg-black px-5 py-2 text-[11px] font-black tracking-[0.2em] text-[#F4F4F0] dark:border-b dark:border-[#598392] dark:bg-[#124559] dark:text-[#AEC3B0]">
+                      <div className="sticky top-0 z-10 border-b-2 border-black bg-black px-5 py-2 text-[11px] font-black tracking-[0.2em] text-[#F4F4F0] dark:border-b dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--accent)]">
                         [ {category} ]
                       </div>
                       {categoryResults.map((target) => {
@@ -538,10 +552,10 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
                             aria-selected={isHighlighted}
                             onMouseMove={() => setHighlightedIndex(resultIndex)}
                             onClick={() => execute(target, false)}
-                            className={`flex min-h-11 w-full items-center gap-4 border-b-2 border-black px-5 py-3 text-left uppercase transition-none last:border-b-0 dark:border-b dark:border-[#598392]/60 ${
+                            className={`flex min-h-11 w-full items-center gap-4 border-b-2 border-black px-5 py-3 text-left uppercase transition-none last:border-b-0 dark:border-b dark:border-[var(--line)]/60 ${
                               isHighlighted
-                                ? "bg-black text-[#F4F4F0] dark:bg-[#AEC3B0] dark:text-[#01161E] dark:[text-shadow:none]"
-                                : "bg-[#F4F4F0] hover:bg-black/10 dark:bg-[#01161E] dark:text-[#EFF6E0] dark:hover:bg-[#124559]"
+                                ? "bg-black text-[#F4F4F0] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)] dark:[text-shadow:none]"
+                                : "bg-[#F4F4F0] hover:bg-black/10 dark:bg-[var(--paper)] dark:text-[var(--ink)] dark:hover:bg-[var(--panel)]"
                             }`}
                           >
                             <Icon
@@ -574,7 +588,7 @@ function CommandPalette({ broadcast }: CommandPaletteProps) {
               )}
             </div>
 
-            <footer className="flex flex-wrap items-center justify-between gap-2 border-t-4 border-black px-5 py-3 text-[10px] font-black uppercase tracking-[0.1em] dark:border-t dark:border-[#598392] dark:bg-[#124559]/35 dark:text-[#AEC3B0]">
+            <footer className="flex flex-wrap items-center justify-between gap-2 border-t-4 border-black px-5 py-3 text-[10px] font-black uppercase tracking-[0.1em] dark:border-t dark:border-[var(--line)] dark:bg-[var(--panel)]/35 dark:text-[var(--accent)]">
               <span>
                 {broadcast
                   ? "MULTIPLAYER UPLINK: ARMED"

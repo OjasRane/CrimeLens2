@@ -1,4 +1,5 @@
-export type InvestigationId = "demo" | "mumbai-2611";
+/** Backend-issued investigation identifier. Liveblocks room IDs are unrelated. */
+export type InvestigationId = string;
 
 export type TimePrecision =
   | "EXACT"
@@ -149,6 +150,8 @@ export type InvestigationTimelineEvent = SourceMetadata & {
   severity: number;
   linkedEntityIds: string[];
   linkedLocationIds: string[];
+  eventTime?: string | null;
+  endTime?: string | null;
 };
 
 export type InvestigationFact = SourceMetadata & {
@@ -176,7 +179,9 @@ export type Investigation = SourceMetadata & {
   name: string;
   shortName: string;
   displayName: string;
-  type: "DEMO" | "HISTORICAL";
+  type: "DEMO" | "HISTORICAL" | "PRIVATE";
+  accessMode?: string;
+  roomId?: string | null;
   deskLabel: string;
   caseType: string;
   location: string;

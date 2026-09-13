@@ -65,11 +65,14 @@ def can_access_investigation(
     classification: str,
     is_demo: bool,
     has_explicit_access: bool | None,
+    membership_required: bool = False,
 ) -> bool:
     if not active:
         return False
     if has_explicit_access is False:
         return False
+    if membership_required:
+        return has_explicit_access is True
     if is_demo:
         return True
     required = normalize_clearance(classification)

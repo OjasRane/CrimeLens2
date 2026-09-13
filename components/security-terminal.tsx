@@ -1,4 +1,5 @@
 "use client";
+import { safeReturnPath } from "@/lib/public-access";
 
 import type { FormEvent } from "react";
 import {
@@ -39,13 +40,13 @@ type SecurityTerminalProps = {
 };
 
 const panel =
-  "border-4 border-black bg-white shadow-[8px_8px_0_black] dark:border-[#EAE5C9] dark:bg-[#132E3A] dark:shadow-[8px_8px_0_#EAE5C9]";
+  "border-4 border-black bg-white shadow-[8px_8px_0_black] dark:border-[var(--line)] dark:bg-[var(--panel)] dark:shadow-[8px_8px_0_var(--ink)]";
 
 const button =
   "border-4 border-black bg-white px-4 py-3 font-bold text-black shadow-[5px_5px_0_black] " +
   "transition-[transform,box-shadow,background-color,color] hover:bg-black hover:text-white focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-[#D22B2B] " +
   "active:translate-x-[5px] active:translate-y-[5px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-50 " +
-  "dark:border-[#EAE5C9] dark:bg-[#132E3A] dark:text-[#EAE5C9] dark:shadow-[5px_5px_0_#EAE5C9] dark:hover:bg-[#EAE5C9] dark:hover:text-[#06141B]";
+  "dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[5px_5px_0_var(--ink)] dark:hover:bg-[var(--ink)] dark:hover:text-[var(--accent-ink)]";
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en", {
@@ -93,10 +94,17 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
       const authorizedProfile = await loadAuthorizedProfile(
         supabase,
         data.user.id,
+        onboarding,
       );
       const { data: registeredPasskeys, error: passkeyError } =
         await supabase.auth.passkey.list();
-      if (passkeyError) throw passkeyError;
+      if (passkeyError) {
+        setProfile(authorizedProfile);
+        setMessage("Passkey service unavailable. Retry registration or continue to your cases with this verified email session.");
+        setMessageIsError(true);
+        setLoading(false);
+        return;
+      }
 
       setProfile(authorizedProfile);
       setPasskeys((registeredPasskeys ?? []) as PasskeyRecord[]);
@@ -117,6 +125,11 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
   }, [onboarding, router]);
 
   useEffect(() => {
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    if (fragment.has("error") || new URLSearchParams(window.location.search).has("error")) {
+      setMessage("Verification link expired or invalid. Request a fresh email link below.");
+      setMessageIsError(true);
+    }
     void loadSecurityState();
     if (!isSupabaseBrowserConfigured) return;
 
@@ -144,10 +157,7 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
       email: email.trim(),
       options: {
         shouldCreateUser: false,
-        emailRedirectTo: buildEnrollmentRedirectUrl(
-          process.env.NEXT_PUBLIC_SITE_URL,
-          window.location.origin,
-        ),
+        emailRedirectTo: buildEnrollmentRedirectUrl(process.env.NEXT_PUBLIC_SITE_URL, window.location.origin) + "?next=" + encodeURIComponent(safeReturnPath(new URLSearchParams(window.location.search).get("next"))),
       },
     });
 
@@ -174,7 +184,8 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
     setMessage("Awaiting device authenticator...");
     setMessageIsError(false);
     const supabase = getSupabaseBrowserClient();
-    const { error } = await supabase.auth.registerPasskey();
+    let error: unknown;
+    try { ({ error } = await supabase.auth.registerPasskey()); } catch (cause) { error = cause; }
     if (error) {
       setMessage(classifyPasskeyError(error).message);
       setMessageIsError(true);
@@ -246,7 +257,7 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
   };
 
   return (
-    <main className="login-terminal min-h-dvh bg-[#F4F4F0] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:24px_24px] px-3 py-5 font-mono uppercase tracking-[0.1em] text-black dark:bg-[#06141B] dark:bg-[radial-gradient(#EAE5C9_1px,transparent_1px)] dark:text-[#EAE5C9] sm:px-8 sm:py-10 sm:tracking-[0.16em]">
+    <main className="login-terminal min-h-dvh bg-[#F4F4F0] bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:24px_24px] px-3 py-5 font-mono uppercase tracking-[0.1em] text-black dark:bg-[var(--paper)] dark:bg-[radial-gradient(var(--ink)_1px,transparent_1px)] dark:text-[var(--ink)] sm:px-8 sm:py-10 sm:tracking-[0.16em]">
       <div className="mx-auto flex min-h-[calc(100dvh-2.5rem)] max-w-4xl flex-col justify-center gap-4 sm:min-h-[calc(100dvh-5rem)] sm:gap-6">
         <header className={`p-4 sm:p-8 ${panel}`}>
           <div className="flex flex-wrap items-start justify-between gap-5">
@@ -260,8 +271,8 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
                 MANAGER. CRIMELENS STORES NO BIOMETRIC OR DEVICE PIN DATA.
               </p>
             </div>
-            <Link href={authenticated ? "/dashboard" : "/"} className={button}>
-              [ RETURN ]
+            <Link href={authenticated ? safeReturnPath(typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("next") : null) : "/"} className={button}>
+              {onboarding && profile ? "[ CONTINUE TO YOUR CASE ]" : "[ RETURN ]"}
             </Link>
           </div>
         </header>
@@ -272,36 +283,35 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
           </section>
         ) : !authenticated && onboarding ? (
           <section className={`flex flex-col gap-5 p-4 sm:gap-6 sm:p-8 ${panel}`}>
-            <div className="border-l-4 border-black pl-4 dark:border-[#EAE5C9]">
-              <h2 className="text-sm font-black">CONTROLLED INITIAL ENROLLMENT</h2>
+            <div className="border-l-4 border-black pl-4 dark:border-[var(--line)]">
+              <h2 className="text-sm font-black">VERIFY YOUR EMAIL</h2>
               <p className="mt-3 text-[9px] font-bold leading-5 opacity-70">
-                CONFIRM AN EXISTING, ADMIN-PROVISIONED SUPABASE ACCOUNT. THIS
-                TERMINAL WILL NOT CREATE A NEW USER OR ACCEPT AN AGENT ID AS
-                PROOF OF IDENTITY.
+                FOLLOW YOUR EMAIL LINK TO VERIFY YOUR ACCOUNT, THEN REGISTER A PASSKEY.
+                EXPIRED LINK? REQUEST A FRESH ONE BELOW.
               </p>
             </div>
 
             <form onSubmit={sendEnrollmentLink} className="flex flex-col gap-4">
               <label htmlFor="enrollment-email" className="text-[10px] font-bold">
-                AUTHORIZED ACCOUNT EMAIL
+                ACCOUNT EMAIL
               </label>
               <input
                 id="enrollment-email"
                 type="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                disabled={working || emailSent}
+                disabled={working}
                 required
                 autoComplete="email"
                 placeholder="INVESTIGATOR@AGENCY.GOV"
-                className="border-4 border-black bg-white px-4 py-3 text-sm font-bold text-black outline-none placeholder:text-black/35 focus:bg-black focus:text-white dark:border-[#EAE5C9] dark:bg-[#06141B] dark:text-[#EAE5C9] dark:focus:bg-[#EAE5C9] dark:focus:text-[#06141B]"
+                className="border-4 border-black bg-white px-4 py-3 text-sm font-bold text-black outline-none placeholder:text-black/35 focus:bg-black focus:text-white dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)] dark:focus:bg-[var(--ink)] dark:focus:text-[var(--accent-ink)]"
               />
-              <button type="submit" disabled={working || emailSent} className={button}>
+              <button type="submit" disabled={working} className={button}>
                 {working
                   ? "[ REQUESTING TRUSTED CONFIRMATION ]"
                   : emailSent
-                    ? "[ CONFIRMATION LINK SENT ]"
-                    : "[ CONFIRM EXISTING ACCOUNT ]"}
+                    ? "[ SEND A FRESH LINK ]"
+                    : "[ SEND VERIFICATION LINK ]"}
               </button>
             </form>
           </section>
@@ -310,7 +320,7 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
             <section className={`grid gap-4 p-6 sm:grid-cols-3 sm:p-8 ${panel}`}>
               <div>
                 <p className="text-[8px] font-bold opacity-60">AGENT</p>
-                <p className="mt-2 text-sm font-black">{profile.agent_id}</p>
+                <p className="mt-2 text-sm font-black">{profile.display_name}</p>
               </div>
               <div>
                 <p className="text-[8px] font-bold opacity-60">CLEARANCE</p>
@@ -325,7 +335,7 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
             </section>
 
             <section className={`flex flex-col gap-5 p-6 sm:p-8 ${panel}`}>
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b-4 border-black pb-5 dark:border-[#EAE5C9]">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b-4 border-black pb-5 dark:border-[var(--line)]">
                 <div>
                   <h2 className="text-sm font-black">REGISTERED PASSKEYS</h2>
                   <p className="mt-2 text-[8px] font-bold opacity-60">
@@ -354,7 +364,7 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
                   {passkeys.map((passkey) => (
                     <li
                       key={passkey.id}
-                      className="border-4 border-black p-4 dark:border-[#EAE5C9]"
+                      className="border-4 border-black p-4 dark:border-[var(--line)]"
                     >
                       <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex items-start gap-3">
@@ -407,7 +417,7 @@ export function SecurityTerminal({ onboarding = false }: SecurityTerminalProps) 
                             onChange={(event) => setFriendlyName(event.target.value)}
                             maxLength={120}
                             aria-label="Passkey friendly name"
-                            className="min-w-0 flex-1 border-2 border-current bg-transparent px-3 py-2 text-[10px] font-bold outline-none focus:bg-black focus:text-white dark:focus:bg-[#EAE5C9] dark:focus:text-[#06141B]"
+                            className="min-w-0 flex-1 border-2 border-current bg-transparent px-3 py-2 text-[10px] font-bold outline-none focus:bg-black focus:text-white dark:focus:bg-[var(--ink)] dark:focus:text-[var(--accent-ink)]"
                           />
                           <button type="submit" disabled={working} className={button}>
                             [ SAVE NAME ]
