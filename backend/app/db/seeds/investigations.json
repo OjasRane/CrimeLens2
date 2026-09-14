@@ -1,7 +1,7 @@
 {
   "generatedFrom": [
-    "data/investigations/demo.ts",
-    "data/investigations/mumbai2611.ts"
+    "frontend/data/investigations/demo.ts",
+    "frontend/data/investigations/mumbai2611.ts"
   ],
   "investigations": [
     {

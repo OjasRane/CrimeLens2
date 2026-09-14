@@ -105,62 +105,53 @@ The case at the center of the demo: a fictional multi-suspect crime ring operati
 ## Project Structure
 
 ```
-CrimeLens2/
-├── app/
-│   ├── layout.tsx              # Root layout — ThemeProvider, metadata, viewport
-│   ├── page.tsx                # Entry point — renders InvestigationWorkspace
-│   ├── globals.css             # Design tokens, CSS custom properties, global styles
-│   └── uplink/
-│       └── page.tsx            # Mobile field uplink route (/uplink)
-│
-├── components/
-│   ├── investigation-workspace.tsx     # Root workspace shell (header, layout, ledger)
-│   ├── workspace-viewport.tsx          # Renders the active workspace panel
-│   ├── workspace-bar.tsx               # Desktop workspace tab switcher
-│   ├── mobile-workspace-nav.tsx        # Mobile bottom navigation bar
+fatal/
+├── frontend/                           # Self-contained Next.js application
+│   ├── app/
+│   │   ├── layout.tsx                  # Root layout — ThemeProvider, metadata, viewport
+│   │   ├── page.tsx                    # Public entry point
+│   │   ├── globals.css                 # Design tokens and global styles
+│   │   └── uplink/page.tsx             # Mobile field uplink route (/uplink)
+│   │
+│   ├── components/
+│   │   ├── investigation-workspace.tsx # Root workspace shell (header, layout, ledger)
+│   │   ├── workspace-viewport.tsx      # Renders the active workspace panel
+│   │   ├── workspace-bar.tsx           # Desktop workspace tab switcher
+│   │   ├── mobile-workspace-nav.tsx    # Mobile bottom navigation bar
 │   │
 │   │   ── WORKSPACES ──
-│   ├── geospatial-map-workspace.tsx    # Map view (MapLibre + Deck.gl layers)
-│   ├── board.tsx                       # Evidence board (React Flow + Liveblocks)
-│   ├── network-graph-workspace.tsx     # Relationship graph (React Flow)
-│   ├── timeline-workspace.tsx          # Event timeline with annotations
+│   │   ├── geospatial-map-workspace.tsx # Map view (MapLibre + Deck.gl layers)
+│   │   ├── board.tsx                    # Evidence board (React Flow + Liveblocks)
+│   │   ├── network-graph-workspace.tsx  # Relationship graph (React Flow)
+│   │   ├── timeline-workspace.tsx       # Event timeline with annotations
 │   │
 │   │   ── NODES / EDGES ──
-│   ├── flow-nodes.tsx                  # StickyNote, LiveStickyNote, Polaroid node types
-│   ├── flow-edges.tsx                  # RedString custom edge type
+│   │   ├── flow-nodes.tsx              # Custom evidence node types
+│   │   ├── flow-edges.tsx              # RedString custom edge type
 │   │
 │   │   ── COLLABORATION ──
-│   ├── liveblocks-runtime.tsx          # Room connection, presence, broadcast listeners
-│   ├── collaboration-context.tsx       # React context for agentId / multiplayer flag
-│   ├── live-cursors.tsx                # Renders remote agent cursors
+│   │   ├── liveblocks-runtime.tsx      # Room connection, presence, broadcast listeners
+│   │   ├── collaboration-context.tsx   # React context for agentId / multiplayer flag
+│   │   ├── live-cursors.tsx            # Renders remote agent cursors
 │   │
 │   │   ── UI CHROME ──
-│   ├── command-palette.tsx             # ⌘K global search & dispatch
-│   ├── fact-ledger.tsx                 # Collapsible facts sidebar
-│   ├── global-status-bar.tsx           # Bottom status strip (filters, time range)
-│   ├── qr-uplink-modal.tsx             # QR code modal for field agent deployment
-│   ├── uplink-terminal.tsx             # Mobile field intelligence submission UI
-│   ├── case-access-terminal.tsx        # Canvas header search / node adder
-│   └── theme-toggle.tsx                # Light/dark mode switch
-│
-├── store/
-│   └── use-investigation-store.ts      # Zustand store — all global state & actions
-│
-├── lib/
-│   ├── liveblocks.ts                   # Liveblocks client, room context, hooks
-│   ├── evidence-board-storage.ts       # LiveList serialization / mutation helpers
-│   ├── evidence-board-types.ts         # Shared types for stored nodes/edges
-│   └── haptics.ts                      # Navigator.vibrate wrapper
-│
-├── public/
-│   ├── maplibre-gl-shared.mjs          # MapLibre worker bundle (served statically)
-│   └── maplibre-gl-worker.js           # MapLibre worker entry (avoids Webpack issues)
-│
-├── liveblocks.config.ts                # Global Liveblocks type declarations
-├── next.config.ts                      # Next.js config — Deck.gl transpile, file tracing
-├── .env.example                        # Required environment variables (copy to .env.local)
-├── package.json
-└── tsconfig.json
+│   │   ├── command-palette.tsx         # ⌘K global search and dispatch
+│   │   ├── fact-ledger.tsx             # Collapsible facts sidebar
+│   │   ├── global-status-bar.tsx       # Bottom status strip
+│   │   ├── qr-uplink-modal.tsx         # QR code modal
+│   │   ├── uplink-terminal.tsx         # Mobile field submission UI
+│   │   ├── case-access-terminal.tsx    # Canvas header search / node adder
+│   │   └── theme-toggle.tsx            # Light/dark mode switch
+│   ├── data/investigations/            # Typed case data
+│   ├── lib/                            # Auth, API, collaboration, and domain utilities
+│   ├── store/                          # Zustand application state
+│   ├── public/                         # Static MapLibre workers
+│   ├── .env.example                    # Frontend environment template
+│   ├── next.config.ts
+│   ├── package.json
+│   └── tsconfig.json
+├── backend/                            # FastAPI intelligence service
+└── supabase/                           # Local config and database migrations
 ```
 
 ---
@@ -229,7 +220,8 @@ CrimeLens2/
 git clone https://github.com/your-username/CrimeLens2.git
 cd CrimeLens2
 
-# 2. Install dependencies
+# 2. Enter the frontend project and install dependencies
+cd frontend
 npm install
 
 # 3. Configure environment variables
@@ -257,7 +249,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Environment Variables
 
-Copy `.env.example` to `.env.local` and fill in the values:
+Copy `frontend/.env.example` to `frontend/.env.local` and fill in the values:
 
 ```env
 # Your Liveblocks PUBLIC key (safe to ship to the browser)
@@ -269,7 +261,7 @@ NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY=pk_dev_replace_me
 NEXT_PUBLIC_SUPABASE_URL=https://project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_replace_me
 
-# Stable public origin for production email-confirmation links.
+# Stable public origin for production email and OAuth callbacks.
 NEXT_PUBLIC_SITE_URL=https://crimelens.example.com
 
 # Protected FastAPI intelligence endpoint.
@@ -293,12 +285,22 @@ CrimeLens uses Supabase Auth as the only production identity and session authori
 3. Do not use a Vercel preview hostname or another changing URL as the production RP ID. Changing the RP ID invalidates existing passkeys.
 4. Add the production origin to `CORS_ORIGINS` in the FastAPI deployment.
 5. In **Authentication → URL Configuration**, set the Site URL to the stable
-   production origin and add the exact `https://your-domain.example/enroll`
-   callback under Redirect URLs. Set that same origin as `NEXT_PUBLIC_SITE_URL`
-   in the deployed web app.
+   production origin. Add both `https://your-domain.example/auth/callback` and
+   `https://your-domain.example/enroll` under Redirect URLs. Set that same
+   origin as `NEXT_PUBLIC_SITE_URL` in the deployed web app.
 6. Configure custom SMTP for production email delivery. Supabase's default
    sender is intended for testing and may reject recipients that are not members
    of the project's organization or throttle confirmation messages.
+
+### Google sign-in configuration
+
+1. Create a Google OAuth web client and add Supabase's project callback,
+   `https://<project-ref>.supabase.co/auth/v1/callback`, as an authorized redirect
+   URI in Google Cloud.
+2. In **Supabase Authentication → Sign In / Providers → Google**, enable Google
+   and save the OAuth client ID and secret.
+3. Keep the app's exact `/auth/callback` URL in the Supabase Redirect URLs list.
+   Local development also needs `http://localhost:3000/auth/callback` when used.
 
 The checked-in `supabase/config.toml` enables passkeys for local Supabase development with `localhost` / `127.0.0.1`. WebAuthn works on supported localhost contexts; production requires HTTPS.
 
@@ -319,7 +321,7 @@ Open `/enroll`, enter that existing account email, follow the confirmation link,
 
 ### Test authentication
 
-- Local: run the Supabase stack/config (or use a configured hosted project), start FastAPI from `backend`, then run `npm run dev` and open `http://localhost:3000` in a supported browser.
+- Local: run the Supabase stack/config (or use a configured hosted project), start FastAPI from `backend`, then run `npm run dev` from `frontend` and open `http://localhost:3000` in a supported browser.
 - Production: deploy to the stable HTTPS origin configured as the RP origin, enroll a fresh production credential, verify login/cancel/no-credential cases, and call a protected FastAPI route with the Supabase access token.
 
 ---
@@ -404,7 +406,7 @@ Each event has a severity score (1–10) that determines its visual weight on th
 
 ## Multiplayer & Real-Time Collaboration
 
-The collaboration layer is implemented in `liveblocks-runtime.tsx` and controlled by `lib/liveblocks.ts`.
+The collaboration layer is implemented in `frontend/components/liveblocks-runtime.tsx` and controlled by `frontend/lib/liveblocks.tsx`.
 
 ### How It Works
 
@@ -441,7 +443,7 @@ The field uplink system lets mobile devices join an active case and submit intel
 - Field agent types intelligence text and hits **TRANSMIT INTEL**
 - The note appears instantly as a sticky note on the shared evidence board
 
-The uplink page lives at `app/uplink/page.tsx` and is powered by `components/uplink-terminal.tsx`.
+The uplink page lives at `frontend/app/uplink/page.tsx` and is powered by `frontend/components/uplink-terminal.tsx`.
 
 ---
 
@@ -472,7 +474,7 @@ Open with `⌘K` (Mac) or `Ctrl+K` (Windows/Linux), or from the toolbar.
 
 ## State Management
 
-All global client state lives in a single **Zustand** store at `store/use-investigation-store.ts`.
+All global client state lives in a single **Zustand** store at `frontend/store/use-investigation-store.ts`.
 
 ### Key State Slices
 
@@ -560,7 +562,7 @@ Pull requests are welcome for bug fixes and improvements.
 1. Fork the repo
 2. Create a feature branch: `git checkout -b feat/your-feature`
 3. Make your changes
-4. Run `npm run typecheck && npm run lint` — both must pass
+4. From `frontend`, run `npm run typecheck && npm run lint` — both must pass
 5. Open a pull request
 
 ---

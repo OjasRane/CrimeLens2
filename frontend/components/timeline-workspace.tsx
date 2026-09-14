@@ -15,7 +15,6 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { BlindSpotTimelineWorkspace } from "@/components/blind-spot-timeline-workspace";
 import { GapReconstructionPanel } from "@/components/gap-reconstruction-panel";
 import { AddToNetworkWorkspaceButton } from "@/components/add-to-network-workspace-button";
@@ -27,6 +26,12 @@ import type {
 } from "@/data/investigations/types";
 import { useInvestigationStore } from "@/store/use-investigation-store";
 import { useInvestigationAccess } from "@/components/investigation-access";
+import {
+  computeCompressedTimelineLayout,
+  daysBetween,
+  getTimelineCapabilities,
+  TIMELINE_CARD_LEFT,
+} from "@/lib/timeline-analysis";
 
 /* ─── TYPES ─────────────────────────────────────────────────── */
 
@@ -416,103 +421,6 @@ function formatDate(dateStr: string): string {
   return `${months[d.getMonth()]} ${String(d.getDate()).padStart(2, "0")}`;
 }
 
-function daysBetween(a: string, b: string): number {
-  const msDay = 86400000;
-  return Math.abs(
-    (new Date(b + "T00:00:00").getTime() -
-      new Date(a + "T00:00:00").getTime()) /
-      msDay,
-  );
-}
-
-/* ─── GAP COMPRESSION ENGINE ─────────────────────────────────
-   Compresses long inactive gaps while expanding dense clusters.
-   Returns a mapping of events → x-positions on a virtual axis. */
-
-type CompressedLayout = {
-  positions: Map<string, number>;
-  totalWidth: number;
-  segments: { date: string; x: number; width: number; eventCount: number }[];
-};
-
-function computeCompressedLayout(
-  events: TimelineEvent[],
-  options: {
-    baseDayWidth?: number;
-    denseBonus?: number;
-    eventNodeSpacing?: number;
-    outerPadding?: number;
-  } = {},
-): CompressedLayout {
-  if (events.length === 0) {
-    return { positions: new Map(), totalWidth: 0, segments: [] };
-  }
-
-  const sorted = [...events].sort((a, b) => a.timestamp - b.timestamp);
-
-  // Group events by date
-  const dateGroups = new Map<string, TimelineEvent[]>();
-  for (const event of sorted) {
-    const existing = dateGroups.get(event.date) || [];
-    existing.push(event);
-    dateGroups.set(event.date, existing);
-  }
-
-  const dates = Array.from(dateGroups.keys()).sort();
-  const positions = new Map<string, number>();
-  const segments: CompressedLayout["segments"] = [];
-
-  const BASE_DAY_WIDTH = options.baseDayWidth ?? 120;
-  const DENSE_BONUS = options.denseBonus ?? 40; // extra width per event in a cluster
-  const MIN_GAP_WIDTH = 32;
-  const MAX_GAP_WIDTH = 60;
-  const EVENT_NODE_SPACING = options.eventNodeSpacing ?? 56;
-  const OUTER_PADDING = options.outerPadding ?? 60;
-
-  let cursor = OUTER_PADDING;
-
-  for (let i = 0; i < dates.length; i++) {
-    const date = dates[i];
-    const group = dateGroups.get(date)!;
-
-    // Calculate segment width based on event density
-    const segmentWidth = BASE_DAY_WIDTH + (group.length - 1) * DENSE_BONUS;
-
-    const segStart = cursor;
-
-    // Position each event within the segment
-    for (let j = 0; j < group.length; j++) {
-      const eventX = segStart + j * EVENT_NODE_SPACING;
-      positions.set(group[j].id, eventX);
-    }
-
-    segments.push({
-      date,
-      x: segStart,
-      width: Math.max(segmentWidth, group.length * EVENT_NODE_SPACING),
-      eventCount: group.length,
-    });
-
-    cursor =
-      segStart + Math.max(segmentWidth, group.length * EVENT_NODE_SPACING);
-
-    // Add compressed gap to next date
-    if (i < dates.length - 1) {
-      const gap = daysBetween(date, dates[i + 1]);
-      // Logarithmic compression for gaps
-      const gapWidth =
-        gap <= 1
-          ? MIN_GAP_WIDTH
-          : Math.min(MAX_GAP_WIDTH, MIN_GAP_WIDTH + Math.log2(gap) * 14);
-      cursor += gapWidth;
-    }
-  }
-
-  cursor += OUTER_PADDING;
-
-  return { positions, totalWidth: cursor, segments };
-}
-
 /* ─── DENSITY HEATMAP DATA ───────────────────────────────────── */
 
 type DensityBucket = {
@@ -567,7 +475,7 @@ function AnnotationPanel({
 
   return (
     <div
-      className={`fatal-timeline-annotation absolute inset-0 z-50 h-full w-full overflow-y-auto border-l-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[-6px_0_0_black] sm:left-auto sm:w-[380px] dark:border-[var(--line)] dark:bg-[var(--surface)] dark:text-[var(--ink)] dark:shadow-[-7px_0_0_var(--ink)] ${className}`}
+      className={`fatal-timeline-annotation absolute inset-0 z-50 h-full w-full overflow-y-auto border-l-4 border-black bg-[#F4F4F0] font-mono text-xs font-black uppercase shadow-[-6px_0_0_black] sm:left-auto sm:w-[380px] dark:border-[var(--line)] dark:bg-[var(--surface)] dark:text-[var(--ink)] dark:shadow-[-6px_0_0_var(--ink)] ${className}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b-4 border-black bg-black px-4 py-3 text-white dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)]">
@@ -584,7 +492,7 @@ function AnnotationPanel({
       {/* Event Info */}
       <div className="border-b-4 border-black p-4 dark:border-[var(--line)]">
         <div
-          className={`mb-2 inline-block rounded-none px-2 py-1 text-white dark:border dark:bg-[var(--paper)] ${CATEGORY_DARK_STYLES[event.category].label}`}
+          className={`mb-2 inline-block rounded-none px-2 py-1 text-white dark:bg-[var(--paper)] ${CATEGORY_DARK_STYLES[event.category].label}`}
           style={{ backgroundColor: CATEGORY_COLORS[event.category] }}
         >
           {event.category}
@@ -609,7 +517,7 @@ function AnnotationPanel({
               key={type}
               type="button"
               onClick={() => setSelectedType(type)}
-              className={`flex h-10 flex-1 items-center justify-center gap-1 rounded-none border-4 border-black shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border dark:border-[var(--line)] dark:shadow-[4px_4px_0_var(--ink)] ${
+              className={`flex h-10 flex-1 items-center justify-center gap-1 rounded-none border-4 border-black shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[var(--line)] dark:shadow-[3px_3px_0_var(--ink)] ${
                 selectedType === type
                   ? "bg-black text-white dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]"
                   : "bg-white hover:-translate-x-0.5 hover:-translate-y-0.5 dark:bg-[var(--panel)] dark:text-[var(--ink)]"
@@ -623,7 +531,7 @@ function AnnotationPanel({
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
           placeholder="Enter annotation note..."
-          className="mb-3 block w-full resize-none rounded-none border-4 border-black bg-white p-3 normal-case placeholder:uppercase placeholder:text-black/30 focus:outline-none dark:border dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:placeholder:text-[var(--dim)]"
+          className="mb-3 block w-full resize-none rounded-none border-4 border-black bg-white p-3 normal-case placeholder:uppercase placeholder:text-black/30 focus:outline-none dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:placeholder:text-[var(--dim)]"
           rows={3}
         />
         <button
@@ -635,7 +543,7 @@ function AnnotationPanel({
             }
           }}
           disabled={!noteText.trim()}
-          className="w-full rounded-none border-4 border-black bg-[#FCD34D] py-2 shadow-[4px_4px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none disabled:opacity-40 disabled:shadow-none dark:border dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)] dark:shadow-[4px_4px_0_var(--ink)]"
+          className="w-full rounded-none border-4 border-black bg-[#FCD34D] py-2 shadow-[4px_4px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none disabled:opacity-40 disabled:shadow-none dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)] dark:shadow-[4px_4px_0_var(--ink)]"
         >
           Pin Annotation
         </button>
@@ -651,7 +559,7 @@ function AnnotationPanel({
               return (
                 <div
                   key={annotation.id}
-                  className="rounded-none border-4 border-black bg-white p-3 shadow-[3px_3px_0_black] dark:border dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[4px_4px_0_var(--ink)]"
+                  className="rounded-none border-4 border-black bg-white p-3 shadow-[3px_3px_0_black] dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[3px_3px_0_var(--ink)]"
                 >
                   <div className="mb-2 flex items-center gap-2">
                     <span className="text-base">{config.emoji}</span>
@@ -682,7 +590,7 @@ function AnnotationCallout({
   return (
     <div className="absolute z-30 pointer-events-none" style={style}>
       {/* Callout box */}
-      <div className="pointer-events-auto relative whitespace-nowrap rounded-none border-4 border-black bg-white px-2 py-1.5 font-mono text-[10px] font-black uppercase shadow-[3px_3px_0_black] dark:border dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[4px_4px_0_var(--ink)]">
+      <div className="pointer-events-auto relative whitespace-nowrap rounded-none border-4 border-black bg-white px-2 py-1.5 font-mono text-[10px] font-black uppercase shadow-[3px_3px_0_black] dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[3px_3px_0_var(--ink)]">
         <span className="mr-1 text-sm not-italic">{config.emoji}</span>
         <span className="max-w-[120px] overflow-hidden text-ellipsis inline-block align-middle">
           {annotation.note.length > 18
@@ -758,7 +666,7 @@ function DensityHeatmapView({
           >
             {/* Tooltip */}
             <div className="pointer-events-none absolute -top-1 left-1/2 z-40 -translate-x-1/2 -translate-y-full opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="border-4 border-black bg-white px-2 py-1 font-mono text-[10px] font-black uppercase shadow-[3px_3px_0_black] whitespace-nowrap dark:border dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[4px_4px_0_var(--ink)]">
+              <div className="border-4 border-black bg-white px-2 py-1 font-mono text-[10px] font-black uppercase shadow-[3px_3px_0_black] whitespace-nowrap dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[3px_3px_0_var(--ink)]">
                 {formatDate(bucket.date)} — {bucket.count} EVENT
                 {bucket.count > 1 ? "S" : ""}
               </div>
@@ -809,12 +717,14 @@ function formatInspectorDate(date: string): string {
 function EventInspector({
   event,
   investigation,
+  annotations,
   onClear,
   onAnnotate,
   canAnnotate,
 }: {
   event: TimelineEvent;
   investigation: Investigation;
+  annotations: Annotation[];
   onClear: () => void;
   onAnnotate: () => void;
   canAnnotate: boolean;
@@ -850,23 +760,26 @@ function EventInspector({
   const sourceLabel =
     linkedFacts[0]?.sourceTitle ??
     (event.sourceRef ? new URL(event.sourceRef).hostname : investigation.badge);
+  const eventAnnotations = annotations.filter(
+    (annotation) => annotation.eventId === event.id,
+  );
 
   return (
     <motion.aside
       aria-label={`Event inspector for ${event.title}`}
-      className="fatal-event-inspector absolute inset-x-2 bottom-2 z-40 max-h-[58dvh] overflow-y-auto border-2 border-[#D8D3C7] bg-[#0D1A20] text-[#F2EFE7] shadow-[7px_7px_0_#010506] sm:inset-x-4 sm:bottom-3 dark:border-[var(--line)] dark:bg-[var(--surface)] dark:text-[var(--ink)] dark:shadow-[7px_7px_0_var(--ink)]"
+      className="fatal-event-inspector absolute inset-x-2 bottom-2 z-40 max-h-[58dvh] overflow-y-auto border-4 border-black bg-[#F4F4F0] text-black shadow-[6px_6px_0_black] sm:inset-x-4 sm:bottom-3 dark:border-[var(--line)] dark:bg-[var(--surface)] dark:text-[var(--ink)] dark:shadow-[6px_6px_0_var(--hard-shadow)]"
       initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18, ease: "easeOut" }}
     >
-      <div className="flex items-center justify-between border-b border-[#34515A] bg-[#050B0E] px-3 py-2 font-mono text-[9px] font-black uppercase tracking-[0.14em] text-[#AFAFA7] dark:border-[var(--line)]/40 dark:bg-[var(--paper)] dark:text-[var(--dim)]">
+      <div className="flex items-center justify-between border-b-4 border-black bg-black px-3 py-2 font-mono text-[9px] font-black uppercase tracking-[0.14em] text-white dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)]">
         <span>
-          Event // <span className="text-[#F2EFE7] dark:text-[var(--ink)]">{event.id}</span>
+          Event // <span>{event.id}</span>
         </span>
         <button
           type="button"
           onClick={onClear}
-          className="flex items-center gap-1.5 border border-[#D8D3C7] bg-[#0D1A20] px-2 py-1 text-[9px] text-[#F2EFE7] transition-colors duration-150 hover:bg-[#F2EFE7] hover:text-[#050B0E] dark:border-[var(--line)] dark:bg-[var(--surface)] dark:text-[var(--ink)] dark:hover:bg-[var(--accent)] dark:hover:text-[var(--accent-ink)]"
+          className="flex items-center gap-1.5 border-2 border-white bg-black px-2 py-1 text-[9px] text-white transition-colors duration-150 hover:bg-white hover:text-black dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:hover:bg-[var(--accent)] dark:hover:text-[var(--accent-ink)]"
         >
           <X aria-hidden="true" className="size-3" strokeWidth={3} />
           Clear Focus
@@ -876,57 +789,70 @@ function EventInspector({
       <div className="grid grid-cols-1 gap-4 px-3 py-3 lg:grid-cols-[minmax(0,1.25fr)_minmax(330px,1fr)]">
         <div className="min-w-0">
           <div className="mb-1.5 flex flex-wrap items-center gap-2 font-mono font-black uppercase">
-            <span className="text-base tabular-nums text-[#F2EFE7] dark:text-[var(--ink)]">
+            <span className="text-base tabular-nums">
               {event.time}
             </span>
             <span
-              className={`border bg-[#050B0E] px-1.5 py-0.5 text-[9px] dark:bg-[var(--paper)] ${CATEGORY_DARK_STYLES[event.category].label}`}
+              className={`border-2 border-black bg-white px-1.5 py-0.5 text-[9px] dark:border-[var(--line)] dark:bg-[var(--paper)] ${CATEGORY_DARK_STYLES[event.category].label}`}
             >
               {event.category}
             </span>
-            <span className="border border-[#34515A] px-1.5 py-0.5 text-[9px] text-[#AFAFA7] dark:border-[var(--line)]/40 dark:text-[var(--dim)]">
+            <span className="border-2 border-black px-1.5 py-0.5 text-[9px] text-black/60 dark:border-[var(--line)] dark:text-[var(--dim)]">
               {event.timePrecision ?? "EXACT"}
             </span>
           </div>
-          <h3 className="truncate font-mono text-sm font-black uppercase tracking-[0.02em] text-[#F2EFE7] dark:text-[var(--ink)]">
+          <h3 className="font-serif text-xl font-black uppercase leading-tight">
             {event.title}
           </h3>
-          <p className="mt-1 line-clamp-2 font-mono text-[10px] font-bold leading-relaxed text-[#AFAFA7] dark:text-[var(--dim)]">
+          <p className="mt-1 font-mono text-[10px] font-bold leading-relaxed text-black/70 dark:text-[var(--dim)]">
             {event.description}
           </p>
         </div>
 
         <div className="flex min-w-0 flex-col justify-between gap-2">
           <dl className="grid grid-cols-2 gap-3 font-mono text-[9px] uppercase sm:grid-cols-4">
-            <div className="min-w-0 border-l border-[#34515A] pl-2 dark:border-[var(--line)]/40">
-              <dt className="text-[#70878D] dark:text-[var(--dim)]">Location</dt>
-              <dd className="mt-0.5 truncate font-black text-[#F2EFE7] dark:text-[var(--ink)]">
+            <div className="min-w-0 border-l-2 border-black pl-2 dark:border-[var(--line)]">
+              <dt className="text-black/60 dark:text-[var(--dim)]">Location</dt>
+              <dd className="mt-0.5 truncate font-black">
                 {linkedLocations
                   .map((location) => location.title)
                   .join(" / ") || "—"}
               </dd>
             </div>
-            <div className="min-w-0 border-l border-[#34515A] pl-2 dark:border-[var(--line)]/40">
-              <dt className="text-[#70878D] dark:text-[var(--dim)]">Date</dt>
-              <dd className="mt-0.5 truncate font-black text-[#F2EFE7] dark:text-[var(--ink)]">
+            <div className="min-w-0 border-l-2 border-black pl-2 dark:border-[var(--line)]">
+              <dt className="text-black/60 dark:text-[var(--dim)]">Date</dt>
+              <dd className="mt-0.5 truncate font-black">
                 {formatInspectorDate(event.date)}
               </dd>
             </div>
-            <div className="min-w-0 border-l border-[#34515A] pl-2 dark:border-[var(--line)]/40">
-              <dt className="text-[#70878D] dark:text-[var(--dim)]">Related Team</dt>
-              <dd className="mt-0.5 truncate font-black text-[#F2EFE7] dark:text-[var(--ink)]">
+            <div className="min-w-0 border-l-2 border-black pl-2 dark:border-[var(--line)]">
+              <dt className="text-black/60 dark:text-[var(--dim)]">Related Team</dt>
+              <dd className="mt-0.5 truncate font-black">
                 {Array.from(
                   new Set(linkedRoutes.map((route) => route.label)),
                 ).join(" / ") || "—"}
               </dd>
             </div>
-            <div className="min-w-0 border-l border-[#34515A] pl-2 dark:border-[var(--line)]/40">
-              <dt className="text-[#70878D] dark:text-[var(--dim)]">Source</dt>
-              <dd className="mt-0.5 truncate font-black text-[#F2EFE7] dark:text-[var(--ink)]">
+            <div className="min-w-0 border-l-2 border-black pl-2 dark:border-[var(--line)]">
+              <dt className="text-black/60 dark:text-[var(--dim)]">Source</dt>
+              <dd className="mt-0.5 truncate font-black">
                 {sourceLabel}
               </dd>
             </div>
           </dl>
+
+          {eventAnnotations.length > 0 ? (
+            <div className="border-2 border-black bg-white p-2 font-mono text-[9px] dark:border-[var(--line)] dark:bg-[var(--panel)]">
+              <p className="font-black uppercase">
+                Pinned Notes ({eventAnnotations.length})
+              </p>
+              {eventAnnotations.map((annotation) => (
+                <p key={annotation.id} className="mt-1 normal-case text-black/70 dark:text-[var(--dim)]">
+                  {ANNOTATION_ICONS[annotation.type].emoji} {annotation.note}
+                </p>
+              ))}
+            </div>
+          ) : null}
 
           <div className="flex flex-wrap justify-start gap-2 font-mono text-[9px] font-black uppercase lg:justify-end">
             {primaryLocation ? (
@@ -1003,9 +929,9 @@ function EventInspector({
 /* ─── MAIN TIMELINE COMPONENT ────────────────────────────────── */
 
 export function TimelineWorkspace() {
-  const { canWrite, isPublicDemo } = useInvestigationAccess();
-  const { resolvedTheme } = useTheme();
-  const isDarkMode = resolvedTheme === "dark";
+  const access = useInvestigationAccess();
+  const { isPublicDemo } = access;
+  const timelineCapabilities = getTimelineCapabilities(access);
   const activeInvestigationId = useInvestigationStore(
     (state) => state.activeInvestigationId,
   );
@@ -1038,7 +964,7 @@ export function TimelineWorkspace() {
   const [hoveredCategory, setHoveredCategory] = useState<EventCategory | null>(
     null,
   );
-  const [showDarkAnnotationPanel, setShowDarkAnnotationPanel] = useState(false);
+  const [showAnnotationPanel, setShowAnnotationPanel] = useState(false);
   const [showBlindSpotDetector, setShowBlindSpotDetector] = useState(false);
   const [showGapReconstruction, setShowGapReconstruction] = useState(false);
 
@@ -1064,7 +990,7 @@ export function TimelineWorkspace() {
     setBrushStart(null);
     setBrushEnd(null);
     setHoveredCategory(null);
-    setShowDarkAnnotationPanel(false);
+    setShowAnnotationPanel(false);
     setShowBlindSpotDetector(false);
     setShowGapReconstruction(false);
   }, [activeInvestigationId]);
@@ -1146,16 +1072,10 @@ export function TimelineWorkspace() {
     [timeRange, timelineEvents],
   );
 
-  const layout = useMemo(() => {
-    if (!isDarkMode) return computeCompressedLayout(filteredEvents);
-
-    return computeCompressedLayout(filteredEvents, {
-      baseDayWidth: 184,
-      denseBonus: 148,
-      eventNodeSpacing: 178,
-      outerPadding: 96,
-    });
-  }, [filteredEvents, isDarkMode]);
+  const layout = useMemo(
+    () => computeCompressedTimelineLayout(filteredEvents, zoomLevel),
+    [filteredEvents, zoomLevel],
+  );
 
   const densityBuckets = useMemo(
     () => computeDensityBuckets(filteredEvents),
@@ -1245,7 +1165,7 @@ export function TimelineWorkspace() {
 
   const addAnnotation = useCallback(
     (type: AnnotationType, note: string) => {
-      if (!canWrite || !selectedEvent) return;
+      if (!timelineCapabilities.canAnnotate || !selectedEvent) return;
       setAnnotations((prev) => [
         ...prev,
         {
@@ -1256,7 +1176,7 @@ export function TimelineWorkspace() {
         },
       ]);
     },
-    [canWrite, selectedEvent],
+    [selectedEvent, timelineCapabilities.canAnnotate],
   );
 
   // Keyboard zoom
@@ -1297,13 +1217,11 @@ export function TimelineWorkspace() {
 
   return (
     <div
-      className={`fatal-timeline-root relative flex h-full flex-col overflow-hidden bg-[#F4F4F0] dark:bg-[var(--paper)] ${
-        isDarkMode && selectedEvent ? "fatal-timeline-focused" : ""
-      }`}
+      className="fatal-timeline-root relative flex h-full flex-col overflow-hidden bg-[#F4F4F0] dark:bg-[var(--paper)]"
     >
       {/* ─── TOP TOOLBAR ──────────────────────────── */}
-      <div className="fatal-timeline-toolbar shrink-0 border-b-4 border-black bg-[#F4F4F0] dark:border-b dark:border-[var(--line)] dark:bg-[var(--surface)]">
-        <div className="fatal-timeline-commandbar flex items-center justify-between gap-2 border-b-4 border-black bg-black px-3 py-2 sm:px-4 sm:py-3 dark:border-b dark:border-[var(--line)] dark:bg-[var(--paper)]">
+      <div className="fatal-timeline-toolbar shrink-0 border-b-4 border-black bg-[#F4F4F0] dark:border-[var(--line)] dark:bg-[var(--surface)]">
+        <div className="fatal-timeline-commandbar flex items-center justify-between gap-2 border-b-4 border-black bg-black px-3 py-2 sm:px-4 sm:py-3 dark:border-[var(--line)] dark:bg-[var(--paper)]">
           <h2 className="fatal-timeline-title truncate font-serif text-lg font-black uppercase leading-none text-white sm:text-2xl md:text-3xl dark:text-[var(--ink)]">
             Timeline Analysis
           </h2>
@@ -1311,9 +1229,11 @@ export function TimelineWorkspace() {
             <button
               type="button"
               onClick={() => {
-                if (canWrite) setShowGapReconstruction(true);
+                if (timelineCapabilities.canUseMutationTools) {
+                  setShowGapReconstruction(true);
+                }
               }}
-              disabled={!canWrite}
+              disabled={!timelineCapabilities.canUseMutationTools}
               title={isPublicDemo ? "Gap reconstruction requires your own investigation" : undefined}
               className="fatal-historical-badge mr-1 flex h-8 items-center gap-1.5 border-2 border-[#FCD34D] bg-[#FCD34D] px-2.5 text-[9px] font-black uppercase tracking-[0.08em] text-black transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 dark:border-[var(--accent)] dark:bg-[var(--surface)] dark:text-[var(--accent)]"
             >
@@ -1339,7 +1259,7 @@ export function TimelineWorkspace() {
             <span className="fatal-events-loaded hidden md:inline dark:text-[var(--dim)]">
               {filteredEvents.length} Events Loaded
             </span>
-            <span className="inline-block h-2 w-2 bg-[#D22B2B] dark:h-2 dark:w-2 dark:rounded-none dark:bg-[#FF4D55] dark:shadow-none" />
+            <span className="inline-block h-2 w-2 bg-[#D22B2B] dark:bg-[#FF4D55]" />
             <span className="dark:text-[var(--dim)]">LIVE</span>
           </div>
         </div>
@@ -1354,7 +1274,7 @@ export function TimelineWorkspace() {
                 type="date"
                 value={timeRange[0]}
                 onChange={(e) => setTimeRange([e.target.value, timeRange[1]])}
-                className="fatal-timeline-control w-[8.8rem] border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none dark:border dark:border-[var(--line)] dark:bg-[var(--surface)] dark:text-[var(--ink)] dark:shadow-none"
+                className="fatal-timeline-control w-[8.8rem] border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none dark:border-[var(--line)] dark:bg-[var(--surface)] dark:text-[var(--ink)] dark:shadow-[3px_3px_0_var(--hard-shadow)]"
               />
             </label>
             <span className="text-black/40 dark:text-[var(--dim)]">→</span>
@@ -1364,12 +1284,12 @@ export function TimelineWorkspace() {
                 type="date"
                 value={timeRange[1]}
                 onChange={(e) => setTimeRange([timeRange[0], e.target.value])}
-                className="fatal-timeline-control w-[8.8rem] border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none dark:border dark:border-[var(--line)] dark:bg-[var(--surface)] dark:text-[var(--ink)] dark:shadow-none"
+                className="fatal-timeline-control w-[8.8rem] border-4 border-black bg-white px-2 py-1.5 shadow-[3px_3px_0_black] focus:outline-none dark:border-[var(--line)] dark:bg-[var(--surface)] dark:text-[var(--ink)] dark:shadow-[3px_3px_0_var(--hard-shadow)]"
               />
             </label>
           </div>
 
-          <div className="h-6 w-[4px] bg-black hidden md:block dark:w-px dark:bg-[var(--ink)]" />
+          <div className="hidden h-6 w-[4px] bg-black md:block dark:bg-[var(--ink)]" />
 
           {/* Zoom controls */}
           <div className="flex shrink-0 items-center gap-2">
@@ -1379,11 +1299,11 @@ export function TimelineWorkspace() {
             <button
               type="button"
               onClick={() => setZoomLevel((z) => Math.max(z - 0.5, 0))}
-              className="fatal-timeline-control flex h-8 w-8 items-center justify-center border-4 border-black bg-white shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border dark:border-[var(--line)] dark:bg-[var(--surface)] dark:shadow-none"
+              className="fatal-timeline-control flex h-8 w-8 items-center justify-center border-4 border-black bg-white shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[var(--line)] dark:bg-[var(--surface)] dark:shadow-[3px_3px_0_var(--hard-shadow)]"
             >
               <ZoomOut size={14} strokeWidth={3} />
             </button>
-            <div className="fatal-timeline-control flex h-8 w-28 items-center border-4 border-black bg-white px-1 dark:border dark:border-[var(--line)] dark:bg-[var(--surface)]">
+            <div className="fatal-timeline-control flex h-8 w-28 items-center border-4 border-black bg-white px-1 dark:border-[var(--line)] dark:bg-[var(--surface)]">
               <div className="relative h-1 w-full bg-black/20 dark:bg-[var(--ink)]/30">
                 <div
                   className="absolute left-0 top-0 h-full bg-black transition-all dark:bg-[var(--ink)]"
@@ -1401,16 +1321,16 @@ export function TimelineWorkspace() {
             <button
               type="button"
               onClick={() => setZoomLevel((z) => Math.min(z + 0.5, 3))}
-              className="fatal-timeline-control flex h-8 w-8 items-center justify-center border-4 border-black bg-white shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border dark:border-[var(--line)] dark:bg-[var(--surface)] dark:shadow-none"
+              className="fatal-timeline-control flex h-8 w-8 items-center justify-center border-4 border-black bg-white shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[var(--line)] dark:bg-[var(--surface)] dark:shadow-[3px_3px_0_var(--hard-shadow)]"
             >
               <ZoomIn size={14} strokeWidth={3} />
             </button>
-            <span className="fatal-zoom-readout ml-1 tabular-nums text-[10px] dark:border dark:border-[var(--line)] dark:bg-[var(--paper)] dark:px-1.5 dark:py-1 dark:text-[var(--ink)]">
+            <span className="fatal-zoom-readout ml-1 border-2 border-transparent px-1.5 py-1 text-[10px] tabular-nums dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)]">
               {isHeatmapMode ? "HEATMAP" : `${zoomLevel.toFixed(1)}×`}
             </span>
           </div>
 
-          <div className="h-6 w-[4px] bg-black hidden md:block dark:w-px dark:bg-[var(--ink)]" />
+          <div className="hidden h-6 w-[4px] bg-black md:block dark:bg-[var(--ink)]" />
 
           {/* Brush toggle */}
           <button
@@ -1420,7 +1340,7 @@ export function TimelineWorkspace() {
               setBrushStart(null);
               setBrushEnd(null);
             }}
-            className={`flex h-8 items-center gap-1.5 border-4 border-black px-3 shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:border-[1px] dark:shadow-none ${
+            className={`flex h-8 items-center gap-1.5 border-4 border-black px-3 shadow-[3px_3px_0_black] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none dark:shadow-[3px_3px_0_var(--hard-shadow)] ${
               brushActive
                 ? "bg-[#D22B2B] text-white dark:border-[var(--accent)] dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]"
                 : "bg-white hover:-translate-x-0.5 hover:-translate-y-0.5 dark:border-[var(--line)] dark:bg-[var(--surface)] dark:text-[var(--ink)] hover:dark:bg-[var(--panel)]"
@@ -1452,7 +1372,7 @@ export function TimelineWorkspace() {
               setBrushStart(null);
               setBrushEnd(null);
             }}
-            className="fatal-reset-control flex h-8 items-center gap-1 border-4 border-black bg-[#FCD34D] px-3 shadow-[3px_3px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none dark:border dark:border-[var(--accent)] dark:bg-[var(--surface)] dark:text-[var(--accent)] dark:shadow-none hover:dark:bg-[var(--accent)] hover:dark:text-[var(--accent-ink)]"
+            className="fatal-reset-control flex h-8 items-center gap-1 border-4 border-black bg-[#FCD34D] px-3 shadow-[3px_3px_0_black] active:translate-x-1 active:translate-y-1 active:shadow-none dark:border-[var(--accent)] dark:bg-[var(--surface)] dark:text-[var(--accent)] dark:shadow-[3px_3px_0_var(--hard-shadow)] hover:dark:bg-[var(--accent)] hover:dark:text-[var(--accent-ink)]"
           >
             RESET
           </button>
@@ -1471,7 +1391,7 @@ export function TimelineWorkspace() {
                   onMouseLeave={() => setHoveredCategory(null)}
                 >
                   <span
-                    className={`inline-block h-3 w-3 border-2 border-black dark:border-[1px] dark:border-[var(--line)] ${CATEGORY_DARK_STYLES[category].strip}`}
+                    className={`inline-block h-3 w-3 border-2 border-black dark:border-[var(--line)] ${CATEGORY_DARK_STYLES[category].strip}`}
                     style={{ backgroundColor: color }}
                   />
                   {category}
@@ -1485,7 +1405,7 @@ export function TimelineWorkspace() {
       <div className="fatal-timeline-main relative flex-1 overflow-hidden">
         {isHeatmapMode ? (
           /* ─── DENSITY HEATMAP MODE ─────────────── */
-          <div className="fatal-timeline-heatmap m-1 h-[calc(100%-0.5rem)] border-4 border-black bg-white shadow-[4px_4px_0_black] sm:m-4 sm:h-[calc(100%-2rem)] dark:border dark:border-[var(--line)] dark:bg-[var(--surface)] dark:shadow-[6px_6px_0_var(--ink)]">
+          <div className="fatal-timeline-heatmap m-1 h-[calc(100%-0.5rem)] border-4 border-black bg-white shadow-[4px_4px_0_black] sm:m-4 sm:h-[calc(100%-2rem)] dark:border-[var(--line)] dark:bg-[var(--surface)] dark:shadow-[4px_4px_0_var(--hard-shadow)]">
             <div className="border-b-4 border-black bg-[#F4F4F0] px-4 py-2 font-mono text-[10px] font-black uppercase dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)]">
               Activity Density Heatmap — {densityBuckets.length} Active Days
             </div>
@@ -1519,7 +1439,7 @@ export function TimelineWorkspace() {
             >
               {/* ─── AXIS LINE ──────────────────────── */}
               <div
-                className="fatal-timeline-axis absolute border-t-4 border-black dark:h-[2px] dark:border-0 dark:bg-[var(--ink)]"
+                className="fatal-timeline-axis absolute border-t-4 border-black dark:border-[var(--ink)]"
                 style={{
                   top: "var(--fatal-axis-y)",
                   left: 0,
@@ -1540,8 +1460,8 @@ export function TimelineWorkspace() {
                     top: "calc(var(--fatal-axis-y) + 12px)",
                   }}
                 >
-                  <div className="border-l-4 border-black pl-2 py-1 dark:border-l-2 dark:border-[var(--line)]">
-                    <span className="fatal-timeline-date-label bg-black px-1.5 py-0.5 text-white dark:border dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--ink)]">
+                  <div className="border-l-4 border-black py-1 pl-2 dark:border-[var(--line)]">
+                    <span className="fatal-timeline-date-label bg-black px-1.5 py-0.5 text-white dark:bg-[var(--paper)] dark:text-[var(--ink)]">
                       {formatDate(seg.date)}
                     </span>
                     {seg.eventCount > 1 && (
@@ -1613,23 +1533,20 @@ export function TimelineWorkspace() {
                   suspectLinkedEvents !== null &&
                   !suspectLinkedEvents.has(event.id);
                 const isFocusDimmed =
-                  isDarkMode && selectedTimelineEventId !== null && !isSelected;
+                  selectedTimelineEventId !== null && !isSelected;
                 const isHoverDimmed =
-                  isDarkMode &&
                   !selectedTimelineEventId &&
                   hoveredEvent !== null &&
                   !isHovered;
                 const isCategoryDimmed =
-                  isDarkMode &&
                   hoveredCategory !== null &&
                   hoveredCategory !== event.category;
-                const isDimmed = isDarkMode
-                  ? !isSelected &&
-                    (isEntityDimmed ||
-                      isFocusDimmed ||
-                      isHoverDimmed ||
-                      isCategoryDimmed)
-                  : isEntityDimmed;
+                const isDimmed =
+                  !isSelected &&
+                  (isEntityDimmed ||
+                    isFocusDimmed ||
+                    isHoverDimmed ||
+                    isCategoryDimmed);
                 const prominence = isEntityDimmed
                   ? 0.25
                   : isFocusDimmed || isCategoryDimmed
@@ -1668,15 +1585,13 @@ export function TimelineWorkspace() {
 
                     {/* Vertical connector stem */}
                     <div
-                      className="fatal-timeline-stem absolute w-0 border-l-[3px] border-dashed border-black/40 dark:border-l dark:border-[var(--line)]/40"
+                      className="fatal-timeline-stem absolute w-0 border-l-[3px] border-dashed border-black/40 dark:border-[var(--line)]/40"
                       data-selected={isSelected}
                       data-hovered={isHovered}
                       style={{
                         left: "12px",
-                        top: isDarkMode ? "11%" : "14%",
-                        height: isDarkMode
-                          ? "calc(var(--fatal-axis-y) - 11%)"
-                          : "46%",
+                        top: "14%",
+                        height: "calc(var(--fatal-axis-y) - 14%)",
                         opacity: isDimmed ? prominence : 1,
                       }}
                     />
@@ -1686,22 +1601,22 @@ export function TimelineWorkspace() {
                       role="button"
                       tabIndex={brushActive ? -1 : 0}
                       aria-label={`${event.date} ${event.time}; ${event.category}; ${event.title}; ${event.timePrecision ?? "EXACT"}`}
-                      className={`fatal-timeline-event-card absolute w-[140px] transition-all duration-200 hover:-translate-y-1 dark:w-[168px] ${
+                      className={`fatal-timeline-event-card absolute w-[140px] transition-all duration-200 hover:-translate-y-1 ${
                         brushActive ? "pointer-events-none" : "cursor-pointer"
                       }`}
                       initial={false}
                       animate={{ opacity: isDimmed ? prominence : 1 }}
                       transition={{ duration: 0.2 }}
                       style={{
-                        left: isDarkMode ? "-72px" : "-46px",
-                        top: isDarkMode ? "calc(11% - 4px)" : "calc(14% - 4px)",
+                        left: `${TIMELINE_CARD_LEFT}px`,
+                        top: "calc(14% - 4px)",
                         filter: isEntityDimmed ? "grayscale(1)" : "none",
                       }}
                       onClick={() => {
                         if (!brushActive) {
                           setSelectedEvent(event);
                           setSelectedTimelineEventId(event.id);
-                          setShowDarkAnnotationPanel(false);
+                          setShowAnnotationPanel(false);
                         }
                       }}
                       onKeyDown={(keyboardEvent) => {
@@ -1713,36 +1628,36 @@ export function TimelineWorkspace() {
                           keyboardEvent.preventDefault();
                           setSelectedEvent(event);
                           setSelectedTimelineEventId(event.id);
-                          setShowDarkAnnotationPanel(false);
+                          setShowAnnotationPanel(false);
                         }
                       }}
                       onMouseEnter={() => setHoveredEvent(event.id)}
                       onMouseLeave={() => setHoveredEvent(null)}
                     >
                       <div
-                        className={`fatal-timeline-card-surface relative min-h-0 rounded-none border-4 p-2 font-mono text-[10px] font-black uppercase leading-tight transition-colors duration-150 dark:min-h-[124px] dark:border-2 dark:border-[var(--line)] dark:bg-[var(--surface)] dark:p-3 dark:text-[var(--ink)] dark:shadow-[6px_6px_0_var(--ink)] ${categoryStyles.cardHover} ${
+                        className={`fatal-timeline-card-surface relative min-h-0 rounded-none border-4 p-2 font-mono text-[10px] font-black uppercase leading-tight transition-colors duration-150 dark:border-[var(--line)] dark:bg-[var(--surface)] dark:text-[var(--ink)] ${categoryStyles.cardHover} ${
                           isSelected
-                            ? "border-black bg-[#FCD34D] shadow-[6px_6px_0_black] dark:border-[var(--line)] dark:bg-[var(--panel)] dark:shadow-[8px_8px_0_var(--ink)]"
+                            ? "border-black bg-[#FCD34D] shadow-[6px_6px_0_black] dark:border-[var(--accent)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:outline-2 dark:outline-offset-2 dark:outline-[var(--accent)] dark:shadow-[6px_6px_0_var(--hard-shadow)]"
                             : isSuspectLinked
-                              ? "border-[#D22B2B] bg-[#D22B2B]/10 shadow-[6px_6px_0_#D22B2B] dark:border-[var(--line)] dark:bg-[var(--surface)] dark:shadow-[6px_6px_0_var(--ink)]"
-                              : "border-black bg-white shadow-[4px_4px_0_black] hover:shadow-[6px_6px_0_black]"
+                              ? "border-[#D22B2B] bg-[#D22B2B]/10 shadow-[6px_6px_0_#D22B2B] dark:border-[var(--line)] dark:bg-[var(--surface)] dark:shadow-[6px_6px_0_var(--hard-shadow)]"
+                              : "border-black bg-white shadow-[4px_4px_0_black] hover:shadow-[6px_6px_0_black] dark:shadow-[4px_4px_0_var(--hard-shadow)] dark:hover:shadow-[6px_6px_0_var(--hard-shadow)]"
                         }`}
                       >
                         {/* Suspect-linked badge */}
                         {isSuspectLinked && (
-                          <div className="absolute -left-2 -top-2 flex h-5 items-center gap-0.5 border-2 border-[#D22B2B] bg-[#D22B2B] px-1 text-[8px] text-white dark:border-[1px] dark:border-[#32D6A0] dark:bg-[var(--panel)] dark:text-[#32D6A0]">
+                          <div className="absolute -left-2 -top-2 flex h-5 items-center gap-0.5 border-2 border-[#D22B2B] bg-[#D22B2B] px-1 text-[8px] text-white dark:border-[#32D6A0] dark:bg-[var(--panel)] dark:text-[#32D6A0]">
                             ● LINKED
                           </div>
                         )}
                         <div
-                          className={`mb-1 inline-block rounded-none px-1 py-0.5 text-[9px] text-white dark:border dark:!bg-[var(--paper)] ${categoryStyles.label}`}
+                          className={`mb-1 inline-block rounded-none px-1 py-0.5 text-[9px] text-white dark:!bg-[var(--paper)] ${categoryStyles.label}`}
                           style={{
                             backgroundColor: CATEGORY_COLORS[event.category],
                           }}
                         >
                           {event.category}
                         </div>
-                        <p className="fatal-timeline-card-time text-[10px] dark:text-[12px] dark:text-[var(--ink)]">
+                        <p className="fatal-timeline-card-time text-[10px] dark:text-[var(--ink)]">
                           {event.time}
                         </p>
                         {event.timePrecision ? (
@@ -1750,7 +1665,7 @@ export function TimelineWorkspace() {
                             {event.timePrecision}
                           </p>
                         ) : null}
-                        <p className="fatal-timeline-card-title mt-1 normal-case leading-tight text-[10px] dark:mt-2 dark:text-[11px] dark:leading-[1.25] dark:text-[var(--ink)]">
+                        <p className="fatal-timeline-card-title mt-1 text-[10px] normal-case leading-tight dark:text-[var(--ink)]">
                           {event.title}
                         </p>
                         {/* Severity bar */}
@@ -1766,17 +1681,9 @@ export function TimelineWorkspace() {
                                         : event.severity >= 5
                                           ? "bg-[#D97706]"
                                           : "bg-[#059669]"
-                                    } ${categoryStyles.strip}`
+                                    }`
                                   : "bg-[#e5e5e5] dark:bg-[var(--ink)]"
                               }`}
-                            />
-                          ))}
-                        </div>
-                        <div className="fatal-timeline-category-accent mt-2 hidden grid-cols-5 gap-[2px] dark:grid">
-                          {Array.from({ length: 5 }, (_, segment) => (
-                            <span
-                              key={segment}
-                              className={`h-1 rounded-none ${categoryStyles.strip}`}
                             />
                           ))}
                         </div>
@@ -1791,7 +1698,7 @@ export function TimelineWorkspace() {
 
                     {/* Node dot on axis */}
                     <div
-                      className={`fatal-timeline-marker absolute h-5 w-5 rounded-none border-4 transition-transform duration-150 hover:scale-110 dark:border-2 ${categoryStyles.markerBorder} ${categoryStyles.strip} ${
+                      className={`fatal-timeline-marker absolute h-5 w-5 rounded-none border-4 transition-transform duration-150 hover:scale-110 ${categoryStyles.markerBorder} ${
                         isHovered ? categoryStyles.markerActive : ""
                       } ${
                         isSelected
@@ -1807,7 +1714,7 @@ export function TimelineWorkspace() {
                           left: "3px",
                           top: "calc(var(--fatal-axis-y) - 10px)",
                           backgroundColor: isSelected
-                            ? "#FCD34D"
+                            ? "var(--accent)"
                             : isSuspectLinked
                               ? "#D22B2B"
                               : CATEGORY_COLORS[event.category],
@@ -1837,46 +1744,36 @@ export function TimelineWorkspace() {
           </div>
         )}
 
-        {/* ─── ANNOTATION PANEL (slides in from right) ── */}
-        {canWrite && selectedEvent && !isHeatmapMode && !isDarkMode && (
-          <AnnotationPanel
-            event={selectedEvent}
-            annotations={annotations}
-            onAdd={addAnnotation}
-            onClose={() => {
-              setSelectedEvent(null);
-              setSelectedTimelineEventId(null);
-            }}
-          />
-        )}
-        {selectedEvent && !isHeatmapMode && isDarkMode && (
+        {/* Shared read-only event inspector for every theme and access level. */}
+        {selectedEvent && !isHeatmapMode && timelineCapabilities.canInspectEvents && (
           <EventInspector
             event={selectedEvent}
             investigation={activeInvestigation}
-            onAnnotate={() => setShowDarkAnnotationPanel(true)}
-            canAnnotate={canWrite}
+            annotations={annotations}
+            onAnnotate={() => setShowAnnotationPanel(true)}
+            canAnnotate={timelineCapabilities.canAnnotate}
             onClear={() => {
               setSelectedEvent(null);
               setSelectedTimelineEventId(null);
-              setShowDarkAnnotationPanel(false);
+              setShowAnnotationPanel(false);
             }}
           />
         )}
         {selectedEvent &&
           !isHeatmapMode &&
-          isDarkMode && canWrite &&
-          showDarkAnnotationPanel && (
+          timelineCapabilities.canAnnotate &&
+          showAnnotationPanel && (
             <AnnotationPanel
               event={selectedEvent}
               annotations={annotations}
               onAdd={addAnnotation}
-              onClose={() => setShowDarkAnnotationPanel(false)}
+              onClose={() => setShowAnnotationPanel(false)}
             />
           )}
       </div>
 
       {/* ─── STATUS BAR ───────────────────────────── */}
-      <div className="fatal-timeline-footer hide-scrollbar shrink-0 overflow-x-auto whitespace-nowrap border-t-4 border-black bg-black px-3 py-2 font-mono text-[9px] font-black uppercase text-[#F4F4F0] sm:px-4 sm:text-[10px] dark:border-t dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--dim)]">
+      <div className="fatal-timeline-footer hide-scrollbar shrink-0 overflow-x-auto whitespace-nowrap border-t-4 border-black bg-black px-3 py-2 font-mono text-[9px] font-black uppercase text-[#F4F4F0] sm:px-4 sm:text-[10px] dark:border-[var(--line)] dark:bg-[var(--paper)] dark:text-[var(--dim)]">
         <div className="flex items-center gap-4">
           <span>
             Range: {timeRange[0]} → {timeRange[1]}

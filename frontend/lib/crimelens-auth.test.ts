@@ -3,8 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   authProgress,
   browserSupportsPasskeys,
+  buildAuthCallbackUrl,
   buildEnrollmentRedirectUrl,
   classifyEnrollmentError,
+  classifyOAuthError,
   classifyPasskeyError,
   loadAuthorizedProfile,
 } from "./crimelens-auth";
@@ -154,6 +156,30 @@ describe("buildEnrollmentRedirectUrl", () => {
     expect(
       buildEnrollmentRedirectUrl("not a url", "https://app.example.com"),
     ).toBe("https://app.example.com/enroll");
+  });
+});
+
+describe("buildAuthCallbackUrl", () => {
+  it("returns to the origin that initiated the browser PKCE flow", () => {
+    expect(buildAuthCallbackUrl("http://localhost:3000")).toBe(
+      "http://localhost:3000/auth/callback",
+    );
+  });
+});
+
+describe("classifyOAuthError", () => {
+  it("explains a disabled Google provider", () => {
+    expect(classifyOAuthError({ code: "provider_disabled" }).message).toContain(
+      "enable the Google provider",
+    );
+  });
+
+  it("does not expose an unknown upstream provider response", () => {
+    const result = classifyOAuthError(
+      new Error("sensitive upstream provider response"),
+    );
+    expect(result.message).not.toContain("sensitive");
+    expect(result.message).toContain("continue with email");
   });
 });
 

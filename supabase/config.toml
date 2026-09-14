@@ -2,7 +2,7 @@ project_id = "crimelens-local"
 
 [auth]
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://127.0.0.1:3000/enroll", "http://localhost:3000/enroll"]
+additional_redirect_urls = ["http://127.0.0.1:3000/enroll", "http://localhost:3000/enroll", "http://127.0.0.1:3000/auth/callback", "http://localhost:3000/auth/callback"]
 
 [auth.passkey]
 enabled = true
@@ -14,4 +14,3 @@ enabled = true
 rp_display_name = "CrimeLens"
 rp_id = "localhost"
 rp_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
-

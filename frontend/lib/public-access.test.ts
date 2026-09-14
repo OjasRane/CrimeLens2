@@ -49,6 +49,10 @@ it("provisions a missing profile through the trusted RPC, then reads its actual 
   expect(rpc).toHaveBeenCalledWith("complete_public_onboarding");
 });
 it("does not report onboarding success after an RPC rejection",async()=>{
-  const client={from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:null,error:null})})})}),rpc:async()=>({error:{message:"Unverified"}})} as unknown as SupabaseClient;
-  await expect(loadAuthorizedProfile(client,"user",true)).rejects.toThrow("Verified registration");
+  const client={from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:null,error:null})})})}),rpc:async()=>({error:{code:"42501",message:"Unverified"}})} as unknown as SupabaseClient;
+  await expect(loadAuthorizedProfile(client,"user",true)).rejects.toThrow("PUBLIC_ONBOARDING_NOT_ELIGIBLE");
+});
+it("reports when the public onboarding RPC has not been deployed",async()=>{
+  const client={from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:null,error:null})})})}),rpc:async()=>({error:{code:"PGRST202",message:"Missing function"}})} as unknown as SupabaseClient;
+  await expect(loadAuthorizedProfile(client,"user",true)).rejects.toThrow("PUBLIC_ONBOARDING_NOT_DEPLOYED");
 });

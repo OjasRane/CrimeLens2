@@ -42,6 +42,11 @@ export type ClassifiedEnrollmentError = {
   code?: string;
 };
 
+export type ClassifiedOAuthError = {
+  message: string;
+  code?: string;
+};
+
 const cancellationCodes = new Set([
   "ERROR_CEREMONY_ABORTED",
   "AbortError",
@@ -214,11 +219,58 @@ export function classifyEnrollmentError(
   };
 }
 
-export function buildEnrollmentRedirectUrl(
+export function classifyOAuthError(error: unknown): ClassifiedOAuthError {
+  const candidate =
+    typeof error === "object" && error !== null ? (error as ErrorLike) : {};
+  const code = typeof candidate.code === "string" ? candidate.code : "";
+  const message =
+    typeof candidate.message === "string" ? candidate.message : "";
+
+  if (
+    code === "provider_disabled" ||
+    /provider.+(disabled|not enabled)|unsupported provider/i.test(message)
+  ) {
+    return {
+      code: code || "provider_disabled",
+      message:
+        "Google sign-in is not enabled // enable the Google provider in Supabase Auth",
+    };
+  }
+
+  if (
+    /redirect|callback/i.test(message) &&
+    /allow|invalid|not permitted|not supported/i.test(message)
+  ) {
+    return {
+      code: code || "redirect_not_allowed",
+      message:
+        "Google callback is not allowlisted // add this site's /auth/callback URL to Supabase Auth redirect URLs",
+    };
+  }
+
+  if (
+    error instanceof TypeError ||
+    /failed to fetch|network|load failed|connection/i.test(message)
+  ) {
+    return {
+      code: code || "network_error",
+      message:
+        "Google sign-in could not reach the authentication service // check the connection and retry",
+    };
+  }
+
+  return {
+    code: code || undefined,
+    message: "Google sign-in could not be started // retry or continue with email",
+  };
+}
+
+function buildRedirectUrl(
+  path: string,
   configuredSiteUrl: string | undefined,
   browserOrigin: string,
 ): string {
-  const fallback = new URL("/enroll", browserOrigin);
+  const fallback = new URL(path, browserOrigin);
   const candidate = configuredSiteUrl?.trim();
   if (!candidate) return fallback.toString();
 
@@ -227,10 +279,23 @@ export function buildEnrollmentRedirectUrl(
     if (configuredUrl.protocol !== "http:" && configuredUrl.protocol !== "https:") {
       return fallback.toString();
     }
-    return new URL("/enroll", configuredUrl).toString();
+    return new URL(path, configuredUrl).toString();
   } catch {
     return fallback.toString();
   }
+}
+
+export function buildEnrollmentRedirectUrl(
+  configuredSiteUrl: string | undefined,
+  browserOrigin: string,
+): string {
+  return buildRedirectUrl("/enroll", configuredSiteUrl, browserOrigin);
+}
+
+export function buildAuthCallbackUrl(
+  browserOrigin: string,
+): string {
+  return new URL("/auth/callback", browserOrigin).toString();
 }
 
 export const authProgress: Record<AuthVisualState, number> = {
@@ -262,7 +327,13 @@ export async function loadAuthorizedProfile(
   if (!data) {
     if (!provisionPublic) throw new Error("AUTHORIZED_PROFILE_NOT_FOUND");
     const { error: onboardingError } = await supabase.rpc("complete_public_onboarding");
-    if (onboardingError) throw new Error("Verified registration is required. Follow your email link, or contact your administrator for an existing account.");
+    if (onboardingError?.code === "PGRST202") {
+      throw new Error("PUBLIC_ONBOARDING_NOT_DEPLOYED");
+    }
+    if (onboardingError?.code === "42501") {
+      throw new Error("PUBLIC_ONBOARDING_NOT_ELIGIBLE");
+    }
+    if (onboardingError) throw new Error("PUBLIC_ONBOARDING_FAILED");
     const result = await supabase.from("profiles").select("user_id,agent_id,display_name,role,clearance,active").eq("user_id", userId).maybeSingle();
     if (result.error || !result.data) throw new Error("AUTHORIZED_PROFILE_NOT_FOUND");
     if (!result.data.active) throw new Error("AUTHORIZED_PROFILE_INACTIVE");

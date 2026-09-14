@@ -388,8 +388,8 @@ function NetworkNode({ data, id }: NodeProps<Node<CaseGraphNodeData>>) {
     kindClasses =
       "bg-[#FCD34D] text-black dark:bg-[var(--accent)]/15 dark:border dark:border-[var(--accent)] dark:text-[var(--ink)] dark:shadow-none";
   } else if (isEvidence || isLocation) {
-    // Evidence/Location: white/parchment in light → deep void in dark
-    kindClasses = `${isEvidence ? "bg-white" : "bg-[#F4F4F0]"} text-black dark:bg-[var(--paper)] dark:border dark:border-[var(--line)] dark:text-[var(--ink)] dark:shadow-none`;
+    // Evidence uses the panel surface in dark; locations remain on the map-like paper tone.
+    kindClasses = `${isEvidence ? "bg-white dark:bg-[var(--panel)]" : "bg-[#F4F4F0] dark:bg-[var(--paper)]"} text-black dark:border dark:border-[var(--line)] dark:text-[var(--ink)] dark:shadow-none`;
   }
 
   return (

@@ -208,6 +208,7 @@ export function PasskeyTerminal() {
         const existingProfile = await loadAuthorizedProfile(
           supabase,
           data.user.id,
+          true,
         );
         if (!componentActive.current) return;
         setProfile(existingProfile);
@@ -282,6 +283,7 @@ export function PasskeyTerminal() {
         authorizedProfile = await loadAuthorizedProfile(
           supabase,
           verifiedUser.user.id,
+          true,
         );
       } catch (profileError) {
         await supabase.auth.signOut();

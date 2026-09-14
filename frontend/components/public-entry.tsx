@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  useEffect,
   useRef,
   useState,
   type FormEvent,
@@ -19,9 +20,10 @@ import { navigateAccountBoundary } from "@/lib/account-navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { publicCases, safeReturnPath } from "@/lib/public-access";
 import {
-  buildEnrollmentRedirectUrl,
+  buildAuthCallbackUrl,
   browserSupportsPasskeys,
   classifyEnrollmentError,
+  classifyOAuthError,
   classifyPasskeyError,
   loadAuthorizedProfile,
 } from "@/lib/crimelens-auth";
@@ -34,6 +36,29 @@ const caseLabels = [
 ] as const;
 
 const caseActions = ["Explore demo", "Explore 26/11", "Create your own case"] as const;
+
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="21" height="21">
+      <path
+        fill="currentColor"
+        d="M21.6 12.23c0-.71-.06-1.24-.2-1.79H12v3.4h5.52a4.72 4.72 0 0 1-2.05 3.09l-.02.11 2.98 2.31.21.02c1.93-1.78 2.96-4.4 2.96-7.14Z"
+      />
+      <path
+        fill="currentColor"
+        d="M12 22c2.76 0 5.07-.91 6.76-2.47l-3.22-2.5c-.86.58-2.01.99-3.54.99a6.15 6.15 0 0 1-5.82-4.25l-.11.01-3.1 2.4-.04.1A10.22 10.22 0 0 0 12 22Z"
+      />
+      <path
+        fill="currentColor"
+        d="M6.18 13.77A6.28 6.28 0 0 1 5.84 12c0-.62.12-1.22.33-1.77v-.12L3.04 7.67l-.1.05A10.11 10.11 0 0 0 1.86 12c0 1.54.37 3 1.07 4.28l3.25-2.51Z"
+      />
+      <path
+        fill="currentColor"
+        d="M12 5.98c1.92 0 3.22.83 3.97 1.52l2.85-2.78A9.73 9.73 0 0 0 12 2a10.22 10.22 0 0 0-9.07 5.72l3.24 2.51A6.18 6.18 0 0 1 12 5.98Z"
+      />
+    </svg>
+  );
+}
 
 export function PublicEntry() {
   const [selected, setSelected] = useState(0);
@@ -55,6 +80,56 @@ export function PublicEntry() {
       new URLSearchParams(window.location.search).get("next"),
       "/cases/new",
     );
+
+  useEffect(() => {
+    const search = new URLSearchParams(window.location.search);
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const isAuthReturn =
+      search.has("code") ||
+      search.has("error") ||
+      fragment.has("access_token") ||
+      fragment.has("error");
+
+    if (!isAuthReturn) return;
+
+    let active = true;
+    const finishFallbackCallback = async () => {
+      if (search.has("error") || fragment.has("error")) {
+        if (!active) return;
+        setError(true);
+        setMessage("Sign-in was cancelled or the authentication link expired. Please try again.");
+        return;
+      }
+
+      setBusy(true);
+      setMessage("Completing secure sign-in…");
+      try {
+        const supabase = getSupabaseBrowserClient();
+        const { data, error: userError } = await supabase.auth.getUser();
+        if (userError || !data.user) {
+          throw userError ?? new Error("No authenticated user was returned");
+        }
+        await loadAuthorizedProfile(supabase, data.user.id, true);
+        if (active) {
+          navigateAccountBoundary(
+            safeReturnPath(search.get("next"), "/cases/new"),
+          );
+        }
+      } catch {
+        if (!active) return;
+        setError(true);
+        setMessage(
+          "Your identity was verified, but CrimeLens could not finish account access. Retry sign-in or contact the administrator.",
+        );
+        setBusy(false);
+      }
+    };
+
+    void finishFallbackCallback();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function focusSignup() {
     setSelected(2);
@@ -93,10 +168,7 @@ export function PublicEntry() {
     setSent(false);
     try {
       const callback = new URL(
-        buildEnrollmentRedirectUrl(
-          process.env.NEXT_PUBLIC_SITE_URL,
-          window.location.origin,
-        ),
+        buildAuthCallbackUrl(window.location.origin),
       );
       callback.searchParams.set("next", destination());
       const { error: signupError } =
@@ -126,6 +198,35 @@ export function PublicEntry() {
     }
   }
 
+  async function google() {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setBusy(true);
+    setError(false);
+    setMessage("Opening Google sign-in…");
+    try {
+      const callback = new URL(
+        buildAuthCallbackUrl(window.location.origin),
+      );
+      callback.searchParams.set("next", destination());
+      const { error: oauthError } =
+        await getSupabaseBrowserClient().auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: callback.toString() },
+        });
+      if (oauthError) throw oauthError;
+    } catch (cause) {
+      setError(true);
+      setMessage(
+        cause instanceof Error && cause.message.includes("not configured")
+          ? cause.message
+          : classifyOAuthError(cause).message,
+      );
+      inFlight.current = false;
+      setBusy(false);
+    }
+  }
+
   async function passkey() {
     if (inFlight.current) return;
     inFlight.current = true;
@@ -139,7 +240,7 @@ export function PublicEntry() {
         await supabase.auth.signInWithPasskey();
       if (passkeyError) throw passkeyError;
       if (!data.user) throw new Error("No verified user");
-      await loadAuthorizedProfile(supabase, data.user.id);
+      await loadAuthorizedProfile(supabase, data.user.id, true);
       navigateAccountBoundary(destination());
     } catch (cause) {
       setError(true);
@@ -365,16 +466,27 @@ export function PublicEntry() {
             {message ||
               "Verify your email. Then secure your account with a passkey."}
           </div>
-          <div className="sheet-divider">ALREADY ON THE CASE?</div>
-          <button
-            type="button"
-            disabled={busy}
-            className="archive-button passkey-button"
-            onClick={() => void passkey()}
-          >
-            <Fingerprint size={21} />
-            Sign in with a passkey
-          </button>
+          <div className="sheet-divider">OR SIGN IN DIRECTLY</div>
+          <div className="signup-auth-options">
+            <button
+              type="button"
+              disabled={busy}
+              className="archive-button passkey-button"
+              onClick={() => void google()}
+            >
+              <GoogleMark />
+              Sign in with Google
+            </button>
+            <button
+              type="button"
+              disabled={busy}
+              className="archive-button passkey-button"
+              onClick={() => void passkey()}
+            >
+              <Fingerprint size={21} />
+              Sign in with a passkey
+            </button>
+          </div>
           <p className="sheet-footnote">
             <LockKeyhole size={13} /> Your cases are private by default.
           </p>

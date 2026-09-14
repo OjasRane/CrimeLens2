@@ -79,28 +79,30 @@ flowchart TB
 
 ```text
 fatal/
-├── app/                         Next.js routes and root styling
-│   ├── page.tsx                 Login entry point
-│   ├── workspace/page.tsx       Main investigation workspace
-│   ├── dashboard/page.tsx       Workspace alias
-│   ├── enroll/page.tsx          Account confirmation and passkey enrollment
-│   ├── security/page.tsx        Passkey management
-│   └── uplink/page.tsx          Mobile field uplink
-├── components/                  Workspace and interface components
-├── data/investigations/         Typed investigation source data
-├── lib/                         Auth, Liveblocks and board-storage utilities
-├── store/                       Zustand investigation store
+├── frontend/                    Self-contained Next.js application
+│   ├── app/                     Routes and root styling
+│   │   ├── page.tsx             Login entry point
+│   │   ├── workspace/page.tsx   Main investigation workspace
+│   │   ├── dashboard/page.tsx   Workspace alias
+│   │   ├── enroll/page.tsx      Account confirmation and passkey enrollment
+│   │   ├── security/page.tsx    Passkey management
+│   │   └── uplink/page.tsx      Mobile field uplink
+│   ├── components/              Workspace and interface components
+│   ├── data/investigations/     Typed investigation source data
+│   ├── lib/                     Auth, Liveblocks and board-storage utilities
+│   ├── store/                   Zustand investigation store
+│   ├── public/                  Static MapLibre workers
+│   ├── liveblocks.config.ts     Liveblocks event type declarations
+│   ├── next.config.ts           Next.js and Deck.gl configuration
+│   └── package.json             Frontend dependencies and scripts
 ├── backend/                     FastAPI intelligence service
 ├── supabase/                    Local config and database migrations
-├── public/                      Static MapLibre workers
-├── liveblocks.config.ts         Liveblocks event type declarations
-├── next.config.ts               Next.js and Deck.gl configuration
-└── package.json                 Frontend dependencies and scripts
+└── docs/                        Implementation documentation
 ```
 
 ## 4. Frontend application architecture
 
-The main shell is `components/investigation-workspace.tsx`. It owns:
+The main shell is `frontend/components/investigation-workspace.tsx`. It owns:
 
 - The Fatal Ledger header.
 - Investigation switching.
@@ -110,7 +112,7 @@ The main shell is `components/investigation-workspace.tsx`. It owns:
 - Liveblocks collaboration wrapper.
 - Light/dark themes and mobile safe-area layout.
 
-`components/workspace-viewport.tsx` selects one of four workspaces:
+`frontend/components/workspace-viewport.tsx` selects one of four workspaces:
 
 | Workspace | Component | Purpose |
 |---|---|---|
@@ -126,6 +128,7 @@ The desktop layout uses a workspace bar and collapsible Fact Ledger. Mobile uses
 | Route | Access | Responsibility |
 |---|---|---|
 | `/` | Public | Passkey login in production; redirects to `/workspace` in development |
+| `/auth/callback` | Public auth handoff | Completes email or Google sign-in, provisions eligible public profiles and opens the requested private route |
 | `/workspace` | Authenticated in production | Main investigation workspace |
 | `/dashboard` | Authenticated in production | Alias of the main workspace |
 | `/enroll` | Public onboarding flow | Email confirmation and initial passkey enrollment |
@@ -235,7 +238,7 @@ The registry validates case data when it loads. Validation includes:
 
 ## 8. Client state ownership
 
-`store/use-investigation-store.ts` is the central Zustand store.
+`frontend/store/use-investigation-store.ts` is the central Zustand store.
 
 It controls:
 
@@ -551,22 +554,22 @@ Recommended changes, in order:
 
 | Area | File |
 |---|---|
-| Main workspace shell | `components/investigation-workspace.tsx` |
-| Workspace selection | `components/workspace-viewport.tsx` |
-| Authentication gate | `components/authenticated-workspace.tsx` |
-| Supabase browser client | `lib/supabase-browser.ts` |
-| Auth/profile utilities | `lib/crimelens-auth.ts` |
-| Investigation schema | `data/investigations/types.ts` |
-| Investigation registry | `data/investigations/registry.ts` |
-| Global state | `store/use-investigation-store.ts` |
-| Collaboration runtime | `components/liveblocks-runtime.tsx` |
-| Liveblocks client | `lib/liveblocks.ts` |
-| Evidence storage helpers | `lib/evidence-board-storage.ts` |
-| Main map | `components/geospatial-map-workspace.tsx` |
-| Timeline | `components/timeline-workspace.tsx` |
+| Main workspace shell | `frontend/components/investigation-workspace.tsx` |
+| Workspace selection | `frontend/components/workspace-viewport.tsx` |
+| Authentication gate | `frontend/components/authenticated-workspace.tsx` |
+| Supabase browser client | `frontend/lib/supabase-browser.ts` |
+| Auth/profile utilities | `frontend/lib/crimelens-auth.ts` |
+| Investigation schema | `frontend/data/investigations/types.ts` |
+| Investigation registry | `frontend/data/investigations/registry.ts` |
+| Global state | `frontend/store/use-investigation-store.ts` |
+| Collaboration runtime | `frontend/components/liveblocks-runtime.tsx` |
+| Liveblocks client | `frontend/lib/liveblocks.tsx` |
+| Evidence storage helpers | `frontend/lib/evidence-board-storage.ts` |
+| Main map | `frontend/components/geospatial-map-workspace.tsx` |
+| Timeline | `frontend/components/timeline-workspace.tsx` |
 | FastAPI service | `backend/app/main.py` |
 | Blind-spot API | `backend/app/timeline_router.py` |
-| Evidence intake workspace | `components/evidence-intake-workspace.tsx` |
+| Evidence intake workspace | `frontend/components/evidence-intake-workspace.tsx` |
 | Evidence API routes | `backend/app/api/routes/evidence.py` |
 | Evidence extraction provider | `backend/app/services/evidence_extraction.py` |
 | Evidence ingestion migration | `supabase/migrations/20260909000000_create_evidence_ingestion.sql` |

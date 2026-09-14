@@ -326,7 +326,7 @@ const StoryNode = memo(function StoryNode({
         ? "h-[88px]"
         : "min-h-[82px]";
   const palette = isSelected
-    ? "bg-[#FCD34D] text-black dark:bg-[var(--accent)] dark:text-[var(--accent-ink)]"
+    ? "bg-[#FCD34D] text-black dark:border-[var(--accent)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:outline-2 dark:outline-offset-2 dark:outline-[var(--accent)]"
     : isActor
       ? "bg-black text-white dark:bg-[var(--panel)] dark:text-[var(--ink)]"
       : "bg-[#F4F4F0] text-black dark:bg-[var(--paper)] dark:text-[var(--ink)]";

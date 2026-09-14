@@ -133,7 +133,7 @@ protected request uses `Authorization: Bearer <Supabase access token>`.
 
 ## Frontend connection
 
-Set in the root `.env.local`:
+Set in `frontend/.env.local`:
 
 ```text
 NEXT_PUBLIC_CRIMELENS_API_URL=http://localhost:8000
@@ -151,6 +151,7 @@ investigation ID from the Liveblocks `case` query parameter.
 
 ```bash
 ENVIRONMENT=test backend/.venv/bin/pytest -q backend/tests
+cd frontend
 npm test
 npm run lint
 npm run typecheck

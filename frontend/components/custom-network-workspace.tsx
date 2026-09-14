@@ -150,7 +150,7 @@ type InspectorTab = "details" | "basis" | "connections" | "conflicts" | "ai";
 
 const iconByType: Record<
   WorkspaceNodeType,
-  ComponentType<{ size?: number; strokeWidth?: number }>
+  ComponentType<{ className?: string; size?: number; strokeWidth?: number }>
 > = {
   person: CircleUserRound,
   organization: Building2,
@@ -300,11 +300,13 @@ const WorkspaceEntityNode = memo(function WorkspaceEntityNode({
     data.sourceVerificationStatus ?? data.verificationStatus;
   return (
     <div
-      className={`w-44 border-4 bg-[var(--panel)] p-3 font-mono uppercase text-[var(--ink)] shadow-[5px_5px_0_var(--ink)] transition-opacity ${
+      className={`fatal-workspace-node w-44 border-4 bg-[var(--panel)] p-3 font-mono uppercase text-[var(--ink)] shadow-[5px_5px_0_var(--ink)] transition-opacity ${
         isHypothesis ? "border-dashed" : "border-solid"
       } ${selected || data.selectedByAnalyst ? "!border-[var(--danger)] shadow-[5px_5px_0_var(--danger)]" : "border-[var(--ink)]"} ${
         data.dimmed ? "opacity-25" : "opacity-100"
       } ${data.searchMatch ? "outline-4 outline-offset-4 outline-[var(--accent)]" : ""}`}
+      data-node-type={data.type}
+      data-selected={selected || data.selectedByAnalyst}
     >
       <Handle
         type="target"
@@ -318,7 +320,11 @@ const WorkspaceEntityNode = memo(function WorkspaceEntityNode({
       />
       <div className="mb-2 flex items-center justify-between border-b-2 border-current pb-2 text-[9px] font-black">
         <span className="flex items-center gap-1.5">
-          <Icon size={15} strokeWidth={3} />
+          <Icon
+            className="fatal-workspace-node-icon"
+            size={15}
+            strokeWidth={3}
+          />
           {data.type}
         </span>
         <span>{data.origin === "investigation" ? "CASE" : "ANALYST"}</span>

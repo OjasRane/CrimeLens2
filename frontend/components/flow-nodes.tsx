@@ -2,6 +2,7 @@
 
 import type { ChangeEvent } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { NotebookPen } from "lucide-react";
 import { useMutation } from "@/lib/liveblocks";
 import { useInvestigationStore } from "@/store/use-investigation-store";
 import { useInvestigationAccess } from "@/components/investigation-access";
@@ -18,9 +19,11 @@ function NodeLockTag({ lockedBy }: { lockedBy: unknown }) {
 
 function StickyNoteCard({
   data,
+  selected,
   onChange,
 }: {
   data: NodeProps["data"];
+  selected: boolean;
   onChange: (event: ChangeEvent<HTMLTextAreaElement>) => void;
 }) {
   const { canWrite } = useInvestigationAccess();
@@ -32,26 +35,34 @@ function StickyNoteCard({
         : "";
 
   return (
-    <div className="relative h-40 w-40 border-2 border-[var(--ink)] bg-[var(--accent)] p-3 pt-5 shadow-[4px_4px_0_var(--ink)] rounded-none sm:h-48 sm:w-48 sm:p-4 sm:pt-6">
+    <div
+      className="fatal-sticky-note-card relative h-40 w-40 rounded-none border-2 border-[var(--ink)] bg-[var(--accent)] p-3 pt-5 shadow-[4px_4px_0_var(--ink)] sm:h-48 sm:w-48 sm:p-4 sm:pt-6 dark:border-[var(--line)] dark:bg-[var(--panel)] dark:text-[var(--ink)] dark:shadow-[4px_4px_0_var(--hard-shadow)]"
+      data-selected={selected}
+    >
       <NodeLockTag lockedBy={data.lockedBy} />
       <Handle
-        className="w-3 h-3 bg-black border-2 border-black rounded-none dark:w-2 dark:h-2 dark:border-[var(--accent)] dark:shadow-[0_0_5px_var(--accent)] absolute -top-2"
+        className="absolute -top-2 h-3 w-3 rounded-none border-2 border-black bg-black dark:border-[var(--line)] dark:bg-[var(--surface)]"
         position={Position.Top}
         type="target"
       />
-      <div className="absolute left-1/2 top-[-10px] h-5 w-16 -translate-x-1/2 border-2 border-[var(--ink)] bg-[var(--panel)] shadow-[2px_2px_0_var(--ink)] rounded-none" />
+      <div className="absolute left-1/2 top-[-10px] h-5 w-16 -translate-x-1/2 rounded-none border-2 border-[var(--ink)] bg-[var(--panel)] shadow-[2px_2px_0_var(--ink)] dark:border-[var(--line)] dark:bg-[var(--surface)] dark:shadow-[2px_2px_0_var(--hard-shadow)]" />
+      <NotebookPen
+        aria-hidden="true"
+        className="absolute left-2 top-2 hidden size-3.5 text-[var(--accent)] dark:block"
+        strokeWidth={3}
+      />
       <textarea
         value={text}
         onChange={(event) => {
           if (canWrite) onChange(event);
         }}
         readOnly={!canWrite}
-        className="nodrag nopan h-full w-full resize-none border-0 bg-transparent font-mono text-sm leading-tight text-[var(--ink)] outline-none placeholder:text-[var(--ink)]/50 rounded-none"
+        className="nodrag nopan h-full w-full resize-none rounded-none border-0 bg-transparent font-mono text-sm leading-tight text-[var(--ink)] outline-none placeholder:text-[var(--ink)]/50 dark:focus-visible:outline-2 dark:focus-visible:outline-offset-2 dark:focus-visible:outline-[var(--accent)]"
         placeholder="TYPE FACT..."
         aria-label="Sticky note text"
       />
       <Handle
-        className="w-3 h-3 bg-black border-2 border-black rounded-none dark:w-2 dark:h-2 dark:border-[var(--accent)] dark:shadow-[0_0_5px_var(--accent)] absolute -bottom-2"
+        className="absolute -bottom-2 h-3 w-3 rounded-none border-2 border-black bg-black dark:border-[var(--line)] dark:bg-[var(--surface)]"
         position={Position.Bottom}
         type="source"
       />
@@ -59,18 +70,19 @@ function StickyNoteCard({
   );
 }
 
-export function StickyNoteNode({ id, data }: NodeProps) {
+export function StickyNoteNode({ id, data, selected }: NodeProps) {
   const updateNodeData = useInvestigationStore((state) => state.updateNodeData);
 
   return (
     <StickyNoteCard
       data={data}
+      selected={selected}
       onChange={(event) => updateNodeData(id, { text: event.target.value })}
     />
   );
 }
 
-export function LiveStickyNoteNode({ id, data }: NodeProps) {
+export function LiveStickyNoteNode({ id, data, selected }: NodeProps) {
   const updateNodeData = useMutation(
     ({ storage }, nodeId: string, text: string) => {
       const liveNodes = storage.get("nodes");
@@ -94,6 +106,7 @@ export function LiveStickyNoteNode({ id, data }: NodeProps) {
   return (
     <StickyNoteCard
       data={data}
+      selected={selected}
       onChange={(event) => updateNodeData(id, event.target.value)}
     />
   );

@@ -113,25 +113,25 @@ the existing bundled board snapshot. No approved Mumbai board snapshot exists in
 so that board explicitly directs guests to the approved Fact Ledger and Case Sources instead of
 connecting to a room, inventing content or silently displaying an empty canvas.
 
-The default Turbopack production build hit an environment subprocess-port error. The supported
-`npm run build -- --webpack` production build passes, including static generation and type checking.
+The production build passes from the reorganized application root with
+`cd frontend && npm run build`, including static generation and type checking.
 The SQL migration was prepared but not executed against PostgreSQL; backend behavioral tests use
 the existing memory repository. Real SMTP delivery, an actual Supabase passkey ceremony, and a
 connection to the isolated Liveblocks project have **not** been verified end to end.
 
 ## Main files
 
-- Entry/demo UI: `app/page.tsx`, `app/demo/[id]/page.tsx`, `components/public-entry.tsx`,
-  `components/investigation-workspace.tsx`, `components/investigation-access.tsx`,
-  `components/public-case-sources.tsx`, `app/globals.css`.
-- Onboarding/cases: `app/cases/**`, `components/private-cases.tsx`,
-  `components/authenticated-workspace.tsx`, `components/security-terminal.tsx`,
-  `components/passkey-terminal.tsx`, `lib/crimelens-auth.ts`, `lib/public-access.ts`.
+- Entry/demo UI: `frontend/app/page.tsx`, `frontend/app/demo/[id]/page.tsx`, `frontend/components/public-entry.tsx`,
+  `frontend/components/investigation-workspace.tsx`, `frontend/components/investigation-access.tsx`,
+  `frontend/components/public-case-sources.tsx`, `frontend/app/globals.css`.
+- Onboarding/cases: `frontend/app/cases/**`, `frontend/components/private-cases.tsx`,
+  `frontend/components/authenticated-workspace.tsx`, `frontend/components/security-terminal.tsx`,
+  `frontend/components/passkey-terminal.tsx`, `frontend/lib/crimelens-auth.ts`, `frontend/lib/public-access.ts`.
 - Private API: `backend/app/services/private_cases.py`, investigation/evidence/workspace routes,
   permissions/dependencies, profile/investigation schemas, repository and pins router.
-- Collaboration: `backend/app/api/routes/collaboration.py`, `lib/liveblocks.tsx`, Liveblocks runtime,
+- Collaboration: `backend/app/api/routes/collaboration.py`, `frontend/lib/liveblocks.tsx`, Liveblocks runtime,
   authenticated uplink and QR links, backend settings and example env files.
-- Workspaces: custom network persistence, `lib/network-workspace-persistence.ts`, API client,
+- Workspaces: custom network persistence, `frontend/lib/network-workspace-persistence.ts`, API client,
   investigation registry/store/switcher and private timeline guard.
-- Tests: `backend/tests/test_private_cases.py`, `lib/public-access.test.ts`, updated room-contract
-  test, `vitest.config.ts`.
+- Tests: `backend/tests/test_private_cases.py`, `frontend/lib/public-access.test.ts`, updated room-contract
+  test, `frontend/vitest.config.ts`.

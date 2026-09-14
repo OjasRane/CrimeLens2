@@ -32,7 +32,7 @@ def test_every_mumbai_event_has_source_and_timezone_metadata():
 
 def test_liveblocks_room_contract_is_still_independent():
     root = Path(__file__).parents[2]
-    runtime = (root / "components/liveblocks-runtime.tsx").read_text(encoding="utf-8")
+    runtime = (root / "frontend/components/liveblocks-runtime.tsx").read_text(encoding="utf-8")
     assert 'searchParams.get("case")' in runtime
     assert "roomId={requestedCase}" in runtime
     assert "investigation.roomId" in runtime
@@ -41,6 +41,11 @@ def test_liveblocks_room_contract_is_still_independent():
 
 def test_service_role_key_is_not_exposed_to_next_client():
     root = Path(__file__).parents[2]
-    sources = list((root / "app").rglob("*.tsx")) + list((root / "components").rglob("*.tsx")) + list((root / "lib").rglob("*.ts"))
+    frontend = root / "frontend"
+    sources = (
+        list((frontend / "app").rglob("*.tsx"))
+        + list((frontend / "components").rglob("*.tsx"))
+        + list((frontend / "lib").rglob("*.ts"))
+    )
     contents = "\n".join(path.read_text(encoding="utf-8") for path in sources)
     assert "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY" not in contents

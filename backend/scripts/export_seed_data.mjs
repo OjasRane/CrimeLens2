@@ -6,8 +6,8 @@ const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(scriptDirectory, "../..");
 const [{ demoInvestigation }, { mumbai2611Investigation }] =
   await Promise.all([
-    import(resolve(repositoryRoot, "data/investigations/demo.ts")),
-    import(resolve(repositoryRoot, "data/investigations/mumbai2611.ts")),
+    import(resolve(repositoryRoot, "frontend/data/investigations/demo.ts")),
+    import(resolve(repositoryRoot, "frontend/data/investigations/mumbai2611.ts")),
   ]);
 
 const destination = resolve(
@@ -16,8 +16,8 @@ const destination = resolve(
 );
 const payload = {
   generatedFrom: [
-    "data/investigations/demo.ts",
-    "data/investigations/mumbai2611.ts",
+    "frontend/data/investigations/demo.ts",
+    "frontend/data/investigations/mumbai2611.ts",
   ],
   investigations: [demoInvestigation, mumbai2611Investigation],
 };
